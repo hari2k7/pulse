@@ -79,11 +79,11 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
   // Registration CTA behavior per Non-Negotiable Constraint 2
   const registerCta = firstOpenEvent?.registration_status === 'OPEN'
     ? {
-        label: 'Register For Events',
+        label: 'Register',
         to: `/events/${firstOpenEvent.id}`,
       }
     : {
-        label: 'How To Register',
+        label: 'How to Register',
         to: '/events',
       };
 
@@ -115,14 +115,6 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
         ref={textGroupRef}
         className="relative z-10 max-w-4xl mx-auto flex flex-col items-center text-center space-y-6"
       >
-        {/* Runic Realm Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0D1020]/90 border border-[#FF7A1A]/30 backdrop-blur-md shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-[#FF7A1A] animate-pulse" aria-hidden="true" />
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#F5B642]">
-            {FESTIVAL_CONFIG.collegeName ? `${FESTIVAL_CONFIG.collegeName} Presents` : 'Annual Multiverse Fest'}
-          </span>
-        </div>
-
         {/* Real H1 Title (LCP Element) */}
         <h1 className="font-display font-bold text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-[0.12em] text-[#F3EFE8] leading-none drop-shadow-2xl">
           STR<span className="text-[#FF7A1A]">A</span>NGE
@@ -137,7 +129,7 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
         {(FESTIVAL_CONFIG.startDate || FESTIVAL_CONFIG.venue) && (
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm text-[#B8B3C7] font-medium pt-1">
             {FESTIVAL_CONFIG.startDate && (
-              <span className="px-3 py-1 rounded-md bg-[#0D1020]/80 border border-white/10">
+              <span className="px-3 py-1 rounded-md bg-[#0D1020] border border-white/10">
                 {new Date(FESTIVAL_CONFIG.startDate).toLocaleDateString('en-IN', {
                   month: 'short',
                   day: 'numeric',
@@ -147,8 +139,8 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
               </span>
             )}
             {FESTIVAL_CONFIG.venue && (
-              <span className="px-3 py-1 rounded-md bg-[#0D1020]/80 border border-white/10">
-                📍 {FESTIVAL_CONFIG.venue}
+              <span className="px-3 py-1 rounded-md bg-[#0D1020] border border-white/10">
+                {FESTIVAL_CONFIG.venue}
               </span>
             )}
           </div>
@@ -164,14 +156,14 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
         <div className="flex flex-wrap gap-4 justify-center pt-2">
           <Link
             to="/events"
-            className="inline-flex items-center justify-center font-bold text-sm sm:text-base uppercase tracking-wider px-6 sm:px-8 py-3.5 rounded-md bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] shadow-xl hover:shadow-[#FF7A1A]/40 transition-all hover:scale-105 active:scale-95"
+            className="inline-flex items-center justify-center font-bold text-sm sm:text-base uppercase tracking-wider px-6 sm:px-8 py-3.5 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95"
           >
             Explore Events
           </Link>
 
           <Link
             to={registerCta.to}
-            className="inline-flex items-center justify-center font-semibold text-sm sm:text-base uppercase tracking-wider px-6 sm:px-8 py-3.5 rounded-md bg-[#1A1030]/80 border border-[#FF7A1A]/40 text-[#F3EFE8] hover:border-[#FF7A1A] hover:bg-[#261845] transition-all hover:scale-105 active:scale-95 backdrop-blur-sm"
+            className="inline-flex items-center justify-center font-semibold text-sm sm:text-base uppercase tracking-wider px-6 sm:px-8 py-3.5 rounded-md bg-[#1A1030] border border-[#FF7A1A]/40 text-[#F3EFE8] hover:border-[#FF7A1A] hover:bg-[#261845] transition-colors active:scale-95"
           >
             {registerCta.label}
           </Link>

@@ -61,34 +61,36 @@ export const FESTIVAL_CONFIG: FestivalConfig = {
   festivalName: 'STRANGE',
   tagline: 'A Tech Fest Beyond Reality.',
 
-  // Optional dates: When set, the Eye of Agamotto countdown targets this date.
-  // If undefined, it falls back to the earliest upcoming active event from the live API.
-  startDate: '2026-11-13T09:00:00+05:30',
-  endDate: '2026-11-15T21:00:00+05:30',
+  // TODO: Set festival start & end dates (ISO 8601 with +05:30 offset, e.g. "2026-11-13T09:00:00+05:30")
+  // When unset, the countdown automatically falls back to the earliest upcoming active event from the API.
+  startDate: undefined,
+  endDate: undefined,
 
-  venue: 'Sanctum Campus, Pune, Maharashtra',
-  collegeName: 'Pune Institute of Technology & Engineering',
+  // TODO: Set physical campus venue name when announced (e.g. "Main Campus Auditorium")
+  // Unset = completely hidden across the site. Never faked.
+  venue: undefined,
 
-  organizers: [
-    'Department of Computer Engineering',
-    'Robotics & Automation Society',
-    'Design & Creative Collective',
-  ],
+  // TODO: Set official organizing college or university name
+  // Unset = completely hidden.
+  collegeName: undefined,
 
-  // TODO: Add sponsor logos and links. If empty, the sponsor marquee is completely hidden.
+  // TODO: Add organizing committees or student societies
+  organizers: undefined,
+
+  // TODO: Add official festival sponsors when confirmed.
+  // Unset / empty = sponsor section is completely hidden.
   sponsors: [],
 
-  socials: [
-    { platform: 'twitter', label: 'X (Twitter)', url: 'https://twitter.com' },
-    { platform: 'instagram', label: 'Instagram', url: 'https://instagram.com' },
-    { platform: 'linkedin', label: 'LinkedIn', url: 'https://linkedin.com' },
-    { platform: 'github', label: 'GitHub', url: 'https://github.com' },
-    { platform: 'discord', label: 'Discord', url: 'https://discord.com' },
-  ],
+  // TODO: Add official festival social media channels
+  // Unset / empty = social links section hidden.
+  socials: [],
 
-  contactEmail: 'sanctum@strangefest.org',
+  // TODO: Set official contact / inquiries email address
+  // Unset = contact email block is hidden.
+  contactEmail: undefined,
 
-  // Configured statistics (labeled as configured in code comments; hidden if undefined)
-  expectedParticipants: 2500,
-  participatingColleges: 60,
+  // TODO: Set participant and college count benchmarks when verified
+  // Unset = counters remain hidden.
+  expectedParticipants: undefined,
+  participatingColleges: undefined,
 };

@@ -253,7 +253,7 @@ export const EventDetailPage: FC = () => {
   const seatsText = formatSeatsText(event);
 
   // Venue from schedules array
-  const scheduleVenue = event.schedules?.[0]?.venue || 'Sanctum Campus Venue, Pune';
+  const scheduleVenue = event.schedules?.[0]?.venue || '';
 
   const isOpen = event.registration_status === 'OPEN';
 
@@ -288,9 +288,9 @@ export const EventDetailPage: FC = () => {
           <div className="flex flex-wrap items-center gap-2.5">
             <Link
               to="/events"
-              className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors inline-flex items-center gap-1"
+              className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors inline-block"
             >
-              <span>← Multiverse Index</span>
+              Back to Events
             </Link>
             <span className="text-white/20">•</span>
             {event.category && (
@@ -321,11 +321,11 @@ export const EventDetailPage: FC = () => {
 
           {/* Quick Logistic Bar */}
           <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-[#B8B3C7] pt-2">
-            <span>📅 {formatDateIST(event.schedule_summary)}</span>
-            <span>📍 {scheduleVenue}</span>
+            <span>{formatDateIST(event.schedule_summary)}</span>
+            {scheduleVenue && <span>{scheduleVenue}</span>}
             {event.min_teamsize && event.max_teamsize && (
               <span>
-                👥 Team Size: {event.min_teamsize} - {event.max_teamsize}
+                Team Size: {event.min_teamsize} – {event.max_teamsize}
               </span>
             )}
             {event.registration_status && (
@@ -385,7 +385,7 @@ export const EventDetailPage: FC = () => {
                 className="w-full text-xs text-[#B8B3C7]"
                 onClick={handleShare}
               >
-                Share Reality Link ↗
+                Share Event
               </Button>
               {shareFeedback && (
                 <p className="text-[11px] text-[#3DDC97] text-center font-medium">
@@ -470,9 +470,11 @@ export const EventDetailPage: FC = () => {
                             {item.start_time || '09:00'} – {item.end_time || '17:00'} IST
                           </p>
                         </div>
-                        <div className="text-xs text-[#B8B3C7]">
-                          📍 {item.venue || scheduleVenue}
-                        </div>
+                        {(item.venue || scheduleVenue) && (
+                          <div className="text-xs text-[#B8B3C7]">
+                            {item.venue || scheduleVenue}
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -480,7 +482,9 @@ export const EventDetailPage: FC = () => {
                       <p className="text-sm text-[#F3EFE8] font-semibold">
                         {formatDateIST(event.schedule_summary)}
                       </p>
-                      <p className="text-xs text-[#B8B3C7] mt-1">📍 {scheduleVenue}</p>
+                      {scheduleVenue && (
+                        <p className="text-xs text-[#B8B3C7] mt-1">{scheduleVenue}</p>
+                      )}
                     </div>
                   )}
                 </div>

@@ -27,7 +27,7 @@ export const Footer: FC = () => {
             </p>
             {FESTIVAL_CONFIG.contactEmail && (
               <p className="text-xs text-[#B8B3C7] mt-1">
-                Sanctum Inquiries:{' '}
+                Contact:{' '}
                 <a
                   href={`mailto:${FESTIVAL_CONFIG.contactEmail}`}
                   className="text-[#FF7A1A] hover:underline"
@@ -38,40 +38,35 @@ export const Footer: FC = () => {
             )}
           </div>
 
-          {/* Multiverse Realms */}
+          {/* Navigation */}
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#F3EFE8] mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#F3EFE8] mb-4">
               Realms
             </h2>
             <ul className="flex flex-col gap-2.5 text-xs">
               <li>
                 <Link to="/" className="hover:text-[#F3EFE8] transition-colors">
-                  Sanctum Portal (Home)
+                  Home
                 </Link>
               </li>
               <li>
                 <Link to="/events" className="hover:text-[#F3EFE8] transition-colors">
-                  Multiverse Events Index
-                </Link>
-              </li>
-              <li>
-                <Link to="/schedule" className="hover:text-[#F3EFE8] transition-colors">
-                  Temporal Schedule
+                  Events
                 </Link>
               </li>
               {import.meta.env.DEV && (
                 <li>
                   <Link to="/styleguide" className="hover:text-[#F3EFE8] transition-colors">
-                    Dimensional Styleguide (Dev)
+                    Styleguide (Dev)
                   </Link>
                 </li>
               )}
             </ul>
           </div>
 
-          {/* Socials & Portals (only if configured or internal anchors) */}
+          {/* Connect */}
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#F3EFE8] mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#F3EFE8] mb-4">
               Connect
             </h2>
             <ul className="flex flex-col gap-2.5 text-xs">
@@ -80,26 +75,20 @@ export const Footer: FC = () => {
                   About STRANGE
                 </a>
               </li>
-              {FESTIVAL_CONFIG.socials && FESTIVAL_CONFIG.socials.length > 0 ? (
+              {FESTIVAL_CONFIG.socials && FESTIVAL_CONFIG.socials.length > 0 &&
                 FESTIVAL_CONFIG.socials.map((social) => (
                   <li key={social.platform}>
                     <a
                       href={social.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:text-[#FF7A1A] transition-colors inline-flex items-center gap-1.5"
+                      className="hover:text-[#FF7A1A] transition-colors inline-block"
                       aria-label={`${social.platform} (opens in new window)`}
                     >
-                      <span>{social.platform}</span>
-                      <span aria-hidden="true" className="text-[10px]">↗</span>
+                      {social.platform}
                     </a>
                   </li>
-                ))
-              ) : (
-                <li className="text-xs text-[#B8B3C7]/60 italic">
-                  Social conduits will materialize soon
-                </li>
-              )}
+                ))}
             </ul>
           </div>
         </div>

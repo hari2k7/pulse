@@ -204,7 +204,7 @@ export const Navbar: FC = () => {
               onClick={closeMobileMenu}
               className="px-3 py-2.5 rounded-md text-base font-bold text-[#FF7A1A] hover:bg-[#1A1030] transition-colors"
             >
-              Register Now ↗
+              Register
             </NavLink>
             {import.meta.env.DEV && (
               <NavLink

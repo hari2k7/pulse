@@ -102,7 +102,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-2xl bg-[#0D1020]/80 border border-[#FF7A1A]/30 backdrop-blur-md shadow-2xl overflow-hidden ${className}`}
+      className={`relative flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-xl bg-[#0D1020] border border-[#FF7A1A]/30 shadow-2xl overflow-hidden ${className}`}
     >
       {/* Screen reader announcement (polite, updated periodically, not every second) */}
       <div className="sr-only" aria-live="polite">
@@ -110,11 +110,10 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
       </div>
 
       {/* Label */}
-      <div className="flex items-center gap-2 mb-6">
-        <span className="w-2 h-2 rounded-full bg-[#3DDC97] animate-pulse" aria-hidden="true" />
-        <span className="text-xs uppercase tracking-[0.25em] font-medium text-[#F5B642]">
-          {isFallback ? 'Next Event In' : 'Temporal Convergence'}
-        </span>
+      <div className="mb-6">
+        <h2 className="text-xs uppercase tracking-wider font-semibold text-[#F5B642]">
+          {isFallback ? 'Next Event In' : 'Festival Countdown'}
+        </h2>
       </div>
 
       {/* The Eye of Agamotto Medallion Artwork */}
@@ -180,7 +179,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
 
       {/* Countdown Values or Live State */}
       {time.isLive ? (
-        <div className="py-2 px-6 rounded-full bg-[#3DDC97]/20 border border-[#3DDC97] text-[#3DDC97] font-display text-lg tracking-widest uppercase animate-pulse">
+        <div className="py-2 px-6 rounded-full bg-[#3DDC97]/20 border border-[#3DDC97] text-[#3DDC97] font-display text-lg tracking-widest uppercase">
           Festival is Live
         </div>
       ) : (

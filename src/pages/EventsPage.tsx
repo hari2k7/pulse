@@ -182,11 +182,8 @@ export const EventsPage: FC = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
           <div className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-[#FF7A1A]">
-              Multiverse Index
-            </span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
-              DIMENSIONAL EVENTS
+              EVENTS
             </h1>
             <p className="text-sm text-[#B8B3C7] max-w-2xl leading-relaxed">
               Explore 30+ competitions, hackathons, and masterclasses across alternate reality tracks.
@@ -469,7 +466,7 @@ export const EventsPage: FC = () => {
           role="status"
         >
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
             <p className="text-xs sm:text-sm text-[#F3EFE8]">
               <strong className="text-amber-400">Showing astral cached data</strong>
               {formattedFetchedAt ? ` (${formattedFetchedAt})` : ''}: Live temporal connection interrupted.

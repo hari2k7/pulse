@@ -19,17 +19,12 @@ export const SanctumAbout: FC = () => {
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-8">
-        <div className="space-y-3">
-          <span className="text-xs uppercase tracking-[0.3em] font-semibold text-[#FF7A1A]">
-            The Sanctum Sanctorum
-          </span>
-          <h2
-            id="about-heading"
-            className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]"
-          >
-            A TECH FEST BEYOND REALITY
-          </h2>
-        </div>
+        <h2
+          id="about-heading"
+          className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]"
+        >
+          A TECH FEST BEYOND REALITY
+        </h2>
 
         <div className="max-w-3xl space-y-4 text-sm sm:text-base md:text-lg text-[#B8B3C7] leading-relaxed">
           <p>
@@ -48,21 +43,13 @@ export const SanctumAbout: FC = () => {
           )}
         </div>
 
-        {/* Action portals */}
-        <div className="flex flex-wrap gap-4 justify-center pt-4">
+        {/* Action button */}
+        <div className="flex flex-wrap gap-4 justify-center pt-2">
           <Link
             to="/events"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-[#1A1030] border border-[#FF7A1A]/40 text-xs font-bold uppercase tracking-wider text-[#F3EFE8] hover:border-[#FF7A1A] hover:bg-[#251745] transition-all"
+            className="px-6 py-3 rounded-md bg-[#FF7A1A] text-[#07060D] text-xs font-bold uppercase tracking-wider hover:bg-[#F5B642] transition-colors"
           >
-            <span>Traverse All Events</span>
-            <span aria-hidden="true">↗</span>
-          </Link>
-          <Link
-            to="/schedule"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-[#0D1020] border border-white/10 text-xs font-bold uppercase tracking-wider text-[#B8B3C7] hover:text-[#F3EFE8] hover:border-white/30 transition-all"
-          >
-            <span>Temporal Schedule</span>
-            <span aria-hidden="true">↗</span>
+            Explore Events
           </Link>
         </div>
       </div>

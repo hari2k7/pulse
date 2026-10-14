@@ -189,9 +189,8 @@ export const EventCard: FC<EventCardProps> = ({
             <span>{priceFormatted}</span>
           </div>
 
-          <span className="inline-flex items-center gap-1 font-bold text-xs uppercase tracking-wider text-[#FF7A1A] group-hover:text-[#F5B642] transition-colors">
-            <span>{isOpen ? 'Register Now' : 'Explore Event'}</span>
-            <span aria-hidden="true">↗</span>
+          <span className="font-bold text-xs uppercase tracking-wider text-[#FF7A1A] group-hover:text-[#F5B642] transition-colors">
+            {isOpen ? 'Register' : 'View Event'}
           </span>
         </div>
       </div>

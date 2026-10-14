@@ -58,7 +58,7 @@ export const StatusBadge: FC<StatusBadgeProps> = (props) => {
     OPEN: {
       label: 'Registration Open',
       container: 'bg-[#064e3b]/80 border border-[#10b981]/50 text-[#6ee7b7]',
-      dot: 'bg-[#34d399] animate-pulse',
+      dot: 'bg-[#34d399]',
     },
     CLOSED: {
       label: 'Registration Closed',

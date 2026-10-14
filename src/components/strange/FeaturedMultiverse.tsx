@@ -34,20 +34,14 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
-          <div className="space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] font-semibold text-[#FF7A1A]">
-              Prime Realities
-            </span>
-            <h2 id="featured-multiverse-heading" className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
-              FEATURED MULTIVERSE EVENTS
-            </h2>
-          </div>
+          <h2 id="featured-multiverse-heading" className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
+            FEATURED EVENTS
+          </h2>
           <Link
             to="/events"
-            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#F5B642] hover:text-[#FF7A1A] transition-colors"
+            className="text-xs font-bold uppercase tracking-wider text-[#F5B642] hover:text-[#FF7A1A] transition-colors"
           >
-            <span>View All Events</span>
-            <span aria-hidden="true">→</span>
+            View All Events
           </Link>
         </div>
 
@@ -98,8 +92,8 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
 
                   <div className="flex items-center justify-between pt-4 border-t border-white/10 text-xs text-[#B8B3C7]">
                     <span>{formatDateIST(flagship.schedule_summary)}</span>
-                    <span className="font-bold text-[#FF7A1A] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                      Traverse Dimension ↗
+                    <span className="font-bold text-[#FF7A1A] text-xs">
+                      View Event
                     </span>
                   </div>
                 </div>
@@ -154,7 +148,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
 
                     <div className="flex items-center justify-between pt-3 border-t border-white/5 text-xs text-[#B8B3C7]">
                       <span>{formatDateIST(event.schedule_summary)}</span>
-                      <span className="font-semibold text-[#FF7A1A]">Details ↗</span>
+                      <span className="font-semibold text-[#FF7A1A]">View Event</span>
                     </div>
                   </div>
                 </Link>
@@ -187,7 +181,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
 
                   <div className="flex items-center justify-between text-xs text-[#B8B3C7] pt-3 border-t border-white/5 mt-4">
                     <span>{formatDateIST(event.schedule_summary)}</span>
-                    <span className="text-[#F5B642] font-medium">Explore ↗</span>
+                    <span className="text-[#F5B642] font-medium">View Event</span>
                   </div>
                 </Link>
               </div>
