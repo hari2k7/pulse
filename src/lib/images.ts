@@ -1,5 +1,5 @@
 /**
- * Responsive image utilities for PULSE
+ * Responsive image utilities for STRANGE
  * Optimizes Pexels images per PROJECT.md Section 6 & Hard Rule 6
  */
 
