@@ -98,10 +98,10 @@ export const Navbar: FC = () => {
         {/* Right side CTA or mobile menu toggle */}
         <div className="flex items-center gap-4">
           <NavLink
-            to="/events"
+            to="/events?registration_status=OPEN"
             className="hidden sm:inline-flex items-center text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-md bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] shadow-md hover:shadow-[#FF7A1A]/40 transition-all hover:scale-105 active:scale-95"
           >
-            Explore Events
+            Register
           </NavLink>
 
           {/* Mobile Menu Button */}
@@ -199,6 +199,13 @@ export const Navbar: FC = () => {
             >
               About
             </a>
+            <NavLink
+              to="/events?registration_status=OPEN"
+              onClick={closeMobileMenu}
+              className="px-3 py-2.5 rounded-md text-base font-bold text-[#FF7A1A] hover:bg-[#1A1030] transition-colors"
+            >
+              Register Now ↗
+            </NavLink>
             {import.meta.env.DEV && (
               <NavLink
                 to="/styleguide"
