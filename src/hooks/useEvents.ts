@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ApiError, getEvents } from '../lib/api';
-import type { EventSummary } from '../lib/types';
+import { useCallback, useEffect, useState, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ApiError, getEvent, getEvents } from '../lib/api';
+import { queryClient } from '../lib/queryClient';
+import type { EventDetail, EventSummary, GetEventsResult } from '../lib/types';
 
 export type EventsStatus = 'loading' | 'success' | 'error';
 
@@ -10,6 +12,14 @@ export interface UseEventsResult {
   stale: boolean;
   fetchedAt: number | null;
   error: ApiError | null;
+  retry: () => void;
+}
+
+export interface UseEventResult {
+  status: EventsStatus;
+  event: EventDetail | null;
+  error: ApiError | null;
+  isPlaceholder: boolean;
   retry: () => void;
 }
 
@@ -41,15 +51,13 @@ export function useEvents(): UseEventsResult {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    let isMounted = true;
-
-    // If reloadIndex > 0, bypass memory cache for explicit retry
+    let ignore = false;
     const isForce = reloadIndex > 0;
 
-    getEvents({ force: isForce, signal: controller.signal })
+    getEvents({ force: isForce })
       .then((result) => {
-        if (!isMounted) return;
+        if (ignore) return;
+        queryClient.setQueryData(['events'], result);
         setState({
           status: 'success',
           events: result.events,
@@ -59,10 +67,7 @@ export function useEvents(): UseEventsResult {
         });
       })
       .catch((err: unknown) => {
-        if (!isMounted || controller.signal.aborted) {
-          return;
-        }
-
+        if (ignore) return;
         const apiError =
           err instanceof ApiError
             ? err
@@ -72,7 +77,6 @@ export function useEvents(): UseEventsResult {
                 undefined,
                 err
               );
-
         setState((prev) => ({
           ...prev,
           status: 'error',
@@ -81,8 +85,7 @@ export function useEvents(): UseEventsResult {
       });
 
     return () => {
-      isMounted = false;
-      controller.abort();
+      ignore = true;
     };
   }, [reloadIndex]);
 
@@ -93,5 +96,99 @@ export function useEvents(): UseEventsResult {
     fetchedAt: state.fetchedAt,
     error: state.error,
     retry,
+  };
+}
+
+export function useEvent(id?: string): UseEventResult {
+  const query = useQuery<EventDetail, ApiError>({
+    queryKey: ['event', id],
+    queryFn: () => {
+      if (!id) throw new Error('Event ID is required');
+      return getEvent(id);
+    },
+    enabled: Boolean(id),
+    retry: (_failureCount, error) => {
+      // Never retry 404/notfound
+      if (error?.kind === 'notfound' || error?.status === 404) {
+        return false;
+      }
+      return false; // api.ts already handles retries
+    },
+    placeholderData: () => {
+      if (!id) return undefined;
+      const cachedList = queryClient.getQueryData<GetEventsResult>(['events']);
+      const summary = cachedList?.events.find((e) => e.id === id);
+      if (!summary) return undefined;
+      return {
+        ...summary,
+      } as EventDetail;
+    },
+  });
+
+  const status: EventsStatus = query.isLoading
+    ? 'loading'
+    : query.isError
+    ? 'error'
+    : 'success';
+
+  return {
+    status,
+    event: query.data ?? null,
+    error: query.error ?? null,
+    isPlaceholder: query.isPlaceholderData,
+    retry: () => {
+      query.refetch();
+    },
+  };
+}
+
+export function usePrefetchEvent(id?: string) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const prefetch = useCallback(
+    (targetId?: string) => {
+      const eventId = targetId ?? id;
+      if (!eventId) return;
+
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      // 150ms delay so quick mouse sweeps do not trigger unnecessary requests
+      timerRef.current = setTimeout(() => {
+        queryClient.prefetchQuery({
+          queryKey: ['event', eventId],
+          queryFn: () => getEvent(eventId),
+          staleTime: 5 * 60 * 1000,
+        });
+      }, 150);
+    },
+    [id]
+  );
+
+  const cancel = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    prefetch,
+    cancel,
+    handlers: {
+      onMouseEnter: () => prefetch(),
+      onMouseLeave: cancel,
+      onFocus: () => prefetch(),
+      onBlur: cancel,
+    },
   };
 }

@@ -22,7 +22,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       <Navbar />
 
       {/* Main Landmark */}
-      <main id="main" className="flex-1 flex flex-col pt-16 md:pt-18 outline-none">
+      <main id="main" className="w-full flex-1 flex flex-col pt-16 md:pt-18 outline-none">
         {children ?? <Outlet />}
       </main>
 

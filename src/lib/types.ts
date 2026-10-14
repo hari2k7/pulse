@@ -101,9 +101,7 @@ export interface GetEventsResult {
 
 export interface GetEventsOptions {
   force?: boolean;
-  signal?: AbortSignal;
 }
 
-export interface GetEventOptions {
-  signal?: AbortSignal;
-}
+export type GetEventOptions = Record<string, never>;
+

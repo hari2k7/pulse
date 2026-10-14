@@ -16,7 +16,7 @@ export class SimulatedApiError extends Error {
 }
 
 export function getSimMode(): SimMode | null {
-  if (!import.meta.env.DEV) {
+  if (!import.meta.env?.DEV) {
     return null;
   }
 
@@ -40,11 +40,8 @@ export function getSimMode(): SimMode | null {
   return null;
 }
 
-export async function checkDevSimulation(
-  url: string,
-  signal?: AbortSignal
-): Promise<Response | null> {
-  if (!import.meta.env.DEV) {
+export async function checkDevSimulation(url: string): Promise<Response | null> {
+  if (!import.meta.env?.DEV) {
     return null;
   }
 
@@ -54,19 +51,7 @@ export async function checkDevSimulation(
   }
 
   // Small delay so loading states and retries can be visually observed
-  await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, 200);
-    if (signal) {
-      signal.addEventListener('abort', () => {
-        clearTimeout(timer);
-        reject(new DOMException('Request aborted by caller', 'AbortError'));
-      }, { once: true });
-    }
-  });
-
-  if (signal?.aborted) {
-    throw new DOMException('Request aborted by caller', 'AbortError');
-  }
+  await new Promise<void>((resolve) => setTimeout(resolve, 200));
 
   switch (mode) {
     case 'timeout':

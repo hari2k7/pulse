@@ -33,11 +33,13 @@ interface MemoryCache {
   fetchedAt: number;
 }
 
+// Module-level session cache and in-flight request tracking
 let memoryCache: MemoryCache | null = null;
 let inFlightGetEvents: Promise<GetEventsResult> | null = null;
 
 export function clearSessionCache(): void {
   memoryCache = null;
+  inFlightGetEvents = null;
 }
 
 export function clearLocalStorageCache(): void {
@@ -48,33 +50,15 @@ export function clearLocalStorageCache(): void {
   }
 }
 
-async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, ms);
-    if (signal) {
-      signal.addEventListener(
-        'abort',
-        () => {
-          clearTimeout(timer);
-          reject(new DOMException('Request aborted by caller', 'AbortError'));
-        },
-        { once: true }
-      );
-    }
-  });
+async function sleep(ms: number): Promise<void> {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchWithRetry(
-  url: string,
-  options: { signal?: AbortSignal } = {}
-): Promise<Response> {
+async function fetchWithRetry(url: string): Promise<Response> {
   let lastError: ApiError | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (options.signal?.aborted) {
-      throw new DOMException('Request aborted by caller', 'AbortError');
-    }
-
+    // The API layer owns the AbortController, used ONLY for the 8s timeout
     const attemptController = new AbortController();
     let isTimedOut = false;
 
@@ -83,16 +67,8 @@ async function fetchWithRetry(
       attemptController.abort();
     }, TIMEOUT_MS);
 
-    const onExternalAbort = () => {
-      attemptController.abort();
-    };
-
-    if (options.signal) {
-      options.signal.addEventListener('abort', onExternalAbort, { once: true });
-    }
-
     try {
-      const simulatedResponse = await checkDevSimulation(url, attemptController.signal);
+      const simulatedResponse = await checkDevSimulation(url);
       const response =
         simulatedResponse ?? (await fetch(url, { signal: attemptController.signal }));
 
@@ -109,22 +85,24 @@ async function fetchWithRetry(
 
       return response;
     } catch (err: unknown) {
-      if (options.signal?.aborted) {
-        throw err;
-      }
-
       let apiError: ApiError;
+
       if (err instanceof ApiError) {
         apiError = err;
       } else if (err instanceof SimulatedApiError) {
         apiError = new ApiError(err.message, err.kind, err.status);
       } else if (isTimedOut) {
         apiError = new ApiError(`Request timed out after ${TIMEOUT_MS}ms`, 'timeout');
-      } else if (err instanceof DOMException && err.name === 'AbortError') {
+      } else if (
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.name === 'AbortError') ||
+        (typeof err === 'object' && err !== null && (err as { name?: string }).name === 'AbortError')
+      ) {
         if (isTimedOut) {
           apiError = new ApiError(`Request timed out after ${TIMEOUT_MS}ms`, 'timeout');
         } else {
-          throw err;
+          // Convert any other AbortError into a retryable ApiError, not a raw DOMException message
+          apiError = new ApiError('Connection interrupted, retrying...', 'network', undefined, err);
         }
       } else if (err instanceof TypeError) {
         apiError = new ApiError(err.message || 'Network connection failed', 'network', undefined, err);
@@ -147,37 +125,39 @@ async function fetchWithRetry(
       // If more attempts remain, perform exponential backoff
       if (attempt < MAX_RETRIES) {
         const backoffMs = 500 * Math.pow(2, attempt);
-        await sleep(backoffMs, options.signal);
+        await sleep(backoffMs);
       }
     } finally {
       clearTimeout(timeoutTimer);
-      if (options.signal) {
-        options.signal.removeEventListener('abort', onExternalAbort);
-      }
     }
   }
 
   throw lastError ?? new ApiError('Request failed after retries', 'network');
 }
 
-export async function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResult> {
-  const { force = false, signal } = options;
+export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResult> {
+  const { force = false } = options;
 
-  if (!force && memoryCache) {
-    return {
-      events: memoryCache.events,
-      stale: false,
-      fetchedAt: memoryCache.fetchedAt,
-    };
-  }
+  if (force) {
+    memoryCache = null;
+    inFlightGetEvents = null;
+  } else {
+    if (memoryCache) {
+      return Promise.resolve({
+        events: memoryCache.events,
+        stale: false,
+        fetchedAt: memoryCache.fetchedAt,
+      });
+    }
 
-  if (!force && inFlightGetEvents) {
-    return inFlightGetEvents;
+    if (inFlightGetEvents) {
+      return inFlightGetEvents;
+    }
   }
 
   const fetchPromise = (async (): Promise<GetEventsResult> => {
     try {
-      const response = await fetchWithRetry(`${API_BASE_URL}/api/test/events`, { signal });
+      const response = await fetchWithRetry(`${API_BASE_URL}/api/test/events`);
 
       let data: unknown;
       try {
@@ -225,10 +205,6 @@ export async function getEvents(options: GetEventsOptions = {}): Promise<GetEven
         fetchedAt: now,
       };
     } catch (err: unknown) {
-      if (signal?.aborted) {
-        throw err;
-      }
-
       // If live call fails and cache exists in localStorage, return cached data as stale
       try {
         const cachedRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -241,11 +217,6 @@ export async function getEvents(options: GetEventsOptions = {}): Promise<GetEven
             const cachedEvents = parsed.events as EventSummary[];
             const timestamp = typeof parsed.timestamp === 'number' ? parsed.timestamp : null;
 
-            memoryCache = {
-              events: cachedEvents,
-              fetchedAt: timestamp ?? Date.now(),
-            };
-
             return {
               events: cachedEvents,
               stale: true,
@@ -257,9 +228,22 @@ export async function getEvents(options: GetEventsOptions = {}): Promise<GetEven
         // Parsing or reading localStorage failed
       }
 
+      // Never cache a failed result in session cache!
+      memoryCache = null;
+
       if (err instanceof ApiError) {
         throw err;
       }
+
+      const isAbortError =
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.name === 'AbortError') ||
+        (typeof err === 'object' && err !== null && (err as { name?: string }).name === 'AbortError');
+
+      if (isAbortError) {
+        throw new ApiError('Connection interrupted, retrying...', 'network', undefined, err);
+      }
+
       throw new ApiError(
         err instanceof Error ? err.message : 'Failed to fetch events',
         'network',
@@ -267,6 +251,7 @@ export async function getEvents(options: GetEventsOptions = {}): Promise<GetEven
         err
       );
     } finally {
+      // Clear the in-flight reference in .finally() so a failed or aborted promise is never reused
       inFlightGetEvents = null;
     }
   })();
@@ -278,10 +263,10 @@ export async function getEvents(options: GetEventsOptions = {}): Promise<GetEven
   return fetchPromise;
 }
 
-export async function getEvent(id: string, options: GetEventOptions = {}): Promise<EventDetail> {
-  const { signal } = options;
+export async function getEvent(id: string, options?: GetEventOptions): Promise<EventDetail> {
+  void options;
   const url = `${API_BASE_URL}/api/test/events/${encodeURIComponent(id)}`;
-  const response = await fetchWithRetry(url, { signal });
+  const response = await fetchWithRetry(url);
 
   let data: unknown;
   try {
@@ -308,7 +293,7 @@ export async function getEvent(id: string, options: GetEventOptions = {}): Promi
 }
 
 // Dev browser console testing hook
-if (import.meta.env.DEV && typeof window !== 'undefined') {
+if (import.meta.env?.DEV && typeof window !== 'undefined') {
   (window as unknown as { __pulseApi?: unknown }).__pulseApi = {
     getEvents,
     getEvent,
