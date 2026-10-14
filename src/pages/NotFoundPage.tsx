@@ -9,7 +9,7 @@ export const NotFoundPage: FC = () => {
   });
 
   return (
-    <div className="flex-1 flex items-center justify-center py-16">
+    <div className="flex-1 flex items-center justify-center pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-16">
       <NotFound />
     </div>
   );

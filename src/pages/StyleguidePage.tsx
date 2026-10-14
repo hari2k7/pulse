@@ -77,7 +77,7 @@ export const StyleguidePage: FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 space-y-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-16 space-y-16">
       {/* Header */}
       <div className="border-b border-[#FF7A1A]/20 pb-8">
         <span className="text-xs font-mono uppercase tracking-widest text-[#FF7A1A] bg-[#FF7A1A]/10 px-2.5 py-1 rounded-md border border-[#FF7A1A]/30">

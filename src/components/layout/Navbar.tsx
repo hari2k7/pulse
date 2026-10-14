@@ -68,7 +68,7 @@ export const Navbar: FC = () => {
           : 'bg-gradient-to-b from-[#07060D]/90 via-[#07060D]/40 to-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[var(--navbar-height)] flex items-center justify-between">
         {/* STRANGE Logo */}
         <div className="flex items-center gap-8">
           <StrangeLogo size="md" />
@@ -81,12 +81,6 @@ export const Navbar: FC = () => {
             <NavLink to="/events" className={navLinkClass}>
               Events
             </NavLink>
-            <NavLink to="/schedule" className={navLinkClass}>
-              Schedule
-            </NavLink>
-            <a href="/#about" className="text-sm font-medium text-[#B8B3C7] hover:text-[#F3EFE8] transition-colors py-1">
-              About
-            </a>
             {import.meta.env.DEV && (
               <NavLink to="/styleguide" className={navLinkClass}>
                 Styleguide
@@ -99,7 +93,7 @@ export const Navbar: FC = () => {
         <div className="flex items-center gap-4">
           <NavLink
             to="/events?registration_status=OPEN"
-            className="hidden sm:inline-flex items-center text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-md bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] shadow-md hover:shadow-[#FF7A1A]/40 transition-all hover:scale-105 active:scale-95"
+            className="hidden sm:inline-flex items-center text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95"
           >
             Register
           </NavLink>
@@ -177,28 +171,8 @@ export const Navbar: FC = () => {
                 }`
               }
             >
-              Multiverse Events
+              Events
             </NavLink>
-            <NavLink
-              to="/schedule"
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                `px-3 py-2.5 rounded-md text-base font-medium transition-colors ${
-                  isActive
-                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold'
-                    : 'text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030]'
-                }`
-              }
-            >
-              Festival Schedule
-            </NavLink>
-            <a
-              href="/#about"
-              onClick={closeMobileMenu}
-              className="px-3 py-2.5 rounded-md text-base font-medium text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030] transition-colors"
-            >
-              About
-            </a>
             <NavLink
               to="/events?registration_status=OPEN"
               onClick={closeMobileMenu}

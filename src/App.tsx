@@ -16,9 +16,6 @@ const EventsPage = lazy(() =>
 const EventDetailPage = lazy(() =>
   import('./pages/EventDetailPage').then((m) => ({ default: m.EventDetailPage }))
 );
-const SchedulePage = lazy(() =>
-  import('./pages/SchedulePage').then((m) => ({ default: m.SchedulePage }))
-);
 
 // Dynamic import of ReactQueryDevtools strictly in development on-demand via ?devtools=true
 // Tree-shaken in production. In dev, avoids downloading 3MB devtools payload during audits unless requested.
@@ -47,22 +44,6 @@ function App() {
               element={
                 <Suspense fallback={<EventsGridSkeleton />}>
                   <EventsPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/schedule"
-              element={
-                <Suspense
-                  fallback={
-                    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-8 min-h-[60vh]">
-                      <div className="h-10 w-64 bg-[#0D1020] rounded animate-pulse" />
-                      <div className="h-24 w-full bg-[#0D1020] rounded-xl animate-pulse" />
-                      <div className="h-32 w-full bg-[#0D1020] rounded-xl animate-pulse" />
-                    </div>
-                  }
-                >
-                  <SchedulePage />
                 </Suspense>
               }
             />

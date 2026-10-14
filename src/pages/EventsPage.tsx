@@ -152,7 +152,7 @@ export const EventsPage: FC = () => {
   // Loading skeleton state
   if (status === 'loading') {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8">
         <div className="h-10 w-72 bg-[#1A1030]/60 rounded-md animate-pulse" />
         <div className="h-12 w-full bg-[#1A1030]/40 rounded-md animate-pulse" />
         <EventsGridSkeleton count={9} />
@@ -163,7 +163,7 @@ export const EventsPage: FC = () => {
   // Error state
   if (status === 'error') {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 min-h-[60vh] flex items-center justify-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-16 min-h-[60vh] flex items-center justify-center">
         <ErrorState
           title="Multiverse Portal Disrupted"
           message={error?.message || 'Unable to load event listings across these dimensional coordinates.'}
@@ -175,7 +175,7 @@ export const EventsPage: FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8 bg-[#07060D] text-[#F3EFE8]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8]">
       {/* -------------------------------------------------------------
           Header & Multiverse Search Bar
           ------------------------------------------------------------- */}
