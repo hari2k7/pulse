@@ -47,7 +47,6 @@ export const FilterDrawer: FC<FilterDrawerProps> = ({
   // Initial focus management
   useEffect(() => {
     if (isOpen) {
-      // Focus close button on open
       requestAnimationFrame(() => {
         closeButtonRef.current?.focus();
       });
@@ -58,24 +57,23 @@ export const FilterDrawer: FC<FilterDrawerProps> = ({
   const handleTrapKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Tab' || !drawerRef.current) return;
 
-    const focusableElements = drawerRef.current.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
+    if (focusable.length === 0) return;
 
-    if (focusableElements.length === 0) return;
-
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
 
     if (e.shiftKey) {
-      if (document.activeElement === firstElement) {
-        lastElement.focus();
+      if (document.activeElement === first) {
         e.preventDefault();
+        last.focus();
       }
     } else {
-      if (document.activeElement === lastElement) {
-        firstElement.focus();
+      if (document.activeElement === last) {
         e.preventDefault();
+        first.focus();
       }
     }
   };
@@ -95,7 +93,7 @@ export const FilterDrawer: FC<FilterDrawerProps> = ({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity"
         onClick={handleClose}
         aria-hidden="true"
       />
@@ -106,19 +104,19 @@ export const FilterDrawer: FC<FilterDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="filter-drawer-title"
-        className="relative w-full max-w-xs sm:max-w-sm h-full bg-[#181818] border-l border-white/10 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-200"
+        className="relative w-full max-w-xs sm:max-w-sm h-full bg-[#0D1020] border-l border-[#FF7A1A]/30 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-200 text-[#F3EFE8]"
       >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-          <h2 id="filter-drawer-title" className="text-base font-bold text-white uppercase tracking-wider">
-            Filter & Refine
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#FF7A1A]/20 bg-[#07060D]">
+          <h2 id="filter-drawer-title" className="text-sm font-bold font-display uppercase tracking-[0.2em] text-[#F3EFE8]">
+            Filter Multiverse
           </h2>
           <button
             ref={closeButtonRef}
             type="button"
             onClick={handleClose}
             aria-label="Close filters drawer"
-            className="p-1.5 rounded-[4px] text-zinc-400 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914]"
+            className="p-1.5 rounded-md text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -130,11 +128,11 @@ export const FilterDrawer: FC<FilterDrawerProps> = ({
         <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
 
         {/* Drawer Footer */}
-        <div className="p-4 border-t border-white/10 bg-zinc-950/80">
+        <div className="p-4 border-t border-white/10 bg-[#07060D]">
           <button
             type="button"
             onClick={handleClose}
-            className="w-full bg-[#e50914] hover:bg-[#f40612] text-white font-semibold py-2.5 px-4 rounded-[4px] text-sm uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="w-full bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] hover:from-[#f06f13] hover:to-[#e5a835] text-[#07060D] font-bold py-2.5 px-4 rounded-md text-xs uppercase tracking-wider transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
           >
             Apply Filters
           </button>

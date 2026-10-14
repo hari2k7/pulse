@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventSummary } from '../../lib/types';
 import { formatDateIST, formatPrice } from '../../lib/format';
+import { getEventDimension } from '../../lib/dimensions';
 import { Badge } from '../ui/Badge';
 import { StatusBadge } from '../ui/StatusBadge';
 import { getOptimizedImageUrl } from '../../lib/images';
@@ -63,20 +64,20 @@ export const EventTimeline: FC<EventTimelineProps> = ({ events }) => {
         {groups.map((group) => (
           <li key={group.dateKey} className="space-y-4">
             {/* Date Group Heading */}
-            <div className="sticky top-16 md:top-18 z-20 bg-[#141414]/95 backdrop-blur-md py-2 border-b border-white/10 flex items-center justify-between">
+            <div className="sticky top-16 md:top-20 z-20 bg-[#07060D]/95 backdrop-blur-md py-3 border-b border-[#FF7A1A]/20 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-[#e50914] shadow-[0_0_8px_rgba(229,9,20,0.8)]" aria-hidden="true" />
-                <h3 className="text-lg sm:text-xl font-display font-normal text-white uppercase tracking-wider">
+                <span className="w-3 h-3 rounded-full bg-[#FF7A1A] shadow-[0_0_10px_rgba(255,122,26,0.8)]" aria-hidden="true" />
+                <h3 className="text-lg sm:text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wider">
                   {group.formattedDate}
                 </h3>
               </div>
-              <span className="font-mono text-xs text-[#b3b3b3]">
+              <span className="font-mono text-xs text-[#B8B3C7]">
                 {group.events.length} {group.events.length === 1 ? 'event' : 'events'}
               </span>
             </div>
 
             {/* Event Items in this Date Group */}
-            <ul className="space-y-3 pl-2 sm:pl-4 border-l-2 border-white/10 ml-1.5 sm:ml-2">
+            <ul className="space-y-3 pl-2 sm:pl-4 border-l-2 border-[#FF7A1A]/20 ml-1.5 sm:ml-2">
               {group.events.map((event) => {
                 const startTime = event.schedule_summary?.start_time;
                 const endTime = event.schedule_summary?.end_time;
@@ -85,6 +86,12 @@ export const EventTimeline: FC<EventTimelineProps> = ({ events }) => {
                     ? `${startTime} – ${endTime} IST`
                     : `${startTime} IST`
                   : 'Time TBA';
+
+                const dimension = getEventDimension({
+                  category: event.category,
+                  event_type: event.event_type,
+                  is_technical: event.is_technical,
+                });
 
                 const isClosed =
                   event.event_status === 'COMPLETED' ||
@@ -95,16 +102,16 @@ export const EventTimeline: FC<EventTimelineProps> = ({ events }) => {
                   <li key={event.id}>
                     <Link
                       to={`/events/${event.id}`}
-                      className={`group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 sm:p-4 rounded-[6px] border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914] ${
+                      className={`group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3.5 sm:p-4 rounded-lg border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] ${
                         isClosed
-                          ? 'bg-[#181818]/60 border-white/5 hover:border-white/15 opacity-80'
-                          : 'bg-[#181818] border-white/10 hover:border-zinc-600 hover:bg-[#202020]'
+                          ? 'bg-[#0D1020]/50 border-white/5 opacity-75 hover:border-white/15'
+                          : 'bg-[#0D1020] border-white/10 hover:border-[#FF7A1A]/50 hover:bg-[#1A1030]/60'
                       }`}
                     >
                       {/* Left: Thumbnail & Info */}
                       <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
                         {/* Thumbnail image */}
-                        <div className="w-20 h-14 sm:w-24 sm:h-16 rounded-[4px] overflow-hidden bg-zinc-900 shrink-0 border border-white/10">
+                        <div className="w-20 h-14 sm:w-24 sm:h-16 rounded-md overflow-hidden bg-[#07060D] shrink-0 border border-white/10">
                           <img
                             src={getOptimizedImageUrl(event.cover_image_url, 150, 100)}
                             alt=""
@@ -120,23 +127,31 @@ export const EventTimeline: FC<EventTimelineProps> = ({ events }) => {
                         {/* Text info */}
                         <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-[#e50914] font-semibold">
+                            <span className="font-mono text-xs text-[#FF7A1A] font-semibold">
                               {timeString}
                             </span>
                             {event.category && (
-                              <span className="text-[11px] font-mono text-[#b3b3b3] uppercase tracking-wider">
-                                • {event.category}
+                              <span
+                                className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                                style={{
+                                  backgroundColor: `${dimension.colorHex}15`,
+                                  color: dimension.colorHex,
+                                }}
+                              >
+                                {event.category}
                               </span>
                             )}
                           </div>
 
-                          <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-white transition-colors truncate">
+                          <h4 className="font-display font-bold text-sm sm:text-base text-[#F3EFE8] group-hover:text-[#FF7A1A] transition-colors truncate">
                             {event.name}
                           </h4>
 
-                          <p className="text-xs text-[#b3b3b3] line-clamp-1 hidden sm:block">
-                            {event.blurb}
-                          </p>
+                          {event.blurb && (
+                            <p className="text-xs text-[#B8B3C7] line-clamp-1 hidden sm:block">
+                              {event.blurb}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -154,19 +169,12 @@ export const EventTimeline: FC<EventTimelineProps> = ({ events }) => {
                             size="sm"
                           />
                         )}
-                        <span className="font-mono text-xs sm:text-sm font-bold text-zinc-200">
+                        <span className="font-mono text-xs sm:text-sm font-bold text-[#F3EFE8]">
                           {formatPrice(event.price, event.is_per_head)}
                         </span>
-                        <svg
-                          className="w-4 h-4 text-zinc-500 group-hover:text-white group-hover:translate-x-0.5 transition-all hidden sm:block"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
+                        <span className="text-xs text-[#FF7A1A] font-bold group-hover:translate-x-1 transition-transform">
+                          →
+                        </span>
                       </div>
                     </Link>
                   </li>

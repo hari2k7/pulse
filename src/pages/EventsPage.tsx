@@ -1,33 +1,21 @@
-import {
-  useState,
-  useMemo,
-  useRef,
-  useEffect,
-  useCallback,
-  type FC,
-  type ChangeEvent,
-} from 'react';
+import { useState, useMemo, useRef, type FC, type ChangeEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
 import { EventCard } from '../components/events/EventCard';
-import { EventsGridSkeleton } from '../components/events/EventsGridSkeleton';
 import { EventFilters } from '../components/events/EventFilters';
-import { FilterDrawer } from '../components/events/FilterDrawer';
 import { EventTimeline } from '../components/events/EventTimeline';
+import { FilterDrawer } from '../components/events/FilterDrawer';
+import { EventsGridSkeleton } from '../components/events/EventsGridSkeleton';
 import { EmptyState } from '../components/states/EmptyState';
 import { ErrorState } from '../components/states/ErrorState';
 import { Button } from '../components/ui/Button';
-import { getThemeForCategory } from '../lib/themes';
 import {
   filterAndSortEvents,
-  filtersToSearchParams,
-  hasActiveFilters,
-  isPastEvent,
-  parseFiltersFromSearchParams,
   type EventFilterState,
   type EventSortOption,
 } from '../lib/filters';
+import { getThemeForCategory } from '../lib/themes';
 
 export const EventsPage: FC = () => {
   useDocumentMeta({
@@ -42,96 +30,116 @@ export const EventsPage: FC = () => {
   const view = (searchParams.get('view') === 'timeline' ? 'timeline' : 'grid') as 'grid' | 'timeline';
 
   // Parse filters from URL search params
-  const filters = useMemo(() => {
-    return parseFiltersFromSearchParams(searchParams);
+  const filters = useMemo<EventFilterState>(() => {
+    return {
+      search: searchParams.get('q') || '',
+      theme: searchParams.get('theme') || 'all',
+      mode: (searchParams.get('mode') as EventFilterState['mode']) || 'all',
+      type: (searchParams.get('type') as EventFilterState['type']) || 'all',
+      price: (searchParams.get('price') as EventFilterState['price']) || 'all',
+      status: (searchParams.get('status') as EventFilterState['status']) || 'all',
+      technicalOnly: searchParams.get('tech') === 'true',
+      showPast: searchParams.get('past') === 'true',
+      sort: (searchParams.get('sort') as EventSortOption) || 'soonest',
+    };
   }, [searchParams]);
 
-  // Mobile drawer state
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  // Local state for immediate debounced search input feedback
+  const [searchInput, setSearchInput] = useState<string>(filters.search);
+
+  // Mobile filter drawer state
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Search input local state for instant responsiveness + 250ms debounce
-  const [searchInput, setSearchInput] = useState(filters.search);
+  // Update URL search parameters when filters change
+  const updateFilters = (updated: Partial<EventFilterState>) => {
+    const next = { ...filters, ...updated };
+    const params = new URLSearchParams();
 
-  // React pattern: adjust state during render when props/external state change
-  const [prevFilterSearch, setPrevFilterSearch] = useState(filters.search);
-  if (prevFilterSearch !== filters.search) {
-    setPrevFilterSearch(filters.search);
-    setSearchInput(filters.search);
-  }
+    if (view === 'timeline') params.set('view', 'timeline');
+    if (next.search) params.set('q', next.search);
+    if (next.theme !== 'all') params.set('theme', next.theme);
+    if (next.mode !== 'all') params.set('mode', next.mode);
+    if (next.type !== 'all') params.set('type', next.type);
+    if (next.price !== 'all') params.set('price', next.price);
+    if (next.status !== 'all') params.set('status', next.status);
+    if (next.technicalOnly) params.set('tech', 'true');
+    if (next.showPast) params.set('past', 'true');
+    if (next.sort !== 'soonest') params.set('sort', next.sort);
 
-  // Helper to update filters in URLSearchParams
-  const updateFilters = useCallback(
-    (partial: Partial<EventFilterState>) => {
-      const updated: EventFilterState = { ...filters, ...partial };
-      const newParams = filtersToSearchParams(updated);
-      if (view === 'timeline') {
-        newParams.set('view', 'timeline');
-      }
-      setSearchParams(newParams, { replace: true });
-    },
-    [filters, view, setSearchParams]
-  );
-
-  // Debounce search input by 250ms to update URL
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchInput !== filters.search) {
-        updateFilters({ search: searchInput });
-      }
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [searchInput, filters.search, updateFilters]);
-
-  const handleResetFilters = () => {
-    setSearchInput('');
-    const newParams = new URLSearchParams();
-    if (view === 'timeline') {
-      newParams.set('view', 'timeline');
-    }
-    setSearchParams(newParams, { replace: true });
+    setSearchParams(params, { replace: true });
   };
 
   const setView = (newView: 'grid' | 'timeline') => {
-    const newParams = filtersToSearchParams(filters);
+    const params = new URLSearchParams(searchParams);
     if (newView === 'timeline') {
-      newParams.set('view', 'timeline');
+      params.set('view', 'timeline');
+    } else {
+      params.delete('view');
     }
-    setSearchParams(newParams, { replace: true });
+    setSearchParams(params, { replace: true });
   };
 
-  // Compute theme counts for filter chips
-  const themeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const event of events) {
-      if (!filters.showPast && isPastEvent(event)) continue;
-      const theme = getThemeForCategory(event.category);
-      counts[theme] = (counts[theme] || 0) + 1;
-    }
-    return counts;
-  }, [events, filters.showPast]);
+  // Debounced search sync (250ms)
+  const searchTimeoutRef = useRef<number | null>(null);
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchInput(val);
 
-  // Filter and sort events pipeline
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = window.setTimeout(() => {
+      updateFilters({ search: val });
+    }, 250);
+  };
+
+  const handleResetFilters = () => {
+    setSearchInput('');
+    const params = new URLSearchParams();
+    if (view === 'timeline') params.set('view', 'timeline');
+    setSearchParams(params, { replace: true });
+  };
+
+  // Filtered and sorted event collection
   const filteredEvents = useMemo(() => {
     return filterAndSortEvents(events, filters);
   }, [events, filters]);
 
-  const activeFiltersPresent = hasActiveFilters(filters);
+  // Counts for each theme based on upcoming active events
+  const themeCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const e of events) {
+      if (!filters.showPast && (e.event_status === 'COMPLETED' || e.event_status === 'CLOSED')) continue;
+      const theme = getThemeForCategory(e.category);
+      map[theme] = (map[theme] || 0) + 1;
+    }
+    return map;
+  }, [events, filters.showPast]);
 
-  // Count active filter tags for the mobile button badge
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (filters.search.trim()) count++;
-    if (filters.theme !== 'all') count++;
-    if (filters.mode !== 'all') count++;
-    if (filters.type !== 'all') count++;
-    if (filters.price !== 'all') count++;
-    if (filters.status !== 'all') count++;
-    if (filters.technicalOnly) count++;
-    if (filters.showPast) count++;
-    return count;
-  }, [filters]);
+  // Active filter detection for UI chips
+  const activeFiltersPresent = Boolean(
+    filters.search ||
+      filters.theme !== 'all' ||
+      filters.mode !== 'all' ||
+      filters.type !== 'all' ||
+      filters.price !== 'all' ||
+      filters.status !== 'all' ||
+      filters.technicalOnly ||
+      filters.showPast
+  );
+
+  const activeFiltersCount = [
+    Boolean(filters.search),
+    filters.theme !== 'all',
+    filters.mode !== 'all',
+    filters.type !== 'all',
+    filters.price !== 'all',
+    filters.status !== 'all',
+    filters.technicalOnly,
+    filters.showPast,
+  ].filter(Boolean).length;
 
   const formattedFetchedAt = fetchedAt
     ? new Date(fetchedAt).toLocaleTimeString('en-IN', {
@@ -141,18 +149,24 @@ export const EventsPage: FC = () => {
       })
     : null;
 
-  // 1. Loading State
+  // Loading skeleton state
   if (status === 'loading') {
-    return <EventsGridSkeleton count={8} />;
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 space-y-8">
+        <div className="h-10 w-72 bg-[#1A1030]/60 rounded-md animate-pulse" />
+        <div className="h-12 w-full bg-[#1A1030]/40 rounded-md animate-pulse" />
+        <EventsGridSkeleton count={9} />
+      </div>
+    );
   }
 
-  // 2. Error State
+  // Error state
   if (status === 'error') {
     return (
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 min-h-[60vh] flex items-center justify-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 min-h-[60vh] flex items-center justify-center">
         <ErrorState
-          title="Failed to Load Events"
-          message={error?.message || 'Unable to retrieve event listings from the server.'}
+          title="Multiverse Portal Disrupted"
+          message={error?.message || 'Unable to load event listings across these dimensional coordinates.'}
           errorKind={error?.kind}
           onRetry={retry}
         />
@@ -161,35 +175,34 @@ export const EventsPage: FC = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8 min-h-[70vh]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8 bg-[#07060D] text-[#F3EFE8]">
       {/* -------------------------------------------------------------
-          Page Header & Search Bar
+          Header & Multiverse Search Bar
           ------------------------------------------------------------- */}
-      <div className="space-y-6 border-b border-white/10 pb-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-normal tracking-wide text-white">
-              DISCOVER EVENTS
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
+          <div className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-[#FF7A1A]">
+              Multiverse Index
+            </span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
+              DIMENSIONAL EVENTS
             </h1>
-            <p className="text-sm md:text-base text-[#b3b3b3] mt-1">
-              Search and filter competitions, workshops, and exhibitions across campus.
+            <p className="text-sm text-[#B8B3C7] max-w-2xl leading-relaxed">
+              Explore 30+ competitions, hackathons, and masterclasses across alternate reality tracks.
             </p>
           </div>
 
-          {/* View Toggle (Grid | Timeline) */}
-          <div
-            className="flex items-center bg-zinc-900 border border-zinc-800 rounded-[6px] p-1 self-start md:self-auto"
-            role="group"
-            aria-label="View layout switcher"
-          >
+          {/* Grid vs Timeline View Selector */}
+          <div className="flex items-center gap-1.5 p-1 rounded-md bg-[#0D1020] border border-white/10 self-start md:self-auto shrink-0" role="group" aria-label="View format">
             <button
               type="button"
               aria-pressed={view === 'grid'}
               onClick={() => setView('grid')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-semibold uppercase tracking-wider transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all ${
                 view === 'grid'
-                  ? 'bg-[#e50914] text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-[#FF7A1A] text-[#07060D] shadow-md'
+                  : 'text-[#B8B3C7] hover:text-[#F3EFE8]'
               }`}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -206,10 +219,10 @@ export const EventsPage: FC = () => {
               type="button"
               aria-pressed={view === 'timeline'}
               onClick={() => setView('timeline')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] text-xs font-semibold uppercase tracking-wider transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all ${
                 view === 'timeline'
-                  ? 'bg-[#e50914] text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-[#FF7A1A] text-[#07060D] shadow-md'
+                  : 'text-[#B8B3C7] hover:text-[#F3EFE8]'
               }`}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -229,7 +242,7 @@ export const EventsPage: FC = () => {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Search Input (250ms debounced) */}
           <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#B8B3C7]">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
@@ -242,10 +255,10 @@ export const EventsPage: FC = () => {
             <input
               type="search"
               value={searchInput}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value)}
+              onChange={handleSearchChange}
               placeholder="Search by event name, blurb, category, or tags..."
               aria-label="Search events"
-              className="w-full bg-[#181818] border border-white/10 rounded-[6px] pl-10 pr-9 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#e50914] focus:border-transparent transition-all"
+              className="w-full bg-[#0D1020] border border-[#FF7A1A]/30 rounded-md pl-10 pr-9 py-2.5 text-sm text-[#F3EFE8] placeholder-[#B8B3C7]/60 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] focus:border-transparent transition-all"
             />
             {searchInput && (
               <button
@@ -255,7 +268,7 @@ export const EventsPage: FC = () => {
                   updateFilters({ search: '' });
                 }}
                 aria-label="Clear search query"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-white"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#B8B3C7] hover:text-[#F3EFE8]"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -266,7 +279,7 @@ export const EventsPage: FC = () => {
 
           {/* Sort Selector Dropdown */}
           <div className="flex items-center gap-2 shrink-0">
-            <label htmlFor="events-sort-select" className="text-xs text-zinc-400 font-medium hidden sm:inline">
+            <label htmlFor="events-sort-select" className="text-xs text-[#B8B3C7] font-medium hidden sm:inline">
               Sort:
             </label>
             <select
@@ -274,7 +287,7 @@ export const EventsPage: FC = () => {
               value={filters.sort}
               onChange={(e) => updateFilters({ sort: e.target.value as EventSortOption })}
               aria-label="Sort events by"
-              className="bg-[#181818] border border-white/10 rounded-[6px] px-3 py-2 text-xs text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#e50914] cursor-pointer"
+              className="bg-[#0D1020] border border-[#FF7A1A]/30 rounded-md px-3 py-2 text-xs text-[#F3EFE8] font-medium focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] cursor-pointer"
             >
               <option value="soonest">Soonest Date First</option>
               <option value="price-asc">Price: Low to High</option>
@@ -288,7 +301,7 @@ export const EventsPage: FC = () => {
               onClick={() => setMobileDrawerOpen(true)}
               aria-expanded={mobileDrawerOpen}
               aria-label="Open filter drawer"
-              className="lg:hidden inline-flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-[6px] text-xs font-semibold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914]"
+              className="lg:hidden inline-flex items-center gap-1.5 px-3 py-2 bg-[#0D1020] hover:bg-[#1A1030] border border-[#FF7A1A]/40 text-[#F3EFE8] rounded-md text-xs font-semibold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -300,7 +313,7 @@ export const EventsPage: FC = () => {
               </svg>
               <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[#e50914] text-[10px] text-white font-bold flex items-center justify-center font-mono">
+                <span className="w-4 h-4 rounded-full bg-[#FF7A1A] text-[10px] text-[#07060D] font-bold flex items-center justify-center font-mono">
                   {activeFiltersCount}
                 </span>
               )}
@@ -313,17 +326,17 @@ export const EventsPage: FC = () => {
           {/* Visible Result Count with aria-live="polite" */}
           <div
             aria-live="polite"
-            className="text-xs sm:text-sm font-mono text-zinc-300 font-semibold"
+            className="text-xs sm:text-sm font-mono text-[#B8B3C7] font-semibold"
           >
-            Showing <span className="text-white font-bold">{filteredEvents.length}</span>{' '}
-            {filteredEvents.length === 1 ? 'event' : 'events'}
+            Discovered <span className="text-[#F3EFE8] font-bold">{filteredEvents.length}</span>{' '}
+            {filteredEvents.length === 1 ? 'reality' : 'realms'}
           </div>
 
           {/* Active Filter Removable Tags */}
           {activeFiltersPresent && (
             <div className="flex flex-wrap items-center gap-1.5" aria-label="Active filters">
               {filters.search && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
                   <span>Search: "{filters.search}"</span>
                   <button
                     type="button"
@@ -332,7 +345,7 @@ export const EventsPage: FC = () => {
                       updateFilters({ search: '' });
                     }}
                     aria-label="Remove search filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -340,13 +353,13 @@ export const EventsPage: FC = () => {
               )}
 
               {filters.theme !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
                   <span>Theme: {filters.theme}</span>
                   <button
                     type="button"
                     onClick={() => updateFilters({ theme: 'all' })}
                     aria-label="Remove theme filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -354,13 +367,13 @@ export const EventsPage: FC = () => {
               )}
 
               {filters.mode !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
                   <span>Mode: {filters.mode}</span>
                   <button
                     type="button"
                     onClick={() => updateFilters({ mode: 'all' })}
                     aria-label="Remove mode filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -368,13 +381,13 @@ export const EventsPage: FC = () => {
               )}
 
               {filters.type !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
                   <span>Format: {filters.type}</span>
                   <button
                     type="button"
                     onClick={() => updateFilters({ type: 'all' })}
                     aria-label="Remove format filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -382,13 +395,13 @@ export const EventsPage: FC = () => {
               )}
 
               {filters.price !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
                   <span>Admission: {filters.price}</span>
                   <button
                     type="button"
                     onClick={() => updateFilters({ price: 'all' })}
                     aria-label="Remove price filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -396,13 +409,13 @@ export const EventsPage: FC = () => {
               )}
 
               {filters.status !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
                   <span>Status: {filters.status}</span>
                   <button
                     type="button"
                     onClick={() => updateFilters({ status: 'all' })}
                     aria-label="Remove status filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -410,13 +423,13 @@ export const EventsPage: FC = () => {
               )}
 
               {filters.technicalOnly && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#3BA3FF]/40 text-xs text-[#3BA3FF]">
                   <span>Technical only</span>
                   <button
                     type="button"
                     onClick={() => updateFilters({ technicalOnly: false })}
                     aria-label="Remove technical filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -424,13 +437,13 @@ export const EventsPage: FC = () => {
               )}
 
               {filters.showPast && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] bg-zinc-900 border border-white/10 text-xs text-white">
-                  <span>Including past events</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-white/20 text-xs text-[#B8B3C7]">
+                  <span>Including closed</span>
                   <button
                     type="button"
                     onClick={() => updateFilters({ showPast: false })}
                     aria-label="Remove past events filter"
-                    className="text-zinc-400 hover:text-white"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
                   >
                     ×
                   </button>
@@ -440,7 +453,7 @@ export const EventsPage: FC = () => {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs text-[#e50914] hover:text-[#f40612] font-semibold underline underline-offset-2 ml-1"
+                className="text-xs text-[#FF7A1A] hover:text-[#F5B642] font-semibold underline underline-offset-2 ml-1"
               >
                 Clear all
               </button>
@@ -452,28 +465,28 @@ export const EventsPage: FC = () => {
       {/* Stale Cache Notice */}
       {stale && (
         <div
-          className="bg-[#1c1c1c] border border-amber-500/40 rounded-[4px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md"
+          className="bg-[#1A1030] border border-amber-500/40 rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md"
           role="status"
         >
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-            <p className="text-xs sm:text-sm text-white">
-              <strong className="text-amber-400">Showing saved data</strong>
-              {formattedFetchedAt ? ` (cached ${formattedFetchedAt})` : ''}: The live network call could not be completed.
+            <p className="text-xs sm:text-sm text-[#F3EFE8]">
+              <strong className="text-amber-400">Showing astral cached data</strong>
+              {formattedFetchedAt ? ` (${formattedFetchedAt})` : ''}: Live temporal connection interrupted.
             </p>
           </div>
           <Button variant="secondary" size="sm" onClick={retry}>
-            Retry
+            Retry Portal
           </Button>
         </div>
       )}
 
       {/* -------------------------------------------------------------
-          Main Content: Desktop Filter Sidebar + Event Display Area
+          Main Content: Desktop Filter Sidebar + Mixed-Size Event Display
           ------------------------------------------------------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        {/* Desktop Filter Sidebar (Hidden on mobile/tablet) */}
-        <aside className="hidden lg:block lg:col-span-1 bg-[#181818]/80 border border-white/10 rounded-[6px] p-5 sticky top-24">
+        {/* Desktop Filter Sidebar (Sticky) */}
+        <aside className="hidden lg:block lg:col-span-1 bg-[#0D1020] border border-[#FF7A1A]/20 rounded-xl p-5 sticky top-24 shadow-xl">
           <EventFilters
             filters={filters}
             onChange={updateFilters}
@@ -483,18 +496,18 @@ export const EventsPage: FC = () => {
           />
         </aside>
 
-        {/* Events Display Container (Grid or Timeline) */}
+        {/* Events Display Container (Mixed-Size Grid or Timeline) */}
         <main className="lg:col-span-3 space-y-6">
           {/* Empty State */}
           {filteredEvents.length === 0 ? (
-            <div className="py-12 bg-[#181818]/40 border border-white/5 rounded-[6px] flex items-center justify-center">
+            <div className="py-16 bg-[#0D1020]/40 border border-white/5 rounded-xl flex items-center justify-center">
               <EmptyState
-                title="No Events Found"
-                description="We couldn't find any events matching your selected filter criteria. Try clearing some filters or searching for another term."
+                title="No Dimensional Events Discovered"
+                description="We couldn't detect any events matching your selected coordinates. Try recalibrating your filters or searching another keyword."
                 action={
                   activeFiltersPresent ? (
                     <Button variant="secondary" size="sm" onClick={handleResetFilters}>
-                      Reset all filters
+                      Reset all coordinates
                     </Button>
                   ) : undefined
                 }
@@ -504,11 +517,24 @@ export const EventsPage: FC = () => {
             /* Timeline View */
             <EventTimeline events={filteredEvents} />
           ) : (
-            /* Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
+            /* Mixed-Size Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-              {filteredEvents.map((event, index) => (
-                <EventCard key={event.id} event={event} priority={index < 4} />
-              ))}
+              {filteredEvents.map((event, index) => {
+                // Asymmetric mixed-size accent: first featured item spans 2 cols on larger screens
+                const isFlagshipSpan = index === 0 && Boolean(event.is_featured);
+                return (
+                  <div
+                    key={event.id}
+                    className={isFlagshipSpan ? 'sm:col-span-2 xl:col-span-2' : ''}
+                  >
+                    <EventCard
+                      event={event}
+                      priority={index < 4}
+                      isFlagshipSpan={isFlagshipSpan}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </main>
