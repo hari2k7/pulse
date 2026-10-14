@@ -1,111 +1,119 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/* -------------------------------------------------------------
+   Self-Hosted Font Declarations
+   Pointing directly at optimized woff2 in /public/fonts/
+   font-display: swap for instant text rendering
+   ------------------------------------------------------------- */
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+/* Bebas Neue (Display font, weight 400 only) */
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/bebas-neue-latin-400-normal.woff2') format('woff2');
+}
+
+/* Metric-matched fallback for Bebas Neue (zero layout shift / CLS = 0) */
+@font-face {
+  font-family: 'Bebas Neue Fallback';
+  src: local('Impact'), local('Arial Black'), local('sans-serif');
+  ascent-override: 95%;
+  descent-override: 20%;
+  line-gap-override: 0%;
+  size-adjust: 90%;
+}
+
+/* Inter (Body font, weight 400 regular) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+
+/* Inter (Body font, weight 600 semi-bold) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+
+/* Metric-matched fallback for Inter (zero layout shift / CLS = 0) */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('sans-serif');
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+  size-adjust: 100%;
+}
+
+@theme {
+  --color-background: #141414;
+  --color-surface: #181818;
+  --color-surface-hover: #2f2f2f;
+  --color-accent: #e50914;
+  --color-accent-hover: #f40612;
+  --color-text-primary: #ffffff;
+  --color-text-muted: #b3b3b3;
+
+  --font-display: 'Bebas Neue', 'Bebas Neue Fallback', sans-serif;
+  --font-body: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-pulse: 4px;
+}
+
+/* Visible, accessible focus-visible ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #e50914;
+  outline-offset: 2px;
+}
+
+/* Respect prefers-reduced-motion (Hard rule 4) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  background-color: #141414;
+  color: #ffffff;
+  font-family: var(--font-body);
+  color-scheme: dark;
+  scroll-behavior: smooth;
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background-color: #141414;
+  color: #ffffff;
+  min-height: 100vh;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* Custom utilities */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-synthesis: none;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.font-body {
+  font-family: var(--font-body);
 }

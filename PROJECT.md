@@ -49,8 +49,26 @@ Base URL: `https://render72.pages.dev`
 `banner_image_alt`, `gallery_images[]`, `highlights[]`, `what_to_expect[]`, `eligibility[]`,
 `prerequisites[]`, `rules[]`, `prizes[]`, `faqs[]`, `schedules[]`, `organizers[]`, `coordinators[]`.
 
-**Unknown:** the inner shapes of `prizes`, `faqs`, `schedules`, `organizers`, `coordinators`
-are not documented. Inspect the live response before rendering them. Treat every field as optional.
+**Nested shapes (verified on a real event; keep every field optional because other events may differ):**
+
+```ts
+type Schedule    = { event_date?: string; start_time?: string; end_time?: string; venue?: string }  // "2026-11-13", "09:00" (IST, no offset)
+type Prize       = { rank?: number; title?: string; amount?: number; description?: string }          // amount in INR
+type Faq         = { question?: string; answer?: string }
+type Organizer   = { id?: string; name?: string; org_type?: string }                                  // e.g. "CLUB"
+type Coordinator = { id?: string; name?: string; role?: string; contact?: string }                    // contact is an email here; may be a phone elsewhere
+```
+
+Detail rules from this data:
+- `schedules` items have no end date. A multi-day event is several items (one per day). Venue exists only here.
+- The API gives no registration URL. Do not build a register button. Show the registration status and deadline.
+- When `is_per_head` is false the seats are **team slots** (e.g. 24 teams). Say "team slots left" instead of "seats left".
+  Say "Only N left" when 5 or fewer remain.
+- `coordinators[].contact`: if it contains "@" render a `mailto:` link, if it is mostly digits render `tel:`, else plain text.
+- `rules`, `highlights` etc. are arrays of strings and can be long. Render as lists. They may contain symbols like ×.
+- `description` paragraphs are separated by `\n\n`.
+- Gallery images come as Pexels URLs with `w=1400` (no height). Render with a fixed aspect ratio and `object-cover`.
+- `.ics`: convert IST (UTC+5:30) times to UTC and use `Z` timestamps so every calendar app agrees.
 
 ## 5. Design
 
@@ -81,7 +99,31 @@ Never use the Netflix name, logo, "N" mark or their font.
 - Format dates in IST. Tolerate missing or invalid dates (show nothing or "TBA").
 - Hide any section whose data is missing or empty. Never render `undefined` or `null`.
 - "Closing soon" = `registration_status === "OPEN"` and a future `registration_deadline`, nearest first.
-- Rows come from real data only. Categories are derived from the API, never invented.
+- Rows come from real data only. Never invent events or categories.
+
+### Real data facts (checked against the live API, 30 events)
+
+- 27 distinct `category` values across 30 events (almost all have exactly 1 event). **Never make one row or
+  one filter chip per raw category.** Group them into themes with a client-side map in `src/lib/themes.ts`
+  (unknown categories fall into "More"). Show the raw category as a small label on each card.
+  - Tech & Code: Coding, Hackathon, Artificial Intelligence, Web Development, Cybersecurity, Gaming
+  - Robotics & Engineering: Robotics, Engineering, Aerial Robotics, Robotics & Electronics
+  - Design & Visual Arts: Design & Product, Visual Arts, Art & Design, Arts & Craft, Design, Photography, Film & Media
+  - Performing & Music: Dance, Music, Theatre
+  - Words & Culture: Debate & Literary, Literary Arts, Quiz & Culture, Food & Culture
+  - Science & Startups: Sustainability, Astronomy, Entrepreneurship
+- `event_status`: ACTIVE 27, COMPLETED 2, CLOSED 1. `registration_status`: OPEN 24, CLOSED 3, SOLD_OUT 3.
+  `event_mode`: OFFLINE 26, ONLINE 4. `event_type`: EVENT 23, WORKSHOP 7. Featured 6. Free 7.
+- The list is sorted by start date, so the first items are in the past (COMPLETED/CLOSED, deadlines already gone).
+  - Billboard = a featured event that is ACTIVE with registration OPEN (fallback: any ACTIVE OPEN event).
+  - Default `/events` view hides past events; a "Show past events" toggle reveals them (they are labelled).
+  - Completed events show "Completed", never a seats-left bar or open-registration wording.
+  - SOLD_OUT events stay visible with a "Sold out" badge.
+- Row plan for the landing page (hide any row with fewer than 3 events):
+  Featured, Closing soon, Free to join, Workshops, then one row per **theme** that has 3 or more events.
+  "Online" has only 4 events, so use it as a filter chip rather than a row.
+- Event images are Pexels URLs with `w=1200&h=800&fit=crop` in the query string. Cards request a smaller size
+  (e.g. `w=600&h=400`), the billboard a larger one, with `srcset`/`sizes`. Keep the 3:2 ratio.
 
 ## 7. Resilience
 

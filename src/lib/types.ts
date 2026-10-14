@@ -34,6 +34,38 @@ export interface EventSummary {
   schedule_summary: ScheduleSummary;
 }
 
+export interface Schedule {
+  event_date?: string;
+  start_time?: string;
+  end_time?: string;
+  venue?: string;
+}
+
+export interface Prize {
+  rank?: number;
+  title?: string;
+  amount?: number;
+  description?: string;
+}
+
+export interface Faq {
+  question?: string;
+  answer?: string;
+}
+
+export interface Organizer {
+  id?: string;
+  name?: string;
+  org_type?: string;
+}
+
+export interface Coordinator {
+  id?: string;
+  name?: string;
+  role?: string;
+  contact?: string;
+}
+
 export interface EventDetail extends EventSummary {
   description?: string;
   banner_image_url?: string;
@@ -44,11 +76,11 @@ export interface EventDetail extends EventSummary {
   eligibility?: string[];
   prerequisites?: string[];
   rules?: string[];
-  prizes?: Record<string, unknown>[];
-  faqs?: Record<string, unknown>[];
-  schedules?: Record<string, unknown>[];
-  organizers?: Record<string, unknown>[];
-  coordinators?: Record<string, unknown>[];
+  prizes?: Prize[];
+  faqs?: Faq[];
+  schedules?: Schedule[];
+  organizers?: Organizer[];
+  coordinators?: Coordinator[];
 }
 
 export interface EventsApiResponse {

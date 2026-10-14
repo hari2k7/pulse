@@ -2,12 +2,154 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141414" />
     <title>PULSE — Discover events</title>
+    <meta
+      name="description"
+      content="Feel what's happening. Find workshops, competitions and festivals happening near you. Search, filter and save the events you love."
+    />
+    <meta property="og:title" content="PULSE — Discover events" />
+    <meta
+      property="og:description"
+      content="Feel what's happening. Find workshops, competitions and festivals happening near you. Search, filter and save the events you love."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PULSE" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Preload only above-the-fold display (Bebas Neue 400) and body (Inter 400) fonts -->
+    <link
+      rel="preload"
+      href="/fonts/bebas-neue-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/inter-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <!-- Static inline critical CSS: identical font stacks and metric-matched fallbacks for 0 CLS -->
+    <style>
+      @font-face {
+        font-family: 'Bebas Neue';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/bebas-neue-latin-400-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Bebas Neue Fallback';
+        src: local('Impact'), local('Arial Black'), local('sans-serif');
+        ascent-override: 95%;
+        descent-override: 20%;
+        line-gap-override: 0%;
+        size-adjust: 90%;
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/inter-latin-400-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Inter Fallback';
+        src: local('Arial'), local('Helvetica Neue'), local('sans-serif');
+        ascent-override: 90%;
+        descent-override: 22%;
+        line-gap-override: 0%;
+        size-adjust: 100%;
+      }
+
+      :root {
+        color-scheme: dark;
+      }
+      html, body {
+        margin: 0;
+        background-color: #141414;
+        color: #ffffff;
+        font-family: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-synthesis: none;
+      }
+      #root {
+        min-height: 100vh;
+      }
+      .shell-container {
+        min-height: 100vh;
+        background-color: #141414;
+        display: flex;
+        flex-direction: column;
+      }
+      .shell-header {
+        height: 68px;
+        display: flex;
+        align-items: center;
+        padding: 0 2rem;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(20, 20, 20, 0) 100%);
+      }
+      .shell-brand {
+        font-family: 'Bebas Neue', 'Bebas Neue Fallback', sans-serif;
+        font-weight: 400;
+        font-size: 1.75rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-synthesis: none;
+      }
+      .shell-brand-accent {
+        color: #e50914;
+      }
+      .shell-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 4rem 1.5rem;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .shell-title {
+        font-family: 'Bebas Neue', 'Bebas Neue Fallback', sans-serif;
+        font-weight: 400;
+        font-size: clamp(2.5rem, 8vw, 4.5rem);
+        letter-spacing: 0.05em;
+        margin: 0 0 1.25rem;
+        line-height: 1;
+        font-synthesis: none;
+      }
+      .shell-title span {
+        color: #e50914;
+      }
+      .shell-desc {
+        font-size: 1.25rem;
+        color: #b3b3b3;
+        margin: 0;
+        line-height: 1.5;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static styled shell placeholder replaced seamlessly on React mount -->
+      <div class="shell-container" aria-hidden="true">
+        <header class="shell-header">
+          <div class="shell-brand">
+            <span class="shell-brand-accent">P</span>ULSE
+          </div>
+        </header>
+        <main class="shell-content">
+          <h1 class="shell-title">FEEL WHAT'S <span>HAPPENING.</span></h1>
+          <p class="shell-desc">Feel what's happening.</p>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
