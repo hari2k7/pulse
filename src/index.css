@@ -147,7 +147,6 @@ html {
   color: #f3efe8;
   font-family: var(--font-body);
   color-scheme: dark;
-  scroll-behavior: smooth;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
