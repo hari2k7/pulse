@@ -12,6 +12,9 @@ import { ErrorState } from '../components/states/ErrorState';
 import { Button } from '../components/ui/Button';
 import {
   filterAndSortEvents,
+  parseFiltersFromSearchParams,
+  filtersToSearchParams,
+  hasActiveFilters,
   type EventFilterState,
   type EventSortOption,
 } from '../lib/filters';
@@ -20,7 +23,7 @@ import { getThemeForCategory } from '../lib/themes';
 export const EventsPage: FC = () => {
   useDocumentMeta({
     title: 'Events — STRANGE',
-    description: 'Multiverse Events Index. Search, filter, and traverse hackathons, technical challenges, and workshops at STRANGE.',
+    description: 'Events Index. Search, filter, and explore hackathons, technical challenges, and workshops at STRANGE.',
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,19 +32,9 @@ export const EventsPage: FC = () => {
   // Active view: grid | timeline (synced to query param)
   const view = (searchParams.get('view') === 'timeline' ? 'timeline' : 'grid') as 'grid' | 'timeline';
 
-  // Parse filters from URL search params
+  // Parse filters from URL search params (supports multi-select comma values)
   const filters = useMemo<EventFilterState>(() => {
-    return {
-      search: searchParams.get('q') || '',
-      theme: searchParams.get('theme') || 'all',
-      mode: (searchParams.get('mode') as EventFilterState['mode']) || 'all',
-      type: (searchParams.get('type') as EventFilterState['type']) || 'all',
-      price: (searchParams.get('price') as EventFilterState['price']) || 'all',
-      status: (searchParams.get('status') as EventFilterState['status']) || 'all',
-      technicalOnly: searchParams.get('tech') === 'true',
-      showPast: searchParams.get('past') === 'true',
-      sort: (searchParams.get('sort') as EventSortOption) || 'soonest',
-    };
+    return parseFiltersFromSearchParams(searchParams);
   }, [searchParams]);
 
   // Local state for immediate debounced search input feedback
@@ -53,20 +46,9 @@ export const EventsPage: FC = () => {
 
   // Update URL search parameters when filters change
   const updateFilters = (updated: Partial<EventFilterState>) => {
-    const next = { ...filters, ...updated };
-    const params = new URLSearchParams();
-
+    const next: EventFilterState = { ...filters, ...updated };
+    const params = filtersToSearchParams(next);
     if (view === 'timeline') params.set('view', 'timeline');
-    if (next.search) params.set('q', next.search);
-    if (next.theme !== 'all') params.set('theme', next.theme);
-    if (next.mode !== 'all') params.set('mode', next.mode);
-    if (next.type !== 'all') params.set('type', next.type);
-    if (next.price !== 'all') params.set('price', next.price);
-    if (next.status !== 'all') params.set('status', next.status);
-    if (next.technicalOnly) params.set('tech', 'true');
-    if (next.showPast) params.set('past', 'true');
-    if (next.sort !== 'soonest') params.set('sort', next.sort);
-
     setSearchParams(params, { replace: true });
   };
 
@@ -119,27 +101,17 @@ export const EventsPage: FC = () => {
   }, [events, filters.showPast]);
 
   // Active filter detection for UI chips
-  const activeFiltersPresent = Boolean(
-    filters.search ||
-      filters.theme !== 'all' ||
-      filters.mode !== 'all' ||
-      filters.type !== 'all' ||
-      filters.price !== 'all' ||
-      filters.status !== 'all' ||
-      filters.technicalOnly ||
-      filters.showPast
-  );
+  const activeFiltersPresent = hasActiveFilters(filters);
 
-  const activeFiltersCount = [
-    Boolean(filters.search),
-    filters.theme !== 'all',
-    filters.mode !== 'all',
-    filters.type !== 'all',
-    filters.price !== 'all',
-    filters.status !== 'all',
-    filters.technicalOnly,
-    filters.showPast,
-  ].filter(Boolean).length;
+  const activeFiltersCount =
+    (filters.search.trim() ? 1 : 0) +
+    filters.themes.length +
+    filters.modes.length +
+    filters.types.length +
+    filters.prices.length +
+    filters.statuses.length +
+    filters.technical.length +
+    (filters.showPast ? 1 : 0);
 
   const formattedFetchedAt = fetchedAt
     ? new Date(fetchedAt).toLocaleTimeString('en-IN', {
@@ -325,8 +297,8 @@ export const EventsPage: FC = () => {
             aria-live="polite"
             className="text-xs sm:text-sm font-mono text-[#B8B3C7] font-semibold"
           >
-            Discovered <span className="text-[#F3EFE8] font-bold">{filteredEvents.length}</span>{' '}
-            {filteredEvents.length === 1 ? 'reality' : 'realms'}
+            Showing <span className="text-[#F3EFE8] font-bold">{filteredEvents.length}</span>{' '}
+            {filteredEvents.length === 1 ? 'event' : 'events'}
           </div>
 
           {/* Active Filter Removable Tags */}
@@ -342,96 +314,96 @@ export const EventsPage: FC = () => {
                       updateFilters({ search: '' });
                     }}
                     aria-label="Remove search filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
                 </span>
               )}
 
-              {filters.theme !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Theme: {filters.theme}</span>
+              {filters.themes.map((theme) => (
+                <span key={`theme-${theme}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
+                  <span>Theme: {theme}</span>
                   <button
                     type="button"
-                    onClick={() => updateFilters({ theme: 'all' })}
-                    aria-label="Remove theme filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    onClick={() => updateFilters({ themes: filters.themes.filter((t) => t !== theme) })}
+                    aria-label={`Remove theme filter ${theme}`}
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
 
-              {filters.mode !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Mode: {filters.mode}</span>
+              {filters.modes.map((mode) => (
+                <span key={`mode-${mode}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
+                  <span>Mode: {mode === 'OFFLINE' ? 'In-Person' : 'Online'}</span>
                   <button
                     type="button"
-                    onClick={() => updateFilters({ mode: 'all' })}
-                    aria-label="Remove mode filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    onClick={() => updateFilters({ modes: filters.modes.filter((m) => m !== mode) })}
+                    aria-label={`Remove mode filter ${mode}`}
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
 
-              {filters.type !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Format: {filters.type}</span>
+              {filters.types.map((type) => (
+                <span key={`type-${type}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
+                  <span>Format: {type === 'WORKSHOP' ? 'Workshop' : 'Competition'}</span>
                   <button
                     type="button"
-                    onClick={() => updateFilters({ type: 'all' })}
-                    aria-label="Remove format filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    onClick={() => updateFilters({ types: filters.types.filter((t) => t !== type) })}
+                    aria-label={`Remove format filter ${type}`}
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
 
-              {filters.price !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Admission: {filters.price}</span>
+              {filters.prices.map((price) => (
+                <span key={`price-${price}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
+                  <span>Admission: {price === 'free' ? 'Free Admission' : 'Paid Entry'}</span>
                   <button
                     type="button"
-                    onClick={() => updateFilters({ price: 'all' })}
-                    aria-label="Remove price filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    onClick={() => updateFilters({ prices: filters.prices.filter((p) => p !== price) })}
+                    aria-label={`Remove admission filter ${price}`}
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
 
-              {filters.status !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Status: {filters.status}</span>
+              {filters.statuses.map((status) => (
+                <span key={`status-${status}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
+                  <span>Status: {status === 'OPEN' ? 'Registration Open' : status === 'CLOSED' ? 'Registration Closed' : 'Sold Out'}</span>
                   <button
                     type="button"
-                    onClick={() => updateFilters({ status: 'all' })}
-                    aria-label="Remove status filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    onClick={() => updateFilters({ statuses: filters.statuses.filter((s) => s !== status) })}
+                    aria-label={`Remove status filter ${status}`}
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
 
-              {filters.technicalOnly && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#3BA3FF]/40 text-xs text-[#3BA3FF]">
-                  <span>Technical only</span>
+              {filters.technical.map((tech) => (
+                <span key={`tech-${tech}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#3BA3FF]/40 text-xs text-[#3BA3FF]">
+                  <span>Track: {tech === 'technical' ? 'Technical' : 'Non-Technical'}</span>
                   <button
                     type="button"
-                    onClick={() => updateFilters({ technicalOnly: false })}
-                    aria-label="Remove technical filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    onClick={() => updateFilters({ technical: filters.technical.filter((t) => t !== tech) })}
+                    aria-label={`Remove track filter ${tech}`}
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
 
               {filters.showPast && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-white/20 text-xs text-[#B8B3C7]">
@@ -440,7 +412,7 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ showPast: false })}
                     aria-label="Remove past events filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8]"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
                   >
                     ×
                   </button>
@@ -499,12 +471,12 @@ export const EventsPage: FC = () => {
           {filteredEvents.length === 0 ? (
             <div className="py-16 bg-[#0D1020]/40 border border-white/5 rounded-xl flex items-center justify-center">
               <EmptyState
-                title="No Dimensional Events Discovered"
-                description="We couldn't detect any events matching your selected coordinates. Try recalibrating your filters or searching another keyword."
+                title="No Events Found"
+                description="We couldn't find any events matching your selected filters. Try adjusting your filters or search query."
                 action={
                   activeFiltersPresent ? (
                     <Button variant="secondary" size="sm" onClick={handleResetFilters}>
-                      Reset all coordinates
+                      Reset all filters
                     </Button>
                   ) : undefined
                 }

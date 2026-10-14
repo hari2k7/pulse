@@ -108,8 +108,8 @@ export const FilterDrawer: FC<FilterDrawerProps> = ({
       >
         {/* Drawer Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#FF7A1A]/20 bg-[#07060D]">
-          <h2 id="filter-drawer-title" className="text-sm font-bold font-display uppercase tracking-[0.2em] text-[#F3EFE8]">
-            Filter Multiverse
+          <h2 id="filter-drawer-title" className="text-sm font-bold font-display uppercase tracking-wider text-[#F3EFE8]">
+            Filters
           </h2>
           <button
             ref={closeButtonRef}
@@ -132,7 +132,7 @@ export const FilterDrawer: FC<FilterDrawerProps> = ({
           <button
             type="button"
             onClick={handleClose}
-            className="w-full bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] hover:from-[#f06f13] hover:to-[#e5a835] text-[#07060D] font-bold py-2.5 px-4 rounded-md text-xs uppercase tracking-wider transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+            className="w-full bg-[#FF7A1A] hover:bg-[#ff8f3d] text-[#07060D] font-bold py-2.5 px-4 rounded-md text-xs uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
           >
             Apply Filters
           </button>

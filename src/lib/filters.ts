@@ -1,31 +1,57 @@
 import type { EventSummary } from './types';
-import { getThemeForCategory, isUpcomingEvent } from './themes';
+import { getThemeForCategory, isUpcomingEvent, THEMES, type ThemeId } from './themes';
 
 export type EventSortOption = 'soonest' | 'price-asc' | 'price-desc';
-export type PriceFilterOption = 'all' | 'free' | 'paid';
 
 export interface EventFilterState {
   search: string;
-  theme: string; // ThemeId | 'all'
-  mode: string; // 'all' | 'OFFLINE' | 'ONLINE'
-  type: string; // 'all' | 'EVENT' | 'WORKSHOP'
-  price: PriceFilterOption; // 'all' | 'free' | 'paid'
-  status: string; // 'all' | 'OPEN' | 'CLOSED' | 'SOLD_OUT'
-  technicalOnly: boolean;
+  themes: ThemeId[];
+  modes: ('OFFLINE' | 'ONLINE')[];
+  types: ('EVENT' | 'WORKSHOP')[];
+  prices: ('free' | 'paid')[];
+  statuses: ('OPEN' | 'CLOSED' | 'SOLD_OUT')[];
+  technical: ('technical' | 'non-technical')[];
   showPast: boolean;
   sort: EventSortOption;
 }
 
 export const DEFAULT_FILTERS: Readonly<EventFilterState> = {
   search: '',
-  theme: 'all',
-  mode: 'all',
-  type: 'all',
-  price: 'all',
-  status: 'all',
-  technicalOnly: false,
+  themes: [],
+  modes: [],
+  types: [],
+  prices: [],
+  statuses: [],
+  technical: [],
   showPast: false,
   sort: 'soonest',
+};
+
+// Theme slug mapping for clean URL parameters (?theme=tech,design)
+const THEME_SLUG_MAP: Record<string, ThemeId> = {
+  tech: 'Tech & Code',
+  'tech-code': 'Tech & Code',
+  robotics: 'Robotics & Engineering',
+  'robotics-engineering': 'Robotics & Engineering',
+  design: 'Design & Visual Arts',
+  'design-visual-arts': 'Design & Visual Arts',
+  performing: 'Performing & Music',
+  'performing-music': 'Performing & Music',
+  words: 'Words & Culture',
+  'words-culture': 'Words & Culture',
+  science: 'Science & Startups',
+  'science-startups': 'Science & Startups',
+  more: 'More',
+};
+
+const THEME_TO_SLUG: Record<ThemeId, string> = {
+  'Tech & Code': 'tech',
+  'Robotics & Engineering': 'robotics',
+  'Design & Visual Arts': 'design',
+  'Performing & Music': 'performing',
+  'Words & Culture': 'words',
+  'Science & Startups': 'science',
+  More: 'more',
 };
 
 /**
@@ -69,7 +95,9 @@ export function matchesSearch(event: EventSummary, rawQuery: string): boolean {
 }
 
 /**
- * Pure function: Filters events according to the filter state.
+ * Pure function: Filters events according to the multi-select filter state.
+ * Within a group use OR logic, across groups use AND logic.
+ * Free/Paid together means all.
  */
 export function filterEvents(
   events: EventSummary[],
@@ -86,45 +114,58 @@ export function filterEvents(
       return false;
     }
 
-    // 3. Theme filter (from themes.ts)
-    if (filters.theme && filters.theme !== 'all') {
+    // 3. Theme filter (OR logic within group)
+    if (filters.themes.length > 0) {
       const eventTheme = getThemeForCategory(event.category);
-      if (eventTheme !== filters.theme) {
+      if (!filters.themes.includes(eventTheme)) {
         return false;
       }
     }
 
-    // 4. Mode filter (OFFLINE | ONLINE)
-    if (filters.mode && filters.mode !== 'all') {
-      if (event.event_mode !== filters.mode) {
+    // 4. Delivery Mode filter (OR logic within group)
+    if (filters.modes.length > 0) {
+      if (!event.event_mode || !filters.modes.includes(event.event_mode as 'OFFLINE' | 'ONLINE')) {
         return false;
       }
     }
 
-    // 5. Type filter (EVENT | WORKSHOP)
-    if (filters.type && filters.type !== 'all') {
-      if (event.event_type !== filters.type) {
+    // 5. Type filter (OR logic within group)
+    if (filters.types.length > 0) {
+      if (!event.event_type || !filters.types.includes(event.event_type as 'EVENT' | 'WORKSHOP')) {
         return false;
       }
     }
 
-    // 6. Price filter (free | paid)
-    if (filters.price === 'free') {
-      if (event.price !== 0) return false;
-    } else if (filters.price === 'paid') {
-      if (typeof event.price !== 'number' || event.price <= 0) return false;
-    }
-
-    // 7. Registration status (OPEN | CLOSED | SOLD_OUT)
-    if (filters.status && filters.status !== 'all') {
-      if (event.registration_status !== filters.status) {
+    // 6. Price filter: Free/Paid together means all
+    if (filters.prices.length === 1) {
+      const p = filters.prices[0];
+      if (p === 'free' && event.price !== 0) {
+        return false;
+      }
+      if (p === 'paid' && (typeof event.price !== 'number' || event.price <= 0)) {
         return false;
       }
     }
 
-    // 8. Technical only
-    if (filters.technicalOnly) {
-      if (!event.is_technical) return false;
+    // 7. Registration status (OR logic within group)
+    if (filters.statuses.length > 0) {
+      if (
+        !event.registration_status ||
+        !filters.statuses.includes(event.registration_status as 'OPEN' | 'CLOSED' | 'SOLD_OUT')
+      ) {
+        return false;
+      }
+    }
+
+    // 8. Technical track filter: Both together means all
+    if (filters.technical.length === 1) {
+      const t = filters.technical[0];
+      if (t === 'technical' && !event.is_technical) {
+        return false;
+      }
+      if (t === 'non-technical' && event.is_technical) {
+        return false;
+      }
     }
 
     return true;
@@ -181,7 +222,29 @@ export function filterAndSortEvents(
 }
 
 /**
- * Parses query parameters from URLSearchParams into EventFilterState.
+ * Parses comma-separated string into validated array of items, ignoring unknown values.
+ */
+function parseCommaSeparated<T extends string>(
+  val: string | null,
+  validator: (item: string) => T | null
+): T[] {
+  if (!val) return [];
+  const items = val.split(',').map((s) => s.trim().toLowerCase());
+  const result = new Set<T>();
+
+  for (const item of items) {
+    if (!item) continue;
+    const validated = validator(item);
+    if (validated) {
+      result.add(validated);
+    }
+  }
+
+  return Array.from(result);
+}
+
+/**
+ * Parses query parameters from URLSearchParams into multi-select EventFilterState.
  */
 export function parseFiltersFromSearchParams(
   searchParams: URLSearchParams
@@ -190,25 +253,70 @@ export function parseFiltersFromSearchParams(
   const validSort: EventSortOption =
     sortParam === 'price-asc' || sortParam === 'price-desc' ? sortParam : 'soonest';
 
-  const priceParam = searchParams.get('price');
-  const validPrice: PriceFilterOption =
-    priceParam === 'free' || priceParam === 'paid' ? priceParam : 'all';
+  // 1. Themes (accepts slug e.g. 'tech,design' or full name e.g. 'Tech & Code')
+  const themeParam = searchParams.get('theme') || searchParams.get('themes');
+  const themes = parseCommaSeparated(themeParam, (item) => {
+    if (THEME_SLUG_MAP[item]) return THEME_SLUG_MAP[item];
+    const match = THEMES.find((t) => t.toLowerCase() === item);
+    return match || null;
+  });
+
+  // 2. Modes ('online', 'offline')
+  const modeParam = searchParams.get('mode') || searchParams.get('modes');
+  const modes = parseCommaSeparated(modeParam, (item) => {
+    if (item === 'offline') return 'OFFLINE';
+    if (item === 'online') return 'ONLINE';
+    return null;
+  });
+
+  // 3. Types ('event', 'workshop')
+  const typeParam = searchParams.get('type') || searchParams.get('types');
+  const types = parseCommaSeparated(typeParam, (item) => {
+    if (item === 'event') return 'EVENT';
+    if (item === 'workshop') return 'WORKSHOP';
+    return null;
+  });
+
+  // 4. Prices ('free', 'paid')
+  const priceParam = searchParams.get('price') || searchParams.get('prices');
+  const prices = parseCommaSeparated(priceParam, (item) => {
+    if (item === 'free') return 'free';
+    if (item === 'paid') return 'paid';
+    return null;
+  });
+
+  // 5. Statuses ('open', 'closed', 'sold_out')
+  const statusParam = searchParams.get('status') || searchParams.get('statuses') || searchParams.get('registration_status');
+  const statuses = parseCommaSeparated(statusParam, (item) => {
+    if (item === 'open') return 'OPEN';
+    if (item === 'closed') return 'CLOSED';
+    if (item === 'sold_out' || item === 'soldout') return 'SOLD_OUT';
+    return null;
+  });
+
+  // 6. Technical track ('technical', 'non-technical', 'tech', 'non-tech', 'true', 'false')
+  const techParam = searchParams.get('tech') || searchParams.get('technical');
+  const technical = parseCommaSeparated(techParam, (item) => {
+    if (item === 'technical' || item === 'tech' || item === 'true') return 'technical';
+    if (item === 'non-technical' || item === 'non-tech' || item === 'false') return 'non-technical';
+    return null;
+  });
 
   return {
     search: searchParams.get('q') || searchParams.get('search') || '',
-    theme: searchParams.get('theme') || 'all',
-    mode: searchParams.get('mode') || 'all',
-    type: searchParams.get('type') || 'all',
-    price: validPrice,
-    status: searchParams.get('status') || 'all',
-    technicalOnly: searchParams.get('tech') === 'true',
+    themes,
+    modes,
+    types,
+    prices,
+    statuses,
+    technical,
     showPast: searchParams.get('past') === 'true',
     sort: validSort,
   };
 }
 
 /**
- * Converts EventFilterState into clean URLSearchParams (omitting default values).
+ * Converts EventFilterState into clean URLSearchParams (comma-separated, omitting defaults).
  */
 export function filtersToSearchParams(filters: EventFilterState): URLSearchParams {
   const params = new URLSearchParams();
@@ -217,28 +325,29 @@ export function filtersToSearchParams(filters: EventFilterState): URLSearchParam
     params.set('q', filters.search.trim());
   }
 
-  if (filters.theme && filters.theme !== 'all') {
-    params.set('theme', filters.theme);
+  if (filters.themes.length > 0) {
+    const slugs = filters.themes.map((t) => THEME_TO_SLUG[t] || t.toLowerCase());
+    params.set('theme', slugs.join(','));
   }
 
-  if (filters.mode && filters.mode !== 'all') {
-    params.set('mode', filters.mode);
+  if (filters.modes.length > 0) {
+    params.set('mode', filters.modes.map((m) => m.toLowerCase()).join(','));
   }
 
-  if (filters.type && filters.type !== 'all') {
-    params.set('type', filters.type);
+  if (filters.types.length > 0) {
+    params.set('type', filters.types.map((t) => t.toLowerCase()).join(','));
   }
 
-  if (filters.price && filters.price !== 'all') {
-    params.set('price', filters.price);
+  if (filters.prices.length > 0) {
+    params.set('price', filters.prices.join(','));
   }
 
-  if (filters.status && filters.status !== 'all') {
-    params.set('status', filters.status);
+  if (filters.statuses.length > 0) {
+    params.set('status', filters.statuses.map((s) => s.toLowerCase()).join(','));
   }
 
-  if (filters.technicalOnly) {
-    params.set('tech', 'true');
+  if (filters.technical.length > 0) {
+    params.set('tech', filters.technical.join(','));
   }
 
   if (filters.showPast) {
@@ -258,69 +367,22 @@ export function filtersToSearchParams(filters: EventFilterState): URLSearchParam
 export function hasActiveFilters(filters: EventFilterState): boolean {
   return (
     filters.search.trim() !== '' ||
-    filters.theme !== 'all' ||
-    filters.mode !== 'all' ||
-    filters.type !== 'all' ||
-    filters.price !== 'all' ||
-    filters.status !== 'all' ||
-    filters.technicalOnly ||
+    filters.themes.length > 0 ||
+    filters.modes.length > 0 ||
+    filters.types.length > 0 ||
+    filters.prices.length > 0 ||
+    filters.statuses.length > 0 ||
+    filters.technical.length > 0 ||
     filters.showPast
   );
 }
 
 /**
- * Groups events by their start_date (IST) for Timeline view.
+ * Toggles an item in an array (adding if absent, removing if present).
  */
-export interface DateGroup {
-  dateKey: string;
-  formattedDate: string;
-  events: EventSummary[];
-}
-
-export function groupEventsByDate(events: EventSummary[]): DateGroup[] {
-  const map = new Map<string, EventSummary[]>();
-
-  for (const event of events) {
-    const dateKey = event.schedule_summary?.start_date || 'TBA';
-    const group = map.get(dateKey) || [];
-    group.push(event);
-    map.set(dateKey, group);
+export function toggleArrayItem<T>(array: readonly T[], item: T): T[] {
+  if (array.includes(item)) {
+    return array.filter((i) => i !== item);
   }
-
-  const groups: DateGroup[] = [];
-  for (const [dateKey, groupEvents] of map.entries()) {
-    groups.push({
-      dateKey,
-      formattedDate: dateKey === 'TBA' ? 'Dates To Be Announced' : dateKey,
-      events: groupEvents,
-    });
-  }
-
-  return groups;
+  return [...array, item];
 }
-
-/* =========================================================================
-   Unit-Style Verification Cases
-   =========================================================================
-   1. matchesSearch:
-      - matchesSearch({ name: 'CodeCurrent' }, 'code') => true
-      - matchesSearch({ tags: ['AI', 'Robotics'] }, 'robotics') => true
-      - matchesSearch({ category: 'Photography' }, 'photo') => true
-      - matchesSearch({ name: 'SpanCraft' }, 'xyz') => false
-
-   2. isPastEvent:
-      - { event_status: 'COMPLETED' } => true
-      - { registration_status: 'CLOSED' } => true
-      - { event_status: 'ACTIVE', registration_status: 'OPEN' } => false
-
-   3. filterEvents:
-      - Excludes past events when showPast=false
-      - Includes past events when showPast=true
-      - Filters by theme correctly mapping raw category to ThemeId
-      - Filters by technicalOnly and price accurately
-
-   4. sortEvents:
-      - soonest: orders 2026-11-13 before 2026-11-15
-      - price-asc: 0 before 500 before 1000
-      - price-desc: 1000 before 500 before 0
-   ========================================================================= */

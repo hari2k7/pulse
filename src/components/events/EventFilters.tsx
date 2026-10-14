@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { THEMES } from '../../lib/themes';
-import type { EventFilterState, PriceFilterOption } from '../../lib/filters';
+import { toggleArrayItem, type EventFilterState } from '../../lib/filters';
 
 export interface EventFiltersProps {
   filters: EventFilterState;
@@ -23,8 +23,8 @@ export const EventFilters: FC<EventFiltersProps> = ({
     <div className={`space-y-6 ${className}`}>
       {/* Header with Clear All button */}
       <div className="flex items-center justify-between pb-3 border-b border-[#FF7A1A]/20">
-        <h3 className="text-xs font-bold text-[#F3EFE8] uppercase tracking-[0.2em] font-display">
-          Filter Multiverse
+        <h3 className="text-xs font-bold text-[#F3EFE8] uppercase tracking-wider font-display">
+          Filters
         </h3>
         {hasActive && (
           <button
@@ -40,32 +40,18 @@ export const EventFilters: FC<EventFiltersProps> = ({
       {/* 1. Themes */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
-          Dimension Theme
+          Theme
         </legend>
         <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            role="button"
-            aria-pressed={filters.theme === 'all'}
-            onClick={() => onChange({ theme: 'all' })}
-            className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
-              filters.theme === 'all'
-                ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
-                : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
-            }`}
-          >
-            All Themes
-          </button>
           {THEMES.filter((t) => t !== 'More').map((theme) => {
-            const isSelected = filters.theme === theme;
+            const isSelected = filters.themes.includes(theme);
             const count = themeCounts[theme] ?? 0;
             return (
               <button
                 key={theme}
                 type="button"
-                role="button"
                 aria-pressed={isSelected}
-                onClick={() => onChange({ theme: isSelected ? 'all' : theme })}
+                onClick={() => onChange({ themes: toggleArrayItem(filters.themes, theme) })}
                 className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors inline-flex items-center gap-1.5 ${
                   isSelected
                     ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
@@ -91,31 +77,30 @@ export const EventFilters: FC<EventFiltersProps> = ({
       {/* 2. Format / Type */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
-          Event Format
+          Format
         </legend>
         <div className="flex flex-wrap gap-1.5">
-          {(
-            [
-              { value: 'all', label: 'All Formats' },
-              { value: 'EVENT', label: 'Competitions & Events' },
-              { value: 'WORKSHOP', label: 'Workshops' },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              role="button"
-              aria-pressed={filters.type === opt.value}
-              onClick={() => onChange({ type: opt.value })}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
-                filters.type === opt.value
-                  ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
-                  : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {[
+            { value: 'EVENT' as const, label: 'Competitions' },
+            { value: 'WORKSHOP' as const, label: 'Workshops' },
+          ].map((opt) => {
+            const isSelected = filters.types.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ types: toggleArrayItem(filters.types, opt.value) })}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
+                  isSelected
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
+                    : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 
@@ -125,28 +110,27 @@ export const EventFilters: FC<EventFiltersProps> = ({
           Mode
         </legend>
         <div className="flex flex-wrap gap-1.5">
-          {(
-            [
-              { value: 'all', label: 'All Modes' },
-              { value: 'OFFLINE', label: 'In-Person (Sanctum)' },
-              { value: 'ONLINE', label: 'Virtual (Astral)' },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              role="button"
-              aria-pressed={filters.mode === opt.value}
-              onClick={() => onChange({ mode: opt.value })}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
-                filters.mode === opt.value
-                  ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
-                  : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {[
+            { value: 'OFFLINE' as const, label: 'In-Person' },
+            { value: 'ONLINE' as const, label: 'Virtual' },
+          ].map((opt) => {
+            const isSelected = filters.modes.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ modes: toggleArrayItem(filters.modes, opt.value) })}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
+                  isSelected
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
+                    : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 
@@ -156,92 +140,90 @@ export const EventFilters: FC<EventFiltersProps> = ({
           Admission
         </legend>
         <div className="flex flex-wrap gap-1.5">
-          {(
-            [
-              { value: 'all', label: 'Any Price' },
-              { value: 'free', label: 'Free Only' },
-              { value: 'paid', label: 'Paid Pass' },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              role="button"
-              aria-pressed={filters.price === opt.value}
-              onClick={() => onChange({ price: opt.value as PriceFilterOption })}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
-                filters.price === opt.value
-                  ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
-                  : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {[
+            { value: 'free' as const, label: 'Free' },
+            { value: 'paid' as const, label: 'Paid' },
+          ].map((opt) => {
+            const isSelected = filters.prices.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ prices: toggleArrayItem(filters.prices, opt.value) })}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
+                  isSelected
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
+                    : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 
       {/* 5. Registration Status */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
-          Registration
+          Status
         </legend>
         <div className="flex flex-wrap gap-1.5">
-          {(
-            [
-              { value: 'all', label: 'All Statuses' },
-              { value: 'OPEN', label: 'Open Now' },
-              { value: 'SOLD_OUT', label: 'Sold Out' },
-              { value: 'CLOSED', label: 'Closed' },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              role="button"
-              aria-pressed={filters.status === opt.value}
-              onClick={() => onChange({ status: opt.value })}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
-                filters.status === opt.value
-                  ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
-                  : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {[
+            { value: 'OPEN' as const, label: 'Open' },
+            { value: 'CLOSED' as const, label: 'Closed' },
+            { value: 'SOLD_OUT' as const, label: 'Sold Out' },
+          ].map((opt) => {
+            const isSelected = filters.statuses.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ statuses: toggleArrayItem(filters.statuses, opt.value) })}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
+                  isSelected
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
+                    : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
       </fieldset>
 
-      {/* 6. Technical Focus Toggle */}
-      <div className="pt-2">
-        <label className="flex items-center gap-3 cursor-pointer group select-none">
-          <input
-            type="checkbox"
-            checked={filters.technicalOnly}
-            onChange={(e) => onChange({ technicalOnly: e.target.checked })}
-            className="w-4 h-4 rounded border-white/20 bg-[#0D1020] text-[#3BA3FF] focus:ring-2 focus:ring-[#3BA3FF] focus:ring-offset-0 cursor-pointer"
-          />
-          <span className="text-xs font-semibold text-[#F3EFE8] group-hover:text-[#3BA3FF] transition-colors">
-            ⚡ Technical Realm Only
-          </span>
-        </label>
-      </div>
-
-      {/* 7. Show Past Events Toggle */}
-      <div className="pt-1">
-        <label className="flex items-center gap-3 cursor-pointer group select-none">
-          <input
-            type="checkbox"
-            checked={filters.showPast}
-            onChange={(e) => onChange({ showPast: e.target.checked })}
-            className="w-4 h-4 rounded border-white/20 bg-[#0D1020] text-[#FF7A1A] focus:ring-2 focus:ring-[#FF7A1A] focus:ring-offset-0 cursor-pointer"
-          />
-          <span className="text-xs font-medium text-[#B8B3C7] group-hover:text-[#F3EFE8] transition-colors">
-            Include Closed / Completed events
-          </span>
-        </label>
-      </div>
+      {/* 6. Technical Track */}
+      <fieldset className="space-y-2.5">
+        <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
+          Track
+        </legend>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { value: 'technical' as const, label: 'Technical' },
+            { value: 'non-technical' as const, label: 'Non-Technical' },
+          ].map((opt) => {
+            const isSelected = filters.technical.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ technical: toggleArrayItem(filters.technical, opt.value) })}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
+                  isSelected
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
+                    : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
     </div>
   );
 };
