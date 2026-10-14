@@ -1,24 +1,30 @@
 import { useEffect, useRef, useState, type FC } from 'react';
 
-interface RuneItem {
+interface NoteItem {
   x: number;
   y: number;
+  vx: number;
+  vy: number;
+  rot: number;
+  rotSpeed: number;
   alpha: number;
-  glyph: number;
+  color: string;
+  type: number; // 0: single eighth note, 1: beamed pair, 2: quarter note
+  size: number;
   active: boolean;
 }
 
-const MAX_RUNES = 8;
+const MAX_NOTES = 10;
+const NOTE_COLORS = ['#FF7A1A', '#F5B642'];
 
 export const StrangeCursor: FC = () => {
   const [enabled, setEnabled] = useState<boolean>(false);
   const [isInteractive, setIsInteractive] = useState<boolean>(false);
+  const [isDown, setIsDown] = useState<boolean>(false);
 
   // References for transform/opacity hardware-accelerated nodes
-  const coreRef = useRef<HTMLDivElement>(null);
-  const mandalaRef = useRef<HTMLDivElement>(null);
-  const rippleNodeRef = useRef<HTMLDivElement>(null);
-  const runeElementsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const diamondRef = useRef<HTMLDivElement>(null);
+  const noteElementsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   // Smooth lerp coordinates
   const posRef = useRef({
@@ -30,26 +36,24 @@ export const StrangeCursor: FC = () => {
     lastSpawnY: -100,
   });
 
-  // Click ripple state
-  const rippleStateRef = useRef({
-    x: 0,
-    y: 0,
-    scale: 0.3,
-    alpha: 0,
-    active: false,
-  });
-
-  // Pooled trailing rune glyphs (max 8 elements)
-  const runesPoolRef = useRef<RuneItem[]>(
-    Array.from({ length: MAX_RUNES }, () => ({
+  // Pooled music notes (max 10 reused elements)
+  const notesPoolRef = useRef<NoteItem[]>(
+    Array.from({ length: MAX_NOTES }, () => ({
       x: -100,
       y: -100,
+      vx: 0,
+      vy: 0,
+      rot: 0,
+      rotSpeed: 0,
       alpha: 0,
-      glyph: 0,
+      color: NOTE_COLORS[0],
+      type: 0,
+      size: 16,
       active: false,
     }))
   );
   const poolIndexRef = useRef<number>(0);
+  const colorIndexRef = useRef<number>(0);
 
   // Lazy-load after first paint & verify pointer/motion capability
   useEffect(() => {
@@ -84,26 +88,42 @@ export const StrangeCursor: FC = () => {
 
     let animId: number;
 
+    const spawnNote = (
+      x: number,
+      y: number,
+      vx = (Math.random() - 0.5) * 0.9,
+      vy = -(Math.random() * 0.6 + 0.8)
+    ) => {
+      const idx = poolIndexRef.current;
+      const note = notesPoolRef.current[idx];
+      note.x = x;
+      note.y = y;
+      note.vx = vx;
+      note.vy = vy;
+      note.rot = (Math.random() - 0.5) * 20;
+      note.rotSpeed = (Math.random() - 0.5) * 0.8;
+      note.alpha = 1;
+      note.color = NOTE_COLORS[colorIndexRef.current % NOTE_COLORS.length];
+      colorIndexRef.current += 1;
+      note.type = Math.floor(Math.random() * 3);
+      note.size = Math.floor(Math.random() * 5) + 14; // 14px to 18px
+      note.active = true;
+
+      poolIndexRef.current = (idx + 1) % MAX_NOTES;
+    };
+
     const handlePointerMove = (e: PointerEvent) => {
       posRef.current.targetX = e.clientX;
       posRef.current.targetY = e.clientY;
 
-      // Spawn a trailing rune if moved at least 28px from last position
+      // Spawn one note every ~45px of movement (never when still)
       const dx = e.clientX - posRef.current.lastSpawnX;
       const dy = e.clientY - posRef.current.lastSpawnY;
-      if (dx * dx + dy * dy > 784) {
+      if (dx * dx + dy * dy >= 2025) {
+        // 45^2 = 2025
         posRef.current.lastSpawnX = e.clientX;
         posRef.current.lastSpawnY = e.clientY;
-
-        const idx = poolIndexRef.current;
-        const rune = runesPoolRef.current[idx];
-        rune.x = e.clientX;
-        rune.y = e.clientY;
-        rune.alpha = 0.75;
-        rune.glyph = Math.floor(Math.random() * 4);
-        rune.active = true;
-
-        poolIndexRef.current = (idx + 1) % MAX_RUNES;
+        spawnNote(e.clientX, e.clientY);
       }
 
       // Check if over interactive elements (buttons, links, cards)
@@ -117,64 +137,58 @@ export const StrangeCursor: FC = () => {
     };
 
     const handlePointerDown = (e: PointerEvent) => {
-      rippleStateRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        scale: 0.35,
-        alpha: 0.9,
-        active: true,
-      };
+      setIsDown(true);
+
+      // Click: a burst of 3 to 4 notes flying outward and fading
+      const burstCount = Math.floor(Math.random() * 2) + 3; // 3 or 4
+      for (let i = 0; i < burstCount; i++) {
+        const angle = (i * (Math.PI * 2)) / burstCount + (Math.random() - 0.5) * 0.4;
+        const speed = Math.random() * 1.5 + 1.2;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed - 0.6; // drift slightly upward
+        spawnNote(e.clientX, e.clientY, vx, vy);
+      }
+    };
+
+    const handlePointerUp = () => {
+      setIsDown(false);
     };
 
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+    window.addEventListener('pointerup', handlePointerUp, { passive: true });
 
     // Single rAF loop for transform/opacity updates only
     const render = () => {
       const pos = posRef.current;
-      pos.currentX += (pos.targetX - pos.currentX) * 0.4;
-      pos.currentY += (pos.targetY - pos.currentY) * 0.4;
+      pos.currentX += (pos.targetX - pos.currentX) * 0.35;
+      pos.currentY += (pos.targetY - pos.currentY) * 0.35;
 
-      // 1. Core rotating spell circle position
-      if (coreRef.current) {
-        coreRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
+      // 1. Diamond cursor position
+      if (diamondRef.current) {
+        diamondRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
       }
 
-      // 2. Mandala sigil position (expands on interactive)
-      if (mandalaRef.current) {
-        mandalaRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
-      }
-
-      // 3. Click ripple animation (ring expands and fades)
-      const ripple = rippleStateRef.current;
-      if (ripple.active && rippleNodeRef.current) {
-        ripple.scale += 0.08;
-        ripple.alpha -= 0.04;
-
-        if (ripple.alpha <= 0 || ripple.scale > 1.8) {
-          ripple.active = false;
-          rippleNodeRef.current.style.opacity = '0';
-        } else {
-          rippleNodeRef.current.style.transform = `translate3d(${ripple.x}px, ${ripple.y}px, 0) scale(${ripple.scale})`;
-          rippleNodeRef.current.style.opacity = String(ripple.alpha);
-        }
-      }
-
-      // 4. Trailing runes update (transform/opacity only)
-      const pool = runesPoolRef.current;
-      for (let i = 0; i < MAX_RUNES; i++) {
-        const rune = pool[i];
-        const el = runeElementsRef.current[i];
+      // 2. Trailing music notes update (drifts up & sideways, fades over ~900ms)
+      const pool = notesPoolRef.current;
+      for (let i = 0; i < MAX_NOTES; i++) {
+        const note = pool[i];
+        const el = noteElementsRef.current[i];
         if (!el) continue;
 
-        if (rune.active) {
-          rune.alpha -= 0.025;
-          if (rune.alpha <= 0) {
-            rune.active = false;
+        if (note.active) {
+          note.x += note.vx;
+          note.y += note.vy;
+          note.rot += note.rotSpeed;
+          note.alpha -= 0.018; // ~900ms at 60fps (54 frames)
+
+          if (note.alpha <= 0) {
+            note.active = false;
             el.style.opacity = '0';
           } else {
-            el.style.transform = `translate3d(${rune.x}px, ${rune.y}px, 0)`;
-            el.style.opacity = String(rune.alpha);
+            el.style.transform = `translate3d(${note.x}px, ${note.y}px, 0) rotate(${note.rot}deg) scale(${note.size / 16})`;
+            el.style.opacity = String(note.alpha);
+            el.style.color = note.color;
           }
         }
       }
@@ -198,6 +212,7 @@ export const StrangeCursor: FC = () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled]);
@@ -209,121 +224,62 @@ export const StrangeCursor: FC = () => {
       className="pointer-events-none fixed inset-0 z-50 overflow-hidden select-none"
       aria-hidden="true"
     >
-      {/* 1. Small orange/gold spell circle (thin double ring with tiny runes and tick marks, slowly rotating) */}
+      {/* 1. Small Diamond: roughly 10px square rotated 45deg, gold/orange fill with lighter outline */}
       <div
-        ref={coreRef}
-        className="absolute top-0 left-0 w-7 h-7 -ml-3.5 -mt-3.5 will-change-transform"
+        ref={diamondRef}
+        className="absolute top-0 left-0 w-0 h-0 will-change-transform"
       >
-        <svg
-          viewBox="0 0 28 28"
-          fill="none"
-          className="w-full h-full animate-core-cw opacity-85"
-        >
-          {/* Outer thin ring */}
-          <circle cx="14" cy="14" r="12" stroke="#FF7A1A" strokeWidth="1" />
-          {/* Inner concentric ring with dashed runes */}
-          <circle cx="14" cy="14" r="9" stroke="#F5B642" strokeWidth="0.8" strokeDasharray="3 2" />
-          {/* Cardinal tick marks */}
-          <line x1="14" y1="0.5" x2="14" y2="3.5" stroke="#F5B642" strokeWidth="1" />
-          <line x1="14" y1="24.5" x2="14" y2="27.5" stroke="#F5B642" strokeWidth="1" />
-          <line x1="0.5" y1="14" x2="3.5" y2="14" stroke="#F5B642" strokeWidth="1" />
-          <line x1="24.5" y1="14" x2="27.5" y2="14" stroke="#F5B642" strokeWidth="1" />
-          {/* Central geometric rune node */}
-          <rect x="12" y="12" width="4" height="4" transform="rotate(45 14 14)" fill="#FF7A1A" opacity="0.9" />
-        </svg>
+        <div
+          className={`w-2.5 h-2.5 -ml-[5px] -mt-[5px] bg-[#FF7A1A] border border-[#FCE881] shadow-[0_0_8px_rgba(255,122,26,0.65)] transition-transform duration-300 ease-out ${
+            isDown
+              ? 'scale-75 rotate-[45deg]'
+              : isInteractive
+              ? 'scale-[1.8] rotate-[65deg]'
+              : 'scale-100 rotate-[45deg]'
+          }`}
+        />
       </div>
 
-      {/* 2. Expanded Mandala Sigil (over buttons, links, cards; rings rotating in opposite directions) */}
-      <div
-        ref={mandalaRef}
-        className={`absolute top-0 left-0 w-16 h-16 -ml-8 -mt-8 will-change-transform transition-all duration-300 ${
-          isInteractive ? 'scale-100 opacity-90' : 'scale-0 opacity-0'
-        }`}
-      >
-        <div className="relative w-full h-full">
-          {/* Outer Layer: Clockwise rotating ring with runes & tick marks */}
-          <svg
-            viewBox="0 0 64 64"
-            fill="none"
-            className="absolute inset-0 w-full h-full animate-sigil-cw"
-          >
-            {/* Outer perimeter double ring */}
-            <circle cx="32" cy="32" r="30" stroke="#FF7A1A" strokeWidth="1" />
-            <circle cx="32" cy="32" r="27" stroke="#F5B642" strokeWidth="0.8" strokeDasharray="4 2.5" />
-            {/* 8 Geometric tick runes */}
-            <path d="M32 0 L34 4 L30 4 Z" fill="#F5B642" />
-            <path d="M32 64 L34 60 L30 60 Z" fill="#F5B642" />
-            <path d="M0 32 L4 34 L4 30 Z" fill="#F5B642" />
-            <path d="M64 32 L60 34 L60 30 Z" fill="#F5B642" />
-            <circle cx="10" cy="10" r="1.5" fill="#FF7A1A" />
-            <circle cx="54" cy="10" r="1.5" fill="#FF7A1A" />
-            <circle cx="10" cy="54" r="1.5" fill="#FF7A1A" />
-            <circle cx="54" cy="54" r="1.5" fill="#FF7A1A" />
-          </svg>
-
-          {/* Inner Layer: Counter-clockwise rotating geometric star & inner rune marks */}
-          <svg
-            viewBox="0 0 64 64"
-            fill="none"
-            className="absolute inset-0 w-full h-full animate-sigil-ccw"
-          >
-            {/* Intersecting 8-pointed geometric star */}
-            <rect x="17" y="17" width="30" height="30" stroke="#F5B642" strokeWidth="0.8" opacity="0.8" />
-            <rect x="17" y="17" width="30" height="30" transform="rotate(45 32 32)" stroke="#FF7A1A" strokeWidth="0.8" opacity="0.8" />
-            {/* Mid ring */}
-            <circle cx="32" cy="32" r="21" stroke="#F5B642" strokeWidth="0.7" strokeDasharray="2 3" />
-            <circle cx="32" cy="32" r="12" stroke="#FF7A1A" strokeWidth="0.8" />
-          </svg>
-        </div>
-      </div>
-
-      {/* 3. Click Spell-Circle Ripple Ring */}
-      <div
-        ref={rippleNodeRef}
-        className="absolute top-0 left-0 w-16 h-16 -ml-8 -mt-8 will-change-transform opacity-0"
-      >
-        <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
-          <circle cx="32" cy="32" r="28" stroke="#F5B642" strokeWidth="1.2" strokeDasharray="5 3" />
-          <circle cx="32" cy="32" r="22" stroke="#FF7A1A" strokeWidth="0.8" />
-        </svg>
-      </div>
-
-      {/* 4. Pooled tiny rune glyphs (max 8 elements) that briefly fade near pointer while moving */}
-      {Array.from({ length: MAX_RUNES }).map((_, i) => (
+      {/* 2. Pooled music notes: 10 reused DOM elements emitting SVG shapes */}
+      {Array.from({ length: MAX_NOTES }).map((_, i) => (
         <div
           key={i}
           ref={(el) => {
-            runeElementsRef.current[i] = el;
+            noteElementsRef.current[i] = el;
           }}
-          className="absolute top-0 left-0 w-3.5 h-3.5 -ml-[7px] -mt-[7px] will-change-transform opacity-0"
+          className="absolute top-0 left-0 w-4 h-4 -ml-2 -mt-2 will-change-transform opacity-0 pointer-events-none"
         >
-          <svg viewBox="0 0 14 14" fill="none" className="w-full h-full">
-            {i % 4 === 0 && (
-              /* Diamond with central cross */
-              <path d="M7 1 L13 7 L7 13 L1 7 Z M7 4 L7 10 M4 7 L10 7" stroke="#F5B642" strokeWidth="0.9" />
-            )}
-            {i % 4 === 1 && (
-              /* Concentric ring with equilateral triangle */
-              <>
-                <circle cx="7" cy="7" r="6" stroke="#FF7A1A" strokeWidth="0.8" />
-                <polygon points="7,3 11,10 3,10" stroke="#F5B642" strokeWidth="0.75" />
-              </>
-            )}
-            {i % 4 === 2 && (
-              /* Octagonal rune node with bisector */
-              <>
-                <polygon points="5,1 9,1 13,5 13,9 9,13 5,13 1,9 1,5" stroke="#F5B642" strokeWidth="0.8" />
-                <line x1="7" y1="2" x2="7" y2="12" stroke="#FF7A1A" strokeWidth="0.75" />
-              </>
-            )}
-            {i % 4 === 3 && (
-              /* Alchemical square & circle sigil */
-              <>
-                <rect x="3" y="3" width="8" height="8" stroke="#FF7A1A" strokeWidth="0.8" />
-                <circle cx="7" cy="7" r="3" stroke="#F5B642" strokeWidth="0.75" />
-              </>
-            )}
-          </svg>
+          {i % 3 === 0 && (
+            /* Single eighth note */
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-full h-full drop-shadow-[0_0_4px_currentColor]"
+            >
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+            </svg>
+          )}
+          {i % 3 === 1 && (
+            /* Beamed pair */
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-full h-full drop-shadow-[0_0_4px_currentColor]"
+            >
+              <path d="M10 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V5l8-2v8.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V1L10 3z" />
+            </svg>
+          )}
+          {i % 3 === 2 && (
+            /* Quarter note */
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-full h-full drop-shadow-[0_0_4px_currentColor]"
+            >
+              <ellipse cx="9" cy="17" rx="4" ry="3" transform="rotate(-25 9 17)" />
+              <rect x="11.5" y="4" width="2" height="13" />
+            </svg>
+          )}
         </div>
       ))}
     </div>
