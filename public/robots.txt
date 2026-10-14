@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pulse.pages.dev/sitemap.xml
+Sitemap: https://strange.pages.dev/sitemap.xml

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FC } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Wordmark } from '../ui/Wordmark';
+import { StrangeLogo } from '../strange/StrangeLogo';
 
 export const Navbar: FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -52,8 +52,8 @@ export const Navbar: FC = () => {
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors py-1 relative ${
       isActive
-        ? 'text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#e50914]'
-        : 'text-[#b3b3b3] hover:text-white'
+        ? 'text-[#F3EFE8] font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#FF7A1A]'
+        : 'text-[#B8B3C7] hover:text-[#F3EFE8]'
     }`;
 
   const closeMobileMenu = () => {
@@ -62,16 +62,16 @@ export const Navbar: FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-colors duration-200 ease-out ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-colors duration-300 ease-out ${
         isScrolled
-          ? 'bg-[#141414]/95 backdrop-blur-md shadow-md shadow-black/50 border-b border-white/5'
-          : 'bg-gradient-to-b from-black/85 via-black/40 to-transparent'
+          ? 'bg-[#07060D]/95 backdrop-blur-md shadow-lg shadow-black/60 border-b border-[#FF7A1A]/20'
+          : 'bg-gradient-to-b from-[#07060D]/90 via-[#07060D]/40 to-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-18 flex items-center justify-between">
-        {/* Brand Wordmark */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+        {/* STRANGE Logo */}
         <div className="flex items-center gap-8">
-          <Wordmark size="md" />
+          <StrangeLogo size="md" />
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-6" aria-label="Main Navigation">
@@ -81,6 +81,12 @@ export const Navbar: FC = () => {
             <NavLink to="/events" className={navLinkClass}>
               Events
             </NavLink>
+            <NavLink to="/schedule" className={navLinkClass}>
+              Schedule
+            </NavLink>
+            <a href="/#about" className="text-sm font-medium text-[#B8B3C7] hover:text-[#F3EFE8] transition-colors py-1">
+              About
+            </a>
             {import.meta.env.DEV && (
               <NavLink to="/styleguide" className={navLinkClass}>
                 Styleguide
@@ -89,13 +95,13 @@ export const Navbar: FC = () => {
           </nav>
         </div>
 
-        {/* Right side info or mobile menu toggle */}
+        {/* Right side CTA or mobile menu toggle */}
         <div className="flex items-center gap-4">
           <NavLink
             to="/events"
-            className="hidden sm:inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-[4px] bg-[#e50914] text-white hover:bg-[#f40612] transition-transform hover:scale-105 active:scale-95"
+            className="hidden sm:inline-flex items-center text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-md bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] shadow-md hover:shadow-[#FF7A1A]/40 transition-all hover:scale-105 active:scale-95"
           >
-            Find Tickets
+            Explore Events
           </NavLink>
 
           {/* Mobile Menu Button */}
@@ -103,7 +109,7 @@ export const Navbar: FC = () => {
             ref={menuButtonRef}
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-[4px] text-white/80 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914]"
+            className="md:hidden p-2 rounded-md text-[#F3EFE8] hover:bg-[#1A1030] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-nav-menu"
             aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
@@ -139,7 +145,7 @@ export const Navbar: FC = () => {
       {mobileMenuOpen && (
         <div
           id="mobile-nav-menu"
-          className="md:hidden bg-[#181818] border-b border-white/10 px-4 pt-3 pb-6 shadow-2xl animate-in slide-in-from-top-2 duration-150"
+          className="md:hidden bg-[#0D1020] border-b border-[#FF7A1A]/20 px-4 pt-3 pb-6 shadow-2xl animate-in slide-in-from-top-2 duration-150"
           role="dialog"
           aria-modal="true"
           aria-label="Mobile Navigation"
@@ -151,10 +157,10 @@ export const Navbar: FC = () => {
               end
               onClick={closeMobileMenu}
               className={({ isActive }) =>
-                `px-3 py-2.5 rounded-[4px] text-base font-medium transition-colors ${
+                `px-3 py-2.5 rounded-md text-base font-medium transition-colors ${
                   isActive
-                    ? 'bg-[#e50914] text-white'
-                    : 'text-[#b3b3b3] hover:text-white hover:bg-white/5'
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold'
+                    : 'text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030]'
                 }`
               }
             >
@@ -164,24 +170,44 @@ export const Navbar: FC = () => {
               to="/events"
               onClick={closeMobileMenu}
               className={({ isActive }) =>
-                `px-3 py-2.5 rounded-[4px] text-base font-medium transition-colors ${
+                `px-3 py-2.5 rounded-md text-base font-medium transition-colors ${
                   isActive
-                    ? 'bg-[#e50914] text-white'
-                    : 'text-[#b3b3b3] hover:text-white hover:bg-white/5'
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold'
+                    : 'text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030]'
                 }`
               }
             >
-              Discover Events
+              Multiverse Events
             </NavLink>
+            <NavLink
+              to="/schedule"
+              onClick={closeMobileMenu}
+              className={({ isActive }) =>
+                `px-3 py-2.5 rounded-md text-base font-medium transition-colors ${
+                  isActive
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold'
+                    : 'text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030]'
+                }`
+              }
+            >
+              Festival Schedule
+            </NavLink>
+            <a
+              href="/#about"
+              onClick={closeMobileMenu}
+              className="px-3 py-2.5 rounded-md text-base font-medium text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030] transition-colors"
+            >
+              About
+            </a>
             {import.meta.env.DEV && (
               <NavLink
                 to="/styleguide"
                 onClick={closeMobileMenu}
                 className={({ isActive }) =>
-                  `px-3 py-2.5 rounded-[4px] text-base font-medium transition-colors ${
+                  `px-3 py-2.5 rounded-md text-base font-medium transition-colors ${
                     isActive
-                      ? 'bg-[#e50914] text-white'
-                      : 'text-[#b3b3b3] hover:text-white hover:bg-white/5'
+                      ? 'bg-[#FF7A1A] text-[#07060D] font-bold'
+                      : 'text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030]'
                   }`
                 }
               >

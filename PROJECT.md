@@ -1,10 +1,10 @@
-# PULSE: Render72 Hackathon
+# STRANGE: A Tech Fest Beyond Reality
 
 > Read this file first in every session and follow the **Hard rules**.
 
 ## 1. Goal
 
-A dark, streaming-style events website ("PULSE", tagline: *Feel what's happening.*).
+An immersive, mystical tech fest website ("STRANGE — A Tech Fest Beyond Reality").
 Judged on: Lighthouse (Performance, Accessibility, SEO), responsiveness (375 / 768 / 1280 px),
 backend error handling, scalability readiness, design & creativity, features & UX.
 
@@ -15,20 +15,22 @@ backend error handling, scalability readiness, design & creativity, features & U
 ## 2. Stack
 
 React 18 + TypeScript (strict) + Vite + React Router + Tailwind CSS.
+TanStack Query is the application cache layer for robust query synchronization, prefetching, and state resilience.
 GSAP + ScrollTrigger (dynamic import only). ESLint with `eslint-plugin-jsx-a11y`.
-No backend, no database, no auth, no state library, no data-fetching library.
+No backend, no database, no auth.
 Deploy: Cloudflare Pages or Vercel (build `npm run build`, output `dist`, SPA rewrite).
 
 ## 3. Routes
 
 | Route | Purpose |
 |---|---|
-| `/` | Landing: billboard hero + horizontal rows |
-| `/events` | Discovery: search, filters, sort, grid + timeline views |
-| `/events/:id` | Detail: banner, sticky summary, tabbed content |
+| `/` | Landing: Sling Ring portal hero, stats, countdown, featured multiverse events, sanctum footer |
+| `/events` | Discovery (Multiverse Index): search, filters, sort, grid + timeline views, dimension badges |
+| `/events/:id` | Detail (Dimensional Index): cinematic banner, summary card, vertical section rail, deep hash links |
+| `/schedule` | Schedule timeline: all upcoming events grouped by day (IST) with filter integration |
 | `*` | Not found |
 
-Pages `/events` and `/events/:id` are lazy-loaded (`React.lazy` + `Suspense`).
+Pages `/events`, `/events/:id`, and `/schedule` are lazy-loaded (`React.lazy` + `Suspense`).
 
 ## 4. Events API (public, no auth, JSON, CORS open)
 
@@ -61,7 +63,7 @@ type Coordinator = { id?: string; name?: string; role?: string; contact?: string
 
 Detail rules from this data:
 - `schedules` items have no end date. A multi-day event is several items (one per day). Venue exists only here.
-- The API gives no registration URL. Do not build a register button. Show the registration status and deadline.
+- The API gives no registration URL. Do not build a fake register form. If an event supplies a registration URL, link out (`rel="noopener"`); otherwise show registration status + deadline and anchor to event details.
 - When `is_per_head` is false the seats are **team slots** (e.g. 24 teams). Say "team slots left" instead of "seats left".
   Say "Only N left" when 5 or fewer remain.
 - `coordinators[].contact`: if it contains "@" render a `mailto:` link, if it is mostly digits render `tel:`, else plain text.
@@ -70,25 +72,45 @@ Detail rules from this data:
 - Gallery images come as Pexels URLs with `w=1400` (no height). Render with a fixed aspect ratio and `object-cover`.
 - `.ics`: convert IST (UTC+5:30) times to UTC and use `Z` timestamps so every calendar app agrees.
 
-## 5. Design
+## 4b. Festival Configuration (`src/config/festival.ts`)
 
-Netflix-*style* layout (billboard + horizontal rows), **original branding**.
-Never use the Netflix name, logo, "N" mark or their font.
+Festival metadata is configured in `src/config/festival.ts`:
+- Optional fields: `festivalName`, `tagline`, `startDate` (ISO with +05:30), `endDate`, `venue`, `collegeName`, `organizers[]`, `sponsors[] {name, logoUrl, href, tier}`, `socials[]`, `contactEmail`, `expectedParticipants`, `participatingColleges`.
+- **Strict honesty rule**: Anything unset is HIDDEN, never faked. Clear TODO comments indicate user-configurable fields.
+- Countdown targets `festival.ts` `startDate`; if unset, falls back to the earliest upcoming ACTIVE event start from the API and labels it "Next event in". If neither exists, the countdown is hidden.
+- Counters: Real event list length live from API. Prize pool is summed ONLY from events whose detail data is loaded/cached in TanStack Query; if unavailable, the counter is hidden. Participants and colleges come ONLY from `festival.ts`, else hidden.
 
-| Token | Value |
-|---|---|
-| Background | `#141414` (nav gradient / footer may use `#000`) |
-| Surface | `#181818`, hover `#2F2F2F` |
-| Accent | `#E50914` (CTAs, active state, seats bar) |
-| Text | `#FFFFFF`, muted `#B3B3B3` |
-| Radius | 4px |
+## 5. Design & Tokens
 
-- Wordmark: text "PULSE" in heavy condensed caps, the "P" in accent red. Real text, not an image.
-- Fonts: one display + one body, self-hosted (e.g. `@fontsource`), max 2 weights each, `font-display: swap`,
-  preload only the display font.
-- Cards: 3:2 image, name, category, date (IST), price/Free, status badge, thin red seats bar.
-  Hover **and** focus-visible lift using `transform` only.
-- Status is always shown with text labels, never color alone.
+Immersive mystical tech fest aesthetic ("STRANGE — A Tech Fest Beyond Reality").
+Original branding, spell-circle geometry, glowing Sling Ring portal accents, Sanctum Sanctorum motifs.
+
+| Token | Value | Semantic Role |
+|---|---|---|
+| Background Midnight | `#07060D` | Deep cosmic void |
+| Background Navy | `#0D1020` | Surface cards & panels |
+| Background Violet-Dark | `#1A1030` | Elevated surfaces & overlays |
+| Portal Orange | `#FF7A1A` | Sling ring fire, primary CTAs, Hackathons |
+| Portal Gold | `#F5B642` | Magic glow, accents, secondary highlights |
+| Electric Blue | `#3BA3FF` | Technical dimension |
+| Magic Green | `#3DDC97` | Workshops dimension |
+| Mystic Violet | `#A66BFF` | Non-technical dimension |
+| Cloak Red | `#C8102E` | Cloak of Levitation motif (used sparingly) |
+| Text Primary | `#F3EFE8` | High contrast body & titles (AA verified) |
+| Text Muted | `#B8B3C7` | Subtle labels, secondary text (AA verified) |
+
+- **Typography**:
+  - Display: `Cinzel` (Google Fonts / `@fontsource/cinzel`, weights 400 & 700), self-hosted with metric-matched fallback for 0 CLS. Preload display font.
+  - Body: `Inter` (weights 400 & 600), self-hosted with metric-matched fallback.
+  - `font-display: swap` on all fonts.
+- **Motion & Spacing**:
+  - Durations: 150ms (micro), 300ms (standard), 500ms (transition), 800ms (cinematic).
+  - Primary easing: `cubic-bezier(0.16, 1, 0.3, 1)`.
+  - Radii: 6px (`rounded-sm`), 12px (`rounded-md`), 20px (`rounded-lg`), 9999px (`rounded-full`).
+- **Original SVG Assets**:
+  - STRANGE logo (wordmark + circular sigil), spell-circle concentric rings, glyph set (Overview, Schedule, Prizes, Rules, FAQs, Contacts), Eye of Agamotto artifact, Sanctum seal, Cloak silhouette. No Marvel logos or copyrighted images.
+- **Cards**: Shared structure with category-specific portal colorways (electric blue, orange, green, violet), mixed-size layout with flagship span, red cloak sweep reveal, View Transitions API support.
+- **Status Badges**: Always accompanied by explicit text labels, never color alone.
 
 ## 6. Display rules
 
@@ -99,7 +121,26 @@ Never use the Netflix name, logo, "N" mark or their font.
 - Format dates in IST. Tolerate missing or invalid dates (show nothing or "TBA").
 - Hide any section whose data is missing or empty. Never render `undefined` or `null`.
 - "Closing soon" = `registration_status === "OPEN"` and a future `registration_deadline`, nearest first.
-- Rows come from real data only. Never invent events or categories.
+- Event categories mapped to themes in `src/lib/themes.ts`.
+- Event images are Pexels URLs with `w=1200&h=800&fit=crop` in the query string. Keep 3:2 ratio.
+
+## 7. Resilience & Caching
+
+- Timeout 8 s via `AbortController`. Up to 2 retries with backoff. No retry on 404. Never retry forever.
+- Validate responses (`events` is an array, `event` exists). Handle invalid JSON.
+- Typed error kinds: `network | timeout | http | notfound | invalid`.
+- **TanStack Query Cache Layer**: In-memory query caching, stale-while-revalidate, background refetching, and synchronous placeholder data propagation.
+- `localStorage` fallback persistence (`pulse_events_cache`). If live call fails and cache exists, show "Showing saved data" banner with Retry button.
+- States for every data view: skeleton, success, empty (not an error), error + Retry, not-found.
+- Dev-only failure simulation via `?sim=timeout|500|empty|badjson|404` (disabled in production).
+
+## 7b. Page structure and shell
+
+- `index.html` contains a static, styled shell (midnight background, navbar, headline) with inline critical CSS
+  and default meta tags (title, description, Open Graph, theme-color), so first paint and SEO do not
+  depend on JS.
+- Per-route `<title>` and meta description. Pattern: `STRANGE — A Tech Fest Beyond Reality`, `Events — STRANGE`, `Schedule — STRANGE`, `{event name} — STRANGE`.
+- `public/` contains `robots.txt`, `sitemap.xml` (`/`, `/events`, `/schedule`), and an SPA rewrite.
 
 ### Real data facts (checked against the live API, 30 events)
 
@@ -123,29 +164,8 @@ Never use the Netflix name, logo, "N" mark or their font.
   Featured, Closing soon, Free to join, Workshops, then one row per **theme** that has 3 or more events.
   "Online" has only 4 events, so use it as a filter chip rather than a row.
 - Event images are Pexels URLs with `w=1200&h=800&fit=crop` in the query string. Cards request a smaller size
+- Event images are Pexels URLs with `w=1200&h=800&fit=crop` in the query string. Cards request a smaller size
   (e.g. `w=600&h=400`), the billboard a larger one, with `srcset`/`sizes`. Keep the 3:2 ratio.
-
-## 7. Resilience
-
-- Timeout 8 s via `AbortController`. Up to 2 retries with backoff. No retry on 404. Never retry forever.
-- Validate responses (`events` is an array, `event` exists). Handle invalid JSON.
-- Typed error kinds: `network | timeout | http | notfound | invalid`.
-- Cache last good list in `localStorage` (try/catch, with timestamp). If the live call fails and a cache
-  exists, show it with a "Showing saved data" banner and a Retry button.
-- Fetch the list once per session and share it across pages. Filter/sort client-side.
-- States for every data view: skeleton, success, empty (not an error), error + Retry, not-found.
-- One broken image must never break a card. Use a designed fallback with the same aspect ratio.
-- Dev-only failure simulation via `?sim=timeout|500|empty|badjson|404` (disabled in production builds).
-
-## 7b. Page structure and shell
-
-- `index.html` contains a static, styled shell (dark background, navbar, headline) with inline critical CSS
-  and good default meta tags (title, description, Open Graph, theme-color), so first paint and SEO do not
-  depend on JS.
-- Per-route `<title>` and meta description. Pattern: `PULSE — Discover events`, `Events — PULSE`,
-  `{event name} — PULSE`.
-- `public/` contains `robots.txt`, `sitemap.xml` (`/`, `/events`), and an SPA rewrite
-  (`_redirects`: `/* /index.html 200` for Cloudflare, or `vercel.json` rewrites).
 
 ## 8. Hard rules
 

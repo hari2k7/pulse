@@ -33,4 +33,4 @@ export function getImageSrcSet(
 }
 
 export const FALLBACK_IMAGE_DATA_URI =
-  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="%231c1c1c"/><text x="50%" y="50%" fill="%23666666" font-family="sans-serif" font-size="20" text-anchor="middle" dominant-baseline="middle">PULSE EVENT</text></svg>';
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="%2307060D"/><circle cx="300" cy="200" r="80" stroke="%23FF7A1A" stroke-width="1.5" stroke-dasharray="6 4" fill="none" opacity="0.4"/><text x="50%" y="50%" fill="%23F3EFE8" font-family="Cinzel, Georgia, serif" font-size="20" letter-spacing="4" text-anchor="middle" dominant-baseline="middle">STRANGE EVENT</text></svg>';

@@ -4,8 +4,8 @@ import { NotFound } from '../components/states/NotFound';
 
 export const NotFoundPage: FC = () => {
   useDocumentMeta({
-    title: '404 Not Found — PULSE',
-    description: 'The requested page could not be found.',
+    title: '404 Not Found — STRANGE',
+    description: 'This dimensional coordinate does not exist in our reality.',
   });
 
   return (

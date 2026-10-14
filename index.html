@@ -3,19 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#141414" />
-    <title>PULSE — Discover events</title>
+    <meta name="theme-color" content="#07060D" />
+    <title>STRANGE — A Tech Fest Beyond Reality</title>
     <meta
       name="description"
-      content="Feel what's happening. Find workshops, competitions and festivals happening near you. Search, filter and save the events you love."
+      content="STRANGE — A Tech Fest Beyond Reality. Discover hackathons, workshops, and competitions across the multiverse."
     />
-    <meta property="og:title" content="PULSE — Discover events" />
+    <meta property="og:title" content="STRANGE — A Tech Fest Beyond Reality" />
     <meta
       property="og:description"
-      content="Feel what's happening. Find workshops, competitions and festivals happening near you. Search, filter and save the events you love."
+      content="A Tech Fest Beyond Reality. Discover hackathons, workshops, and competitions across the multiverse."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="PULSE" />
+    <meta property="og:site_name" content="STRANGE" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- Early connection hints for API & images -->
@@ -24,10 +24,10 @@
     <link rel="preconnect" href="https://images.pexels.com" crossorigin />
     <link rel="dns-prefetch" href="https://images.pexels.com" />
 
-    <!-- Preload only display font per PROJECT.md Section 5 -->
+    <!-- Preload only display font per Stage 1 & Hard rules -->
     <link
       rel="preload"
-      href="/fonts/bebas-neue-latin-400-normal.woff2"
+      href="/fonts/cinzel-latin-700-normal.woff2"
       as="font"
       type="font/woff2"
       crossorigin
@@ -36,19 +36,19 @@
     <!-- Static inline critical CSS: identical font stacks and metric-matched fallbacks for 0 CLS -->
     <style>
       @font-face {
-        font-family: 'Bebas Neue';
+        font-family: 'Cinzel';
         font-style: normal;
-        font-weight: 400;
+        font-weight: 700;
         font-display: swap;
-        src: url('/fonts/bebas-neue-latin-400-normal.woff2') format('woff2');
+        src: url('/fonts/cinzel-latin-700-normal.woff2') format('woff2');
       }
       @font-face {
-        font-family: 'Bebas Neue Fallback';
-        src: local('Impact'), local('Arial Black'), local('sans-serif');
-        ascent-override: 95%;
-        descent-override: 20%;
+        font-family: 'Cinzel Fallback';
+        src: local('Georgia'), local('Times New Roman'), local('serif');
+        ascent-override: 96%;
+        descent-override: 24%;
         line-gap-override: 0%;
-        size-adjust: 90%;
+        size-adjust: 100%;
       }
       @font-face {
         font-family: 'Inter';
@@ -71,8 +71,8 @@
       }
       html, body {
         margin: 0;
-        background-color: #141414;
-        color: #ffffff;
+        background-color: #07060D;
+        color: #F3EFE8;
         font-family: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-synthesis: none;
       }
@@ -81,27 +81,27 @@
       }
       .shell-container {
         min-height: 100vh;
-        background-color: #141414;
+        background-color: #07060D;
         display: flex;
         flex-direction: column;
       }
       .shell-header {
-        height: 68px;
+        height: 72px;
         display: flex;
         align-items: center;
         padding: 0 2rem;
-        background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(20, 20, 20, 0) 100%);
+        background: linear-gradient(180deg, rgba(7, 6, 13, 0.95) 0%, rgba(7, 6, 13, 0) 100%);
       }
       .shell-brand {
-        font-family: 'Bebas Neue', 'Bebas Neue Fallback', sans-serif;
-        font-weight: 400;
-        font-size: 1.75rem;
-        letter-spacing: 0.1em;
+        font-family: 'Cinzel', 'Cinzel Fallback', Georgia, serif;
+        font-weight: 700;
+        font-size: 1.5rem;
+        letter-spacing: 0.25em;
         text-transform: uppercase;
-        font-synthesis: none;
+        color: #F3EFE8;
       }
       .shell-brand-accent {
-        color: #e50914;
+        color: #FF7A1A;
       }
       .shell-content {
         flex: 1;
@@ -110,42 +110,52 @@
         justify-content: center;
         align-items: center;
         text-align: center;
-        padding: 4rem 1.5rem;
-        max-width: 900px;
+        padding: 5rem 1.5rem;
+        max-width: 960px;
         margin: 0 auto;
       }
+      .shell-tagline {
+        font-size: 0.875rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: #F5B642;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
       .shell-title {
-        font-family: 'Bebas Neue', 'Bebas Neue Fallback', sans-serif;
-        font-weight: 400;
-        font-size: clamp(2.5rem, 8vw, 4.5rem);
-        letter-spacing: 0.05em;
-        margin: 0 0 1.25rem;
-        line-height: 1;
-        font-synthesis: none;
+        font-family: 'Cinzel', 'Cinzel Fallback', Georgia, serif;
+        font-weight: 700;
+        font-size: clamp(2.5rem, 7vw, 5rem);
+        letter-spacing: 0.08em;
+        margin: 0 0 1.5rem;
+        line-height: 1.1;
+        color: #F3EFE8;
       }
       .shell-title span {
-        color: #e50914;
+        color: #FF7A1A;
       }
       .shell-desc {
         font-size: 1.25rem;
-        color: #b3b3b3;
+        color: #B8B3C7;
         margin: 0;
-        line-height: 1.5;
+        line-height: 1.6;
+        max-width: 650px;
       }
     </style>
   </head>
   <body>
     <div id="root">
-      <!-- Static styled shell placeholder replaced seamlessly on React mount -->
+      <!-- Static styled shell placeholder visible instantly without JS for maximum LCP & 0 CLS -->
       <div class="shell-container">
         <header class="shell-header">
           <div class="shell-brand">
-            <span class="shell-brand-accent">P</span>ULSE
+            STR<span class="shell-brand-accent">A</span>NGE
           </div>
         </header>
         <main class="shell-content">
-          <h1 class="shell-title">FEEL WHAT'S <span>HAPPENING.</span></h1>
-          <p class="shell-desc">Feel what's happening.</p>
+          <div class="shell-tagline">Annual Technical Convergence</div>
+          <h1 class="shell-title">A TECH FEST <span>BEYOND REALITY.</span></h1>
+          <p class="shell-desc">Step through the Sling Ring into alternate dimensions of code, engineering, and innovation.</p>
         </main>
       </div>
     </div>

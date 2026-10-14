@@ -24,23 +24,23 @@ export const Button: FC<ButtonProps> = ({
   ...rest
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium rounded-[4px] cursor-pointer transition-transform duration-150 ease-out active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#e50914] focus-visible:ring-offset-[#141414] disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none disabled:transform-none select-none';
+    'inline-flex items-center justify-center font-semibold rounded-md cursor-pointer transition-all duration-200 ease-out active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FF7A1A] focus-visible:ring-offset-[#07060D] disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none disabled:transform-none select-none';
 
   const sizeClasses = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5 h-8',
-    md: 'text-sm px-4 py-2 gap-2 h-10',
+    sm: 'text-xs px-3.5 py-1.5 gap-1.5 h-8',
+    md: 'text-sm px-4.5 py-2 gap-2 h-10',
     lg: 'text-base px-6 py-3 gap-2.5 h-12',
   }[size];
 
   const variantClasses = {
     primary:
-      'bg-[#e50914] text-white hover:bg-[#f40612] hover:-translate-y-0.5 active:translate-y-0 shadow-md shadow-[#e50914]/20',
+      'bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] hover:from-[#f06f13] hover:to-[#e5a835] hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-[#FF7A1A]/25 hover:shadow-[#FF7A1A]/45',
     secondary:
-      'bg-[#2f2f2f] text-white hover:bg-[#3f3f3f] hover:-translate-y-0.5 active:translate-y-0',
+      'bg-[#1A1030] border border-[#FF7A1A]/30 text-[#F3EFE8] hover:bg-[#251745] hover:border-[#FF7A1A]/60 hover:-translate-y-0.5 active:translate-y-0',
     outline:
-      'border border-white/30 text-white hover:border-white hover:bg-white/5 hover:-translate-y-0.5 active:translate-y-0',
+      'border border-[#F5B642]/40 text-[#F3EFE8] hover:border-[#F5B642] hover:bg-[#F5B642]/10 hover:-translate-y-0.5 active:translate-y-0',
     ghost:
-      'bg-transparent text-white/80 hover:text-white hover:bg-white/10 hover:-translate-y-0.5 active:translate-y-0',
+      'bg-transparent text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030]/60 hover:-translate-y-0.5 active:translate-y-0',
   }[variant];
 
   return (
@@ -53,13 +53,13 @@ export const Button: FC<ButtonProps> = ({
     >
       {isLoading ? (
         <span
-          className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+          className="inline-block w-4 h-4 border-2 border-[#07060D]/30 border-t-[#07060D] rounded-full animate-spin"
           aria-hidden="true"
         />
       ) : (
         leftIcon
       )}
-      <span>{children}</span>
+      {children}
       {!isLoading && rightIcon}
     </button>
   );
