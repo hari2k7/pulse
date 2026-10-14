@@ -1,10 +1,8 @@
 import {
   useState,
-  useMemo,
-  useEffect,
   type FC,
 } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvent } from '../hooks/useEvents';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -12,9 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/states/ErrorState';
 import { NotFound } from '../components/states/NotFound';
-import { Glyph, type GlyphType } from '../components/strange/DimensionalGlyphs';
 import { downloadIcs } from '../lib/calendar';
-import { getEventDimension } from '../lib/dimensions';
 import {
   formatDateIST,
   formatPrice,
@@ -28,151 +24,18 @@ import {
   FALLBACK_IMAGE_DATA_URI,
 } from '../lib/images';
 
-type SectionKey = 'overview' | 'schedule' | 'prizes' | 'rules' | 'faqs' | 'contacts' | 'gallery';
-
-interface SectionConfig {
-  key: SectionKey;
-  label: string;
-  glyph: GlyphType;
-}
-
 export const EventDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
-  const location = useLocation();
   const { status, event, error, isPlaceholder, retry } = useEvent(id);
 
   const [shareFeedback, setShareFeedback] = useState<string>('');
   const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({ 0: true });
-  const [activeSection, setActiveSection] = useState<SectionKey>(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const hash = window.location.hash.replace('#', '') as SectionKey;
-      return hash || 'overview';
-    }
-    return 'overview';
-  });
 
   // SEO metadata per route pattern: "{event name} — STRANGE"
   useDocumentMeta({
     title: event?.name ? `${event.name} — STRANGE` : 'Event Detail — STRANGE',
     description: event?.blurb || 'Event schedule, tickets, and detail.',
   });
-
-  const dimension = getEventDimension({
-    category: event?.category,
-    event_type: event?.event_type,
-    is_technical: event?.is_technical,
-  });
-
-  // Calculate available sections based on non-empty data (hides detail sections while only summary data exists)
-  const availableSections = useMemo<SectionConfig[]>(() => {
-    if (!event) return [];
-    const list: SectionConfig[] = [];
-
-    // 1. Overview
-    if (
-      event.description ||
-      (event.highlights && event.highlights.length > 0) ||
-      (event.what_to_expect && event.what_to_expect.length > 0)
-    ) {
-      list.push({ key: 'overview', label: 'Overview', glyph: 'overview' });
-    }
-
-    // 2. Schedule
-    if (
-      (event.schedules && event.schedules.length > 0) ||
-      event.schedule_summary?.start_date
-    ) {
-      list.push({ key: 'schedule', label: 'Schedule', glyph: 'schedule' });
-    }
-
-    // 3. Prizes (strictly if non-empty detail data)
-    if (!isPlaceholder && event.prizes && event.prizes.length > 0) {
-      list.push({ key: 'prizes', label: 'Prizes & Rewards', glyph: 'prizes' });
-    }
-
-    // 4. Rules & Eligibility
-    if (
-      !isPlaceholder &&
-      ((event.eligibility && event.eligibility.length > 0) ||
-        (event.prerequisites && event.prerequisites.length > 0) ||
-        (event.rules && event.rules.length > 0))
-    ) {
-      list.push({ key: 'rules', label: 'Rules & Protocols', glyph: 'rules' });
-    }
-
-    // 5. FAQs
-    if (!isPlaceholder && event.faqs && event.faqs.length > 0) {
-      list.push({ key: 'faqs', label: 'FAQs', glyph: 'faqs' });
-    }
-
-    // 6. Contacts
-    if (
-      !isPlaceholder &&
-      ((event.organizers && event.organizers.length > 0) ||
-        (event.coordinators && event.coordinators.length > 0))
-    ) {
-      list.push({ key: 'contacts', label: 'Contacts', glyph: 'contacts' });
-    }
-
-    // 7. Gallery
-    if (!isPlaceholder && event.gallery_images && event.gallery_images.length > 0) {
-      list.push({ key: 'gallery', label: 'Gallery', glyph: 'overview' });
-    }
-
-    return list;
-  }, [event, isPlaceholder]);
-
-  // Scroll to hash on mount/hash change
-  useEffect(() => {
-    const hash = location.hash.replace('#', '');
-    if (hash) {
-      const el = document.getElementById(hash);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  }, [location.hash]);
-
-  // Sync active section when user changes hash directly or via browser history
-  useEffect(() => {
-    const handleHash = () => {
-      const hash = window.location.hash.replace('#', '') as SectionKey;
-      if (hash && availableSections.some((s) => s.key === hash)) {
-        setActiveSection(hash);
-      }
-    };
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, [availableSections]);
-
-  // IntersectionObserver to highlight current active section during scroll
-  useEffect(() => {
-    if (availableSections.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const key = entry.target.id as SectionKey;
-            setActiveSection(key);
-            // Replace hash without triggering scroll jump
-            if (window.history.replaceState) {
-              window.history.replaceState(null, '', `#${key}`);
-            }
-            break;
-          }
-        }
-      },
-      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
-    );
-
-    availableSections.forEach((sec) => {
-      const el = document.getElementById(sec.key);
-      if (el) observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, [availableSections]);
 
   // Share handler
   const handleShare = async () => {
@@ -195,7 +58,7 @@ export const EventDetailPage: FC = () => {
 
     try {
       await navigator.clipboard.writeText(window.location.href);
-      setShareFeedback('Link copied to astral clipboard!');
+      setShareFeedback('Link copied to clipboard!');
       setTimeout(() => setShareFeedback(''), 3000);
     } catch {
       setShareFeedback('Failed to copy link');
@@ -215,10 +78,10 @@ export const EventDetailPage: FC = () => {
   // Not found state
   if (error?.kind === 'notfound' || (!event && status === 'success')) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 min-h-[60vh] flex items-center justify-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-20 min-h-[60vh] flex items-center justify-center">
         <NotFound
-          title="Dimensional Event Not Found"
-          message="The event coordinate you are trying to reach does not exist or has dissolved into the multiverse."
+          title="Event Not Found"
+          message="The event you are looking for does not exist or has been removed."
         />
       </div>
     );
@@ -227,10 +90,10 @@ export const EventDetailPage: FC = () => {
   // Error state
   if (status === 'error' || !event) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 min-h-[60vh] flex items-center justify-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-20 min-h-[60vh] flex items-center justify-center">
         <ErrorState
-          title="Portal Transmission Error"
-          message={error?.message || 'Failed to retrieve dimensional event details.'}
+          title="Failed to Load Event"
+          message={error?.message || 'Unable to retrieve event details. Please try again.'}
           errorKind={error?.kind}
           onRetry={retry}
         />
@@ -257,13 +120,28 @@ export const EventDetailPage: FC = () => {
 
   const isOpen = event.registration_status === 'OPEN';
 
+  // Section presence flags for full-width auto-span
+  const hasSchedule = Boolean(event.schedules?.length || event.schedule_summary?.start_date);
+  const hasPrizes = !isPlaceholder && Boolean(event.prizes && event.prizes.length > 0);
+  const hasExpect = Boolean(event.what_to_expect && event.what_to_expect.length > 0);
+  const hasEligibility = !isPlaceholder && Boolean(
+    (event.eligibility && event.eligibility.length > 0) ||
+    (event.prerequisites && event.prerequisites.length > 0)
+  );
+  const hasRules = !isPlaceholder && Boolean(event.rules && event.rules.length > 0);
+  const hasFaqs = !isPlaceholder && Boolean(event.faqs && event.faqs.length > 0);
+  const hasGallery = !isPlaceholder && Boolean(event.gallery_images && event.gallery_images.length > 0);
+  const coordinators = event.coordinators || [];
+  const organizers = event.organizers || [];
+  const hasContacts = !isPlaceholder && (coordinators.length > 0 || organizers.length > 0);
+
   return (
-    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] overflow-x-hidden">
+    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-[var(--navbar-height)]">
       {/* -------------------------------------------------------------
-          1. Large Cinematic Banner Hero
+          HERO BANNER with Title, Category, Blurb & Horizontal Facts Strip
           ------------------------------------------------------------- */}
-      <section className="relative w-full min-h-[500px] sm:min-h-[580px] lg:h-[70vh] flex items-end pb-12 sm:pb-16 overflow-hidden">
-        {/* Full-bleed background image */}
+      <section className="relative w-full border-b border-white/10 bg-[#0D1020]/50 overflow-hidden">
+        {/* Banner image background with dark gradients */}
         <div className="absolute inset-0 z-0">
           <img
             src={optimizedBanner}
@@ -276,32 +154,23 @@ export const EventDetailPage: FC = () => {
             fetchPriority="high"
             decoding="sync"
             style={{ viewTransitionName: `event-img-${event.id}` }}
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-center opacity-30"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#07060D] via-[#07060D]/80 to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#07060D] via-[#07060D]/70 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#07060D]/90 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07060D] via-[#07060D]/85 to-[#07060D]/70 pointer-events-none" />
         </div>
 
-        {/* Hero Content Overlay */}
-        <div className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-          <div className="flex flex-wrap items-center gap-2.5">
+        {/* Hero Content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/events"
-              className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors inline-block"
+              className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors"
             >
               Back to Events
             </Link>
             <span className="text-white/20">•</span>
             {event.category && (
-              <span
-                className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border"
-                style={{
-                  backgroundColor: `${dimension.colorHex}20`,
-                  borderColor: `${dimension.colorHex}60`,
-                  color: dimension.colorHex,
-                }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-[#07060D]/90 border border-white/20 text-[#F3EFE8]">
                 {event.category}
               </span>
             )}
@@ -309,462 +178,106 @@ export const EventDetailPage: FC = () => {
             {event.event_mode && <Badge variant="outline">{event.event_mode}</Badge>}
           </div>
 
-          <h1 className="font-display font-bold text-3xl sm:text-5xl md:text-6xl text-[#F3EFE8] leading-tight max-w-4xl drop-shadow-lg">
+          <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-[#F3EFE8] leading-tight max-w-4xl">
             {event.name}
           </h1>
 
           {event.blurb && (
-            <p className="text-sm sm:text-base md:text-lg text-[#B8B3C7] max-w-3xl leading-relaxed">
+            <p className="text-sm sm:text-base text-[#B8B3C7] max-w-3xl leading-relaxed">
               {event.blurb}
             </p>
           )}
 
-          {/* Quick Logistic Bar */}
-          <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-[#B8B3C7] pt-2">
-            <span>{formatDateIST(event.schedule_summary)}</span>
-            {scheduleVenue && <span>{scheduleVenue}</span>}
-            {event.min_teamsize && event.max_teamsize && (
-              <span>
-                Team Size: {event.min_teamsize} – {event.max_teamsize}
-              </span>
-            )}
-            {event.registration_status && (
-              <StatusBadge type="registration" status={event.registration_status} size="sm" />
-            )}
+          {/* Compact Horizontal Facts Strip with Primary Action Beside It */}
+          <div className="mt-4 p-4 rounded-xl bg-[#0D1020] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+              <div>
+                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Date & Time</span>
+                <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.schedule_summary)}</span>
+              </div>
+              {scheduleVenue && (
+                <div>
+                  <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Venue</span>
+                  <span className="text-[#F3EFE8] font-medium">{scheduleVenue}</span>
+                </div>
+              )}
+              {event.min_teamsize && event.max_teamsize && (
+                <div>
+                  <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Team Size</span>
+                  <span className="text-[#F3EFE8] font-medium">
+                    {event.min_teamsize === event.max_teamsize
+                      ? `${event.min_teamsize} Member${event.min_teamsize > 1 ? 's' : ''}`
+                      : `${event.min_teamsize} – ${event.max_teamsize} Members`}
+                  </span>
+                </div>
+              )}
+              {event.registration_deadline && (
+                <div>
+                  <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Deadline</span>
+                  <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.registration_deadline)}</span>
+                </div>
+              )}
+              <div>
+                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Status</span>
+                {event.registration_status && (
+                  <StatusBadge type="registration" status={event.registration_status} size="sm" />
+                )}
+              </div>
+            </div>
+
+            {/* Primary Action Button beside facts strip */}
+            <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
+              {isOpen ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-full md:w-auto uppercase tracking-wider font-bold text-xs px-5 py-2"
+                  onClick={() => {
+                    alert(
+                      `Registration for ${event.name}.\nVenue: ${scheduleVenue || 'Campus Event Desk'}.\nPlease arrive with your confirmation and college identification.`
+                    );
+                  }}
+                >
+                  Register
+                </Button>
+              ) : (
+                <span className="inline-block px-3 py-1.5 rounded bg-white/10 text-xs font-semibold text-[#B8B3C7]">
+                  Registration Closed
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* -------------------------------------------------------------
-          2. Dimensional Main Grid: Index Rail + Sections + Sticky Card
+          COMPOSED 12-COLUMN MAIN LAYOUT
           ------------------------------------------------------------- */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 w-full">
+        {/* ROW 1: Overview (Wide) + Sticky Summary Card (Narrow) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Vertical Dimensional Index Rail (Sticky Desktop) */}
-          <aside className="hidden lg:block lg:col-span-3 sticky top-24 space-y-4">
-            <nav
-              aria-label="Dimensional Index"
-              className="p-4 rounded-xl bg-[#0D1020] border border-[#FF7A1A]/20 shadow-xl space-y-1"
-            >
-              <h2 className="text-xs font-bold uppercase tracking-[0.2em] font-display text-[#F5B642] px-3 py-2 border-b border-white/5 mb-2">
-                Dimensional Index
-              </h2>
-              {availableSections.map((sec) => {
-                const isActive = activeSection === sec.key;
-                return (
-                  <a
-                    key={sec.key}
-                    href={`#${sec.key}`}
-                    aria-current={isActive ? 'true' : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
-                      isActive
-                        ? 'bg-[#FF7A1A] text-[#07060D] font-bold shadow-md shadow-[#FF7A1A]/30'
-                        : 'text-[#B8B3C7] hover:text-[#F3EFE8] hover:bg-[#1A1030]'
-                    }`}
-                  >
-                    <Glyph type={sec.glyph} size={16} />
-                    <span>{sec.label}</span>
-                  </a>
-                );
-              })}
-            </nav>
-
-            {/* Quick Share / Calendar utility */}
-            <div className="p-4 rounded-xl bg-[#0D1020]/70 border border-white/5 space-y-2 text-xs">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs"
-                onClick={() => downloadIcs(event)}
-              >
-                Add To Calendar (.ics)
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs text-[#B8B3C7]"
-                onClick={handleShare}
-              >
-                Share Event
-              </Button>
-              {shareFeedback && (
-                <p className="text-[11px] text-[#3DDC97] text-center font-medium">
-                  {shareFeedback}
-                </p>
-              )}
-            </div>
-          </aside>
-
-          {/* Middle Column: Editorial Content Sections */}
-          <main className="lg:col-span-5 space-y-16">
-            {/* 1. Overview Section */}
-            <section id="overview" className="scroll-mt-24 space-y-6">
-              <div className="flex items-center gap-3 border-b border-[#FF7A1A]/20 pb-3">
-                <Glyph type="overview" size={22} className="text-[#FF7A1A]" />
-                <h2 className="text-2xl font-display font-bold text-[#F3EFE8]">OVERVIEW</h2>
-              </div>
-
-              {event.description && (
-                <div className="space-y-4 text-sm sm:text-base text-[#B8B3C7] leading-relaxed">
-                  {event.description.split('\n\n').map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))}
-                </div>
-              )}
-
-              {event.highlights && event.highlights.length > 0 && (
-                <div className="p-5 rounded-lg bg-[#0D1020] border border-white/10 space-y-3">
-                  <h3 className="font-display font-bold text-sm uppercase tracking-wider text-[#F5B642]">
-                    Key Highlights
-                  </h3>
-                  <ul className="space-y-2 text-xs sm:text-sm text-[#B8B3C7]">
-                    {event.highlights.map((h, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-[#FF7A1A] mt-0.5">✦</span>
-                        <span>{h}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {event.what_to_expect && event.what_to_expect.length > 0 && (
-                <div className="p-5 rounded-lg bg-[#0D1020] border border-white/10 space-y-3">
-                  <h3 className="font-display font-bold text-sm uppercase tracking-wider text-[#3BA3FF]">
-                    What To Expect
-                  </h3>
-                  <ul className="space-y-2 text-xs sm:text-sm text-[#B8B3C7]">
-                    {event.what_to_expect.map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-[#3BA3FF] mt-0.5">►</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </section>
-
-            {/* 2. Schedule Section */}
-            {(event.schedules?.length || event.schedule_summary?.start_date) && (
-              <section id="schedule" className="scroll-mt-24 space-y-6">
-                <div className="flex items-center gap-3 border-b border-[#FF7A1A]/20 pb-3">
-                  <Glyph type="schedule" size={22} className="text-[#3BA3FF]" />
-                  <h2 className="text-2xl font-display font-bold text-[#F3EFE8]">
-                    TEMPORAL TIMELINE
-                  </h2>
-                </div>
-
-                <div className="space-y-4">
-                  {event.schedules && event.schedules.length > 0 ? (
-                    event.schedules.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 rounded-lg bg-[#0D1020] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                      >
-                        <div className="space-y-1">
-                          <span className="font-mono text-xs text-[#FF7A1A] font-bold">
-                            Day {idx + 1} • {item.event_date ? formatDateIST(item.event_date) : 'TBA'}
-                          </span>
-                          <p className="text-sm font-semibold text-[#F3EFE8]">
-                            {item.start_time || '09:00'} – {item.end_time || '17:00'} IST
-                          </p>
-                        </div>
-                        {(item.venue || scheduleVenue) && (
-                          <div className="text-xs text-[#B8B3C7]">
-                            {item.venue || scheduleVenue}
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-4 rounded-lg bg-[#0D1020] border border-white/10">
-                      <p className="text-sm text-[#F3EFE8] font-semibold">
-                        {formatDateIST(event.schedule_summary)}
-                      </p>
-                      {scheduleVenue && (
-                        <p className="text-xs text-[#B8B3C7] mt-1">{scheduleVenue}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {/* 3. Prizes Section (Tiered Podium Panels) */}
-            {!isPlaceholder && event.prizes && event.prizes.length > 0 && (
-              <section id="prizes" className="scroll-mt-24 space-y-6">
-                <div className="flex items-center gap-3 border-b border-[#FF7A1A]/20 pb-3">
-                  <Glyph type="prizes" size={22} className="text-[#F5B642]" />
-                  <h2 className="text-2xl font-display font-bold text-[#F3EFE8]">
-                    PODIUM REWARDS
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {event.prizes.map((prize, idx) => {
-                    const isGold = prize.rank === 1 || idx === 0;
-                    const isSilver = prize.rank === 2 || idx === 1;
-                    const isBronze = prize.rank === 3 || idx === 2;
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`p-5 rounded-xl border flex flex-col justify-between space-y-3 ${
-                          isGold
-                            ? 'bg-[#1A1030] border-[#F5B642]/60 shadow-lg shadow-[#F5B642]/10'
-                            : isSilver
-                            ? 'bg-[#0D1020] border-white/30'
-                            : isBronze
-                            ? 'bg-[#0D1020] border-[#FF7A1A]/30'
-                            : 'bg-[#0D1020] border-white/10'
-                        }`}
-                      >
-                        <div className="space-y-1">
-                          <span
-                            className={`text-[11px] font-bold uppercase tracking-widest ${
-                              isGold
-                                ? 'text-[#F5B642]'
-                                : isSilver
-                                ? 'text-zinc-300'
-                                : 'text-[#FF7A1A]'
-                            }`}
-                          >
-                            {prize.rank ? `Rank #${prize.rank}` : `Podium Position`}
-                          </span>
-                          <h3 className="font-display font-bold text-lg text-[#F3EFE8]">
-                            {prize.title || (isGold ? 'Grand Champion' : 'Runner Up')}
-                          </h3>
-                          {prize.description && (
-                            <p className="text-xs text-[#B8B3C7] leading-relaxed">
-                              {prize.description}
-                            </p>
-                          )}
-                        </div>
-
-                        {typeof prize.amount === 'number' && prize.amount > 0 && (
-                          <div className="font-mono text-2xl font-bold text-[#F5B642] pt-2 border-t border-white/5">
-                            ₹{prize.amount.toLocaleString('en-IN')}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* 4. Rules & Eligibility */}
-            {!isPlaceholder &&
-              ((event.rules && event.rules.length > 0) ||
-                (event.eligibility && event.eligibility.length > 0) ||
-                (event.prerequisites && event.prerequisites.length > 0)) && (
-                <section id="rules" className="scroll-mt-24 space-y-6">
-                  <div className="flex items-center gap-3 border-b border-[#FF7A1A]/20 pb-3">
-                    <Glyph type="rules" size={22} className="text-[#FF7A1A]" />
-                    <h2 className="text-2xl font-display font-bold text-[#F3EFE8]">
-                      RULES & PROTOCOLS
-                    </h2>
-                  </div>
-
-                  {event.eligibility && event.eligibility.length > 0 && (
-                    <div className="p-4 rounded-lg bg-[#0D1020] border border-white/10 space-y-2">
-                      <h3 className="font-display font-bold text-xs uppercase tracking-wider text-[#3BA3FF]">
-                        Eligibility Criteria
-                      </h3>
-                      <ul className="space-y-1.5 text-xs text-[#B8B3C7]">
-                        {event.eligibility.map((el, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-[#3BA3FF]">✓</span>
-                            <span>{el}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {event.rules && event.rules.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="font-display font-bold text-sm uppercase tracking-wider text-[#F3EFE8]">
-                        Mandatory Guidelines
-                      </h3>
-                      <ol className="space-y-2.5">
-                        {event.rules.map((rule, idx) => (
-                          <li
-                            key={idx}
-                            className="p-3.5 rounded-lg bg-[#0D1020] border border-white/10 text-xs sm:text-sm text-[#B8B3C7] flex items-start gap-3"
-                          >
-                            <span className="font-mono font-bold text-[#FF7A1A] shrink-0">
-                              {String(idx + 1).padStart(2, '0')}.
-                            </span>
-                            <span>{rule}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                </section>
-              )}
-
-            {/* 5. FAQs Accordion */}
-            {!isPlaceholder && event.faqs && event.faqs.length > 0 && (
-              <section id="faqs" className="scroll-mt-24 space-y-6">
-                <div className="flex items-center gap-3 border-b border-[#FF7A1A]/20 pb-3">
-                  <Glyph type="faqs" size={22} className="text-[#3DDC97]" />
-                  <h2 className="text-2xl font-display font-bold text-[#F3EFE8]">
-                    FREQUENTLY ASKED QUERIES
-                  </h2>
-                </div>
-
-                <div className="space-y-3">
-                  {event.faqs.map((faq, idx) => {
-                    const isOpenState = Boolean(openFaqs[idx]);
-                    return (
-                      <div
-                        key={idx}
-                        className="rounded-lg bg-[#0D1020] border border-white/10 overflow-hidden"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleFaq(idx)}
-                          aria-expanded={isOpenState}
-                          aria-controls={`faq-answer-${idx}`}
-                          className="w-full p-4 text-left flex items-center justify-between gap-4 font-semibold text-sm text-[#F3EFE8] hover:text-[#FF7A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
-                        >
-                          <span>{faq.question}</span>
-                          <span className="font-mono text-base text-[#FF7A1A] shrink-0">
-                            {isOpenState ? '−' : '+'}
-                          </span>
-                        </button>
-                        {isOpenState && (
-                          <div
-                            id={`faq-answer-${idx}`}
-                            className="px-4 pb-4 text-xs sm:text-sm text-[#B8B3C7] leading-relaxed border-t border-white/5 pt-3"
-                          >
-                            {faq.answer}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* 6. Contacts Section */}
-            {!isPlaceholder &&
-              ((event.organizers && event.organizers.length > 0) ||
-                (event.coordinators && event.coordinators.length > 0)) && (
-                <section id="contacts" className="scroll-mt-24 space-y-6">
-                  <div className="flex items-center gap-3 border-b border-[#FF7A1A]/20 pb-3">
-                    <Glyph type="contacts" size={22} className="text-[#A66BFF]" />
-                    <h2 className="text-2xl font-display font-bold text-[#F3EFE8]">
-                      SANCTUM CONDUITS
-                    </h2>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {event.coordinators?.map((coord, idx) => {
-                      const contact = coord.contact || '';
-                      const isEmail = contact.includes('@');
-                      const isPhone = !isEmail && /^\+?[0-9\s\-()]+$/.test(contact);
-
-                      return (
-                        <div
-                          key={idx}
-                          className="p-4 rounded-lg bg-[#0D1020] border border-white/10 space-y-1.5"
-                        >
-                          <p className="font-display font-bold text-sm text-[#F3EFE8]">
-                            {coord.name}
-                          </p>
-                          {coord.role && (
-                            <p className="text-xs text-[#B8B3C7]">{coord.role}</p>
-                          )}
-                          {contact && (
-                            <div className="pt-2 text-xs">
-                              {isEmail ? (
-                                <a
-                                  href={`mailto:${contact}`}
-                                  className="text-[#FF7A1A] hover:underline"
-                                >
-                                  ✉ {contact}
-                                </a>
-                              ) : isPhone ? (
-                                <a
-                                  href={`tel:${contact.replace(/\s+/g, '')}`}
-                                  className="text-[#FF7A1A] hover:underline"
-                                >
-                                  📞 {contact}
-                                </a>
-                              ) : (
-                                <span className="text-[#B8B3C7]">{contact}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-            {/* 7. Gallery Section */}
-            {!isPlaceholder && event.gallery_images && event.gallery_images.length > 0 && (
-              <section id="gallery" className="scroll-mt-24 space-y-6">
-                <div className="flex items-center gap-3 border-b border-[#FF7A1A]/20 pb-3">
-                  <Glyph type="overview" size={22} className="text-[#F5B642]" />
-                  <h2 className="text-2xl font-display font-bold text-[#F3EFE8]">
-                    ASTRAL GALLERY
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {event.gallery_images.map((imgUrl, i) => (
-                    <div
-                      key={i}
-                      className="aspect-[4/3] rounded-lg overflow-hidden bg-[#0D1020] border border-white/10"
-                    >
-                      <img
-                        src={getOptimizedImageUrl(imgUrl, 400, 300)}
-                        alt={`Gallery photograph ${i + 1}`}
-                        width={400}
-                        height={300}
-                        loading="lazy"
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </main>
-
-          {/* Right Column: Sticky Summary & Registration Card */}
-          <aside className="lg:col-span-4 sticky top-24 space-y-6">
-            <div className="p-6 rounded-xl bg-[#0D1020] border border-[#FF7A1A]/30 shadow-2xl space-y-6">
-              {/* Pricing Header */}
-              <div className="space-y-1">
-                <span className="text-xs font-mono uppercase tracking-widest text-[#B8B3C7]">
-                  Registration Pass
+          {/* Summary Card: On mobile appears right under the hero; on desktop is sticky in the narrow column */}
+          <aside className="order-1 lg:order-2 lg:col-span-4 lg:sticky lg:top-28 space-y-4">
+            <div className="p-5 sm:p-6 rounded-xl bg-[#0D1020] border border-white/10 shadow-xl space-y-5">
+              {/* Price */}
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#8E8A9F] block">
+                  Registration Entry
                 </span>
-                <div className="font-display font-bold text-3xl sm:text-4xl text-[#F3EFE8]">
+                <div className="font-display font-bold text-3xl text-[#F3EFE8]">
                   {formatPrice(event.price, event.is_per_head)}
                 </div>
-                <p className="text-xs text-[#B8B3C7]">
-                  {isPerHead ? 'Individual participant ticket' : 'Full team admission ticket'}
+                <p className="text-xs text-[#B8B3C7] mt-0.5">
+                  {isPerHead ? 'Individual pass' : 'Full team pass'}
                 </p>
               </div>
 
-              {/* Seats Remaining Bar */}
+              {/* Seats remaining bar */}
               {remaining !== null && event.event_status === 'ACTIVE' && (
                 <div className="space-y-2 pt-3 border-t border-white/10">
                   <div className="flex justify-between text-xs">
-                    <span className="text-[#B8B3C7]">Capacity</span>
-                    <span
-                      className={`font-bold ${
-                        remaining <= 5 ? 'text-[#FF7A1A]' : 'text-[#F3EFE8]'
-                      }`}
-                    >
+                    <span className="text-[#8E8A9F]">Capacity</span>
+                    <span className={`font-semibold ${remaining <= 5 ? 'text-[#FF7A1A]' : 'text-[#F3EFE8]'}`}>
                       {seatsText}
                     </span>
                   </div>
@@ -785,74 +298,403 @@ export const EventDetailPage: FC = () => {
                 </div>
               )}
 
-              {/* Honest Registration Block per Constraint 2 */}
-              <div className="pt-4 border-t border-white/10 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#B8B3C7]">Status</span>
+              {/* Registration status & deadline */}
+              <div className="space-y-2 pt-3 border-t border-white/10 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#8E8A9F]">Registration</span>
                   {event.registration_status && (
                     <StatusBadge type="registration" status={event.registration_status} size="sm" />
                   )}
                 </div>
-
                 {event.registration_deadline && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[#B8B3C7]">Deadline</span>
-                    <span className="text-[#F3EFE8] font-mono">
-                      {formatDateIST(event.registration_deadline)}
-                    </span>
-                  </div>
-                )}
-
-                {/* Primary Action Button: No fake form/payment per Constraint 2 */}
-                {isOpen ? (
-                  <div className="space-y-2 pt-2">
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-full uppercase tracking-wider text-sm font-bold"
-                      onClick={() => {
-                        alert(
-                          `Registration coordinate locked for ${event.name}.\nOfficial portal link or desk entry will open at ${scheduleVenue}.`
-                        );
-                      }}
-                    >
-                      Confirm Registration Entry
-                    </Button>
-                    <p className="text-[11px] text-center text-[#B8B3C7]">
-                      Entry verified at sanctum check-in
-                    </p>
-                  </div>
-                ) : (
-                  <div className="pt-2">
-                    <div className="w-full py-3 rounded-md bg-[#1A1030] text-center text-xs uppercase tracking-wider font-semibold text-[#B8B3C7] border border-white/10">
-                      Registration Concluded
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#8E8A9F]">Closes</span>
+                    <span className="text-[#F3EFE8] font-mono">{formatDateIST(event.registration_deadline)}</span>
                   </div>
                 )}
               </div>
 
-              {/* Utility Actions */}
-              <div className="pt-4 border-t border-white/10 space-y-2">
+              {/* Primary action */}
+              <div className="pt-2">
+                {isOpen ? (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full uppercase tracking-wider text-xs font-bold py-2.5"
+                    onClick={() => {
+                      alert(
+                        `Registration confirmed for ${event.name}.\nVenue: ${scheduleVenue || 'Campus Event Desk'}.`
+                      );
+                    }}
+                  >
+                    Register
+                  </Button>
+                ) : (
+                  <div className="w-full py-2.5 rounded-md bg-[#1A1030] text-center text-xs uppercase tracking-wider font-semibold text-[#B8B3C7] border border-white/10">
+                    Registration Closed
+                  </div>
+                )}
+              </div>
+
+              {/* Calendar & Share Utilities */}
+              <div className="pt-3 border-t border-white/10 space-y-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full text-xs"
+                  className="w-full text-xs font-semibold"
                   onClick={() => downloadIcs(event)}
                 >
-                  📅 Add to Calendar (.ics)
+                  Add to Calendar (.ics)
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full text-xs text-[#B8B3C7]"
+                  className="w-full text-xs text-[#B8B3C7] font-semibold"
                   onClick={handleShare}
                 >
-                  🔗 Share with Team
+                  Share Event
                 </Button>
+                {shareFeedback && (
+                  <p className="text-[11px] text-[#3DDC97] text-center font-medium">
+                    {shareFeedback}
+                  </p>
+                )}
               </div>
             </div>
           </aside>
+
+          {/* Overview Content in Wide Column */}
+          <section className="order-2 lg:order-1 lg:col-span-8 space-y-6">
+            <div className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-5">
+              <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+                Overview
+              </h2>
+
+              {event.description ? (
+                <div className="space-y-4 text-sm sm:text-base text-[#B8B3C7] leading-relaxed">
+                  {event.description.split('\n\n').map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#B8B3C7]">{event.blurb}</p>
+              )}
+
+              {event.highlights && event.highlights.length > 0 && (
+                <div className="p-4 rounded-lg bg-[#07060D] border border-[#FF7A1A]/30 space-y-2.5 mt-4">
+                  <h3 className="font-display font-bold text-xs uppercase tracking-wider text-[#F5B642]">
+                    Key Highlights
+                  </h3>
+                  <ul className="space-y-2 text-xs sm:text-sm text-[#B8B3C7]">
+                    {event.highlights.map((h, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-[#FF7A1A] font-bold shrink-0">•</span>
+                        <span>{h}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
+
+        {/* ROW 2: Schedule & Prizes side by side as two panels (stack on mobile) */}
+        {(hasSchedule || hasPrizes) && (
+          <div className={`grid grid-cols-1 ${hasSchedule && hasPrizes ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
+            {hasSchedule && (
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+                  Schedule
+                </h2>
+                <div className="space-y-3">
+                  {event.schedules && event.schedules.length > 0 ? (
+                    event.schedules.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-lg bg-[#07060D] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      >
+                        <div>
+                          <span className="font-mono text-xs text-[#FF7A1A] font-bold block">
+                            Day {idx + 1} • {item.event_date ? formatDateIST(item.event_date) : 'TBA'}
+                          </span>
+                          <p className="text-xs sm:text-sm font-semibold text-[#F3EFE8] mt-0.5">
+                            {item.start_time || '09:00'} – {item.end_time || '17:00'} IST
+                          </p>
+                        </div>
+                        {(item.venue || scheduleVenue) && (
+                          <div className="text-xs text-[#8E8A9F]">
+                            {item.venue || scheduleVenue}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3.5 rounded-lg bg-[#07060D] border border-white/10 text-xs">
+                      <p className="text-[#F3EFE8] font-semibold">
+                        {formatDateIST(event.schedule_summary)}
+                      </p>
+                      {scheduleVenue && (
+                        <p className="text-[#8E8A9F] mt-1">{scheduleVenue}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {hasPrizes && (
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-[#F5B642]/30 space-y-4">
+                <h2 className="text-xl font-display font-bold text-[#F5B642] uppercase tracking-wide">
+                  Prizes & Rewards
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {event.prizes?.map((prize, idx) => {
+                    const isGold = prize.rank === 1 || idx === 0;
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-lg border flex flex-col justify-between space-y-2 ${
+                          isGold
+                            ? 'bg-[#1A1030] border-[#F5B642]/50'
+                            : 'bg-[#07060D] border-white/10'
+                        }`}
+                      >
+                        <div>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${isGold ? 'text-[#F5B642]' : 'text-[#8E8A9F]'}`}>
+                            {prize.rank ? `Rank #${prize.rank}` : 'Prize'}
+                          </span>
+                          <h3 className="font-display font-bold text-sm text-[#F3EFE8] mt-0.5">
+                            {prize.title || (isGold ? 'Winner' : 'Runner Up')}
+                          </h3>
+                          {prize.description && (
+                            <p className="text-xs text-[#B8B3C7] mt-1">{prize.description}</p>
+                          )}
+                        </div>
+                        {typeof prize.amount === 'number' && prize.amount > 0 && (
+                          <div className="font-mono text-xl font-bold text-[#F5B642] pt-2 border-t border-white/5">
+                            ₹{prize.amount.toLocaleString('en-IN')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* ROW 3: What to Expect & Eligibility/Prerequisites side by side */}
+        {(hasExpect || hasEligibility) && (
+          <div className={`grid grid-cols-1 ${hasExpect && hasEligibility ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
+            {hasExpect && (
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+                <h2 className="text-xl font-display font-bold text-[#3BA3FF] uppercase tracking-wide">
+                  What to Expect
+                </h2>
+                <ul className="space-y-2.5 text-xs sm:text-sm text-[#B8B3C7]">
+                  {event.what_to_expect?.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="text-[#3BA3FF] font-bold shrink-0">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {hasEligibility && (
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+                  Eligibility & Prerequisites
+                </h2>
+                <div className="space-y-4 text-xs sm:text-sm text-[#B8B3C7]">
+                  {event.eligibility && event.eligibility.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F5B642]">
+                        Eligibility
+                      </h3>
+                      <ul className="space-y-1.5">
+                        {event.eligibility.map((el, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-[#3DDC97] shrink-0">✓</span>
+                            <span>{el}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {event.prerequisites && event.prerequisites.length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-white/10">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-[#3BA3FF]">
+                        Prerequisites
+                      </h3>
+                      <ul className="space-y-1.5">
+                        {event.prerequisites.map((req, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="text-[#3BA3FF] shrink-0">•</span>
+                            <span>{req}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* ROW 4: Rules & FAQs side by side (FAQs as accordion, rules as numbered list) */}
+        {(hasRules || hasFaqs) && (
+          <div className={`grid grid-cols-1 ${hasRules && hasFaqs ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
+            {hasRules && (
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+                  Rules & Guidelines
+                </h2>
+                <ol className="space-y-2.5">
+                  {event.rules?.map((rule, idx) => (
+                    <li
+                      key={idx}
+                      className="p-3.5 rounded-lg bg-[#07060D] border border-white/10 text-xs sm:text-sm text-[#B8B3C7] flex items-start gap-3"
+                    >
+                      <span className="font-mono font-bold text-[#FF7A1A] shrink-0">
+                        {String(idx + 1).padStart(2, '0')}.
+                      </span>
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {hasFaqs && (
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+                  Frequently Asked Questions
+                </h2>
+                <div className="space-y-2.5">
+                  {event.faqs?.map((faq, idx) => {
+                    const isOpenState = Boolean(openFaqs[idx]);
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-lg bg-[#07060D] border border-white/10 overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleFaq(idx)}
+                          aria-expanded={isOpenState}
+                          aria-controls={`faq-answer-${idx}`}
+                          className="w-full p-3.5 text-left flex items-center justify-between gap-3 font-semibold text-xs sm:text-sm text-[#F3EFE8] hover:text-[#FF7A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+                        >
+                          <span>{faq.question}</span>
+                          <span className="font-mono text-base text-[#FF7A1A] shrink-0">
+                            {isOpenState ? '−' : '+'}
+                          </span>
+                        </button>
+                        {isOpenState && (
+                          <div
+                            id={`faq-answer-${idx}`}
+                            className="px-3.5 pb-3.5 text-xs text-[#B8B3C7] leading-relaxed border-t border-white/5 pt-2.5"
+                          >
+                            {faq.answer}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* ROW 5: Gallery Mosaic & Contacts */}
+        {hasGallery && (
+          <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+            <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+              Gallery
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {event.gallery_images?.map((imgUrl, i) => (
+                <div
+                  key={i}
+                  className="aspect-[4/3] rounded-lg overflow-hidden bg-[#07060D] border border-white/10"
+                >
+                  <img
+                    src={getOptimizedImageUrl(imgUrl, 400, 300)}
+                    alt={`Event photography ${i + 1}`}
+                    width={400}
+                    height={300}
+                    loading="lazy"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {hasContacts && (
+          <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+            <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+              Contacts
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {coordinators.map((coord, idx) => {
+                const contact = coord.contact || '';
+                const isEmail = contact.includes('@');
+                const isPhone = !isEmail && /^\+?[0-9\s\-()]+$/.test(contact);
+
+                return (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-lg bg-[#07060D] border border-white/10 space-y-1.5"
+                  >
+                    <p className="font-display font-bold text-sm text-[#F3EFE8]">
+                      {coord.name}
+                    </p>
+                    {coord.role && (
+                      <p className="text-xs text-[#8E8A9F]">{coord.role}</p>
+                    )}
+                    {contact && (
+                      <div className="pt-2 text-xs">
+                        {isEmail ? (
+                          <a
+                            href={`mailto:${contact}`}
+                            className="text-[#FF7A1A] hover:underline inline-flex items-center gap-1.5"
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <rect width="20" height="16" x="2" y="4" rx="2" strokeWidth={2}/>
+                              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" strokeWidth={2}/>
+                            </svg>
+                            <span>{contact}</span>
+                          </a>
+                        ) : isPhone ? (
+                          <a
+                            href={`tel:${contact.replace(/\s+/g, '')}`}
+                            className="text-[#FF7A1A] hover:underline inline-flex items-center gap-1.5"
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" strokeWidth={2}/>
+                            </svg>
+                            <span>{contact}</span>
+                          </a>
+                        ) : (
+                          <span className="text-[#8E8A9F]">{contact}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
@@ -860,16 +702,14 @@ export const EventDetailPage: FC = () => {
 
 const EventDetailSkeleton: FC = () => {
   return (
-    <div className="w-full min-h-screen bg-[#07060D] animate-pulse space-y-12">
-      <div className="w-full h-[50vh] bg-[#0D1020]" />
+    <div className="w-full min-h-screen bg-[#07060D] animate-pulse space-y-8 pt-[var(--navbar-height)]">
+      <div className="w-full h-72 bg-[#0D1020]" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="hidden lg:block lg:col-span-3 h-64 rounded-xl bg-[#0D1020]" />
-        <div className="lg:col-span-5 space-y-6">
-          <div className="h-8 w-48 rounded bg-[#0D1020]" />
-          <div className="h-24 w-full rounded bg-[#0D1020]" />
-          <div className="h-40 w-full rounded bg-[#0D1020]" />
+        <div className="lg:col-span-8 space-y-4">
+          <div className="h-8 w-48 rounded bg-[#1A1030]" />
+          <div className="h-32 w-full rounded bg-[#1A1030]/60" />
         </div>
-        <div className="lg:col-span-4 h-96 rounded-xl bg-[#0D1020]" />
+        <div className="lg:col-span-4 h-72 rounded-xl bg-[#1A1030]/40" />
       </div>
     </div>
   );
