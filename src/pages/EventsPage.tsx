@@ -123,13 +123,7 @@ export const EventsPage: FC = () => {
 
   // Loading skeleton state
   if (status === 'loading') {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8">
-        <div className="h-10 w-72 bg-[#1A1030]/60 rounded-md animate-pulse" />
-        <div className="h-12 w-full bg-[#1A1030]/40 rounded-md animate-pulse" />
-        <EventsGridSkeleton count={9} />
-      </div>
-    );
+    return <EventsGridSkeleton count={9} />;
   }
 
   // Error state
