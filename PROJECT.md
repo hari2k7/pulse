@@ -1,10 +1,10 @@
-# Frontend: Render72 Hackathon
+# PULSE: Render72 Hackathon
 
 > Read this file first in every session and follow the **Hard rules**.
 
 ## 1. Goal
 
-A dark, streaming-style events website ("Frontend", tagline: *Every event. Front row.*).
+A dark, streaming-style events website ("PULSE", tagline: *Feel what's happening.*).
 Judged on: Lighthouse (Performance, Accessibility, SEO), responsiveness (375 / 768 / 1280 px),
 backend error handling, scalability readiness, design & creativity, features & UX.
 
@@ -65,7 +65,7 @@ Never use the Netflix name, logo, "N" mark or their font.
 | Text | `#FFFFFF`, muted `#B3B3B3` |
 | Radius | 4px |
 
-- Wordmark: text "FRONTEND" in heavy condensed caps, the "O" in accent red. Real text, not an image.
+- Wordmark: text "PULSE" in heavy condensed caps, the "P" in accent red. Real text, not an image.
 - Fonts: one display + one body, self-hosted (e.g. `@fontsource`), max 2 weights each, `font-display: swap`,
   preload only the display font.
 - Cards: 3:2 image, name, category, date (IST), price/Free, status badge, thin red seats bar.
@@ -100,8 +100,8 @@ Never use the Netflix name, logo, "N" mark or their font.
 - `index.html` contains a static, styled shell (dark background, navbar, headline) with inline critical CSS
   and good default meta tags (title, description, Open Graph, theme-color), so first paint and SEO do not
   depend on JS.
-- Per-route `<title>` and meta description. Pattern: `Frontend — Discover events`, `Events — Frontend`,
-  `{event name} — Frontend`.
+- Per-route `<title>` and meta description. Pattern: `PULSE — Discover events`, `Events — PULSE`,
+  `{event name} — PULSE`.
 - `public/` contains `robots.txt`, `sitemap.xml` (`/`, `/events`), and an SPA rewrite
   (`_redirects`: `/* /index.html 200` for Cloudflare, or `vercel.json` rewrites).
 
