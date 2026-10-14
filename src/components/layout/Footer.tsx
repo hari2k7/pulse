@@ -95,7 +95,7 @@ export const Footer: FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#B8B3C7]">
-          <p>© 2026 STRANGE. Built with React 18, Vite, TypeScript & Tailwind CSS.</p>
+          <p>© 2026 STRANGE.</p>
           <p className="font-display tracking-[0.25em] uppercase text-[#F5B642] text-xs">
             SEE YOU IN ANOTHER REALITY.
           </p>
