@@ -245,6 +245,19 @@ body {
   animation: portalPulseSlow 4s ease-in-out infinite;
 }
 
+/* Doctor Strange Sigil Cursor Rotations */
+.animate-sigil-cw {
+  animation: portalSpinClockwise 14s linear infinite;
+}
+
+.animate-sigil-ccw {
+  animation: portalSpinCounter 10s linear infinite;
+}
+
+.animate-core-cw {
+  animation: portalSpinClockwise 18s linear infinite;
+}
+
 /* Card subtle lift on hover and keyboard focus using transform only */
 .card-strange {
   transform: translate3d(0, 0, 0);

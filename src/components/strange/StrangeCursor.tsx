@@ -1,144 +1,127 @@
 import { useEffect, useRef, useState, type FC } from 'react';
 
-interface Particle {
+interface RuneItem {
   x: number;
   y: number;
-  size: number;
   alpha: number;
-  vx: number;
-  vy: number;
-  color: string;
+  glyph: number;
   active: boolean;
 }
 
-const MAX_PARTICLES = 20;
-const COLORS = ['#FF7A1A', '#F5B642', '#FFA04D'];
+const MAX_RUNES = 8;
 
 export const StrangeCursor: FC = () => {
-  const [enabled, setEnabled] = useState(false);
-  const [isInteractive, setIsInteractive] = useState(false);
+  const [enabled, setEnabled] = useState<boolean>(false);
+  const [isInteractive, setIsInteractive] = useState<boolean>(false);
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
+  // References for transform/opacity hardware-accelerated nodes
+  const coreRef = useRef<HTMLDivElement>(null);
+  const mandalaRef = useRef<HTMLDivElement>(null);
+  const rippleNodeRef = useRef<HTMLDivElement>(null);
+  const runeElementsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Position references (avoid React re-renders in rAF loop)
+  // Smooth lerp coordinates
   const posRef = useRef({
     currentX: -100,
     currentY: -100,
     targetX: -100,
     targetY: -100,
+    lastSpawnX: -100,
+    lastSpawnY: -100,
   });
 
   // Click ripple state
-  const rippleRef = useRef<{
-    x: number;
-    y: number;
-    radius: number;
-    alpha: number;
-    active: boolean;
-  }>({
+  const rippleStateRef = useRef({
     x: 0,
     y: 0,
-    radius: 0,
+    scale: 0.3,
     alpha: 0,
     active: false,
   });
 
-  // Pooled particle trail
-  const particlesRef = useRef<Particle[]>(
-    Array.from({ length: MAX_PARTICLES }, () => ({
-      x: 0,
-      y: 0,
-      size: 2,
+  // Pooled trailing rune glyphs (max 8 elements)
+  const runesPoolRef = useRef<RuneItem[]>(
+    Array.from({ length: MAX_RUNES }, () => ({
+      x: -100,
+      y: -100,
       alpha: 0,
-      vx: 0,
-      vy: 0,
-      color: COLORS[0],
+      glyph: 0,
       active: false,
     }))
   );
-  const poolIndexRef = useRef(0);
+  const poolIndexRef = useRef<number>(0);
 
-  // Check hardware capability: fine pointer, hover capable, no reduced motion
+  // Lazy-load after first paint & verify pointer/motion capability
   useEffect(() => {
-    const checkCapability = () => {
+    const evaluateCapabilities = () => {
       const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       setEnabled(finePointer && !reducedMotion);
     };
 
-    checkCapability();
+    // Lazy load after paint
+    const checkTimer = window.setTimeout(() => {
+      requestAnimationFrame(evaluateCapabilities);
+    }, 60);
 
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const pointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
 
-    const handler = () => checkCapability();
-    motionQuery.addEventListener('change', handler);
-    pointerQuery.addEventListener('change', handler);
+    const handleChange = () => evaluateCapabilities();
+    motionQuery.addEventListener('change', handleChange);
+    pointerQuery.addEventListener('change', handleChange);
 
     return () => {
-      motionQuery.removeEventListener('change', handler);
-      pointerQuery.removeEventListener('change', handler);
+      window.clearTimeout(checkTimer);
+      motionQuery.removeEventListener('change', handleChange);
+      pointerQuery.removeEventListener('change', handleChange);
     };
   }, []);
 
+  // Main rAF animation & event management
   useEffect(() => {
     if (!enabled) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
     let animId: number;
 
-    // Handle canvas sizing
-    const resizeCanvas = () => {
-      if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas, { passive: true });
-
-    // Pointer move listener
     const handlePointerMove = (e: PointerEvent) => {
       posRef.current.targetX = e.clientX;
       posRef.current.targetY = e.clientY;
 
-      // Spawn a particle from pool every pointermove
-      const pool = particlesRef.current;
-      const idx = poolIndexRef.current;
-      const p = pool[idx];
-      p.x = e.clientX;
-      p.y = e.clientY;
-      p.size = Math.random() * 2.5 + 1.5;
-      p.alpha = 0.8;
-      p.vx = (Math.random() - 0.5) * 0.8;
-      p.vy = (Math.random() - 0.5) * 0.8 + 0.3;
-      p.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-      p.active = true;
+      // Spawn a trailing rune if moved at least 28px from last position
+      const dx = e.clientX - posRef.current.lastSpawnX;
+      const dy = e.clientY - posRef.current.lastSpawnY;
+      if (dx * dx + dy * dy > 784) {
+        posRef.current.lastSpawnX = e.clientX;
+        posRef.current.lastSpawnY = e.clientY;
 
-      poolIndexRef.current = (idx + 1) % MAX_PARTICLES;
+        const idx = poolIndexRef.current;
+        const rune = runesPoolRef.current[idx];
+        rune.x = e.clientX;
+        rune.y = e.clientY;
+        rune.alpha = 0.75;
+        rune.glyph = Math.floor(Math.random() * 4);
+        rune.active = true;
 
-      // Check if hovering interactive element
+        poolIndexRef.current = (idx + 1) % MAX_RUNES;
+      }
+
+      // Check if over interactive elements (buttons, links, cards)
       const target = e.target as HTMLElement | null;
       if (target) {
         const interactive = !!target.closest(
-          'a, button, [role="button"], input, select, textarea, [data-interactive="true"]'
+          'a, button, [role="button"], input, select, textarea, .card-strange, [data-interactive="true"]'
         );
         setIsInteractive(interactive);
       }
     };
 
-    // Click ripple listener
     const handlePointerDown = (e: PointerEvent) => {
-      rippleRef.current = {
+      rippleStateRef.current = {
         x: e.clientX,
         y: e.clientY,
-        radius: 4,
-        alpha: 0.8,
+        scale: 0.35,
+        alpha: 0.9,
         active: true,
       };
     };
@@ -146,69 +129,56 @@ export const StrangeCursor: FC = () => {
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('pointerdown', handlePointerDown, { passive: true });
 
-    // Single requestAnimationFrame loop
+    // Single rAF loop for transform/opacity updates only
     const render = () => {
-      // Lerp cursor position
       const pos = posRef.current;
-      pos.currentX += (pos.targetX - pos.currentX) * 0.35;
-      pos.currentY += (pos.targetY - pos.currentY) * 0.35;
+      pos.currentX += (pos.targetX - pos.currentX) * 0.4;
+      pos.currentY += (pos.targetY - pos.currentY) * 0.4;
 
-      // Update dot transform
-      if (dotRef.current) {
-        dotRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
-      }
-      if (ringRef.current) {
-        ringRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
+      // 1. Core rotating spell circle position
+      if (coreRef.current) {
+        coreRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
       }
 
-      // Draw particle trail & ripple on canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Update & draw particles
-      const pool = particlesRef.current;
-      for (let i = 0; i < MAX_PARTICLES; i++) {
-        const p = pool[i];
-        if (!p.active) continue;
-
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= 0.04;
-
-        if (p.alpha <= 0) {
-          p.active = false;
-          continue;
-        }
-
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+      // 2. Mandala sigil position (expands on interactive)
+      if (mandalaRef.current) {
+        mandalaRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
       }
 
-      // Update & draw click ripple
-      const ripple = rippleRef.current;
-      if (ripple.active) {
-        ripple.radius += 2.2;
+      // 3. Click ripple animation (ring expands and fades)
+      const ripple = rippleStateRef.current;
+      if (ripple.active && rippleNodeRef.current) {
+        ripple.scale += 0.08;
         ripple.alpha -= 0.04;
 
-        if (ripple.alpha <= 0 || ripple.radius > 36) {
+        if (ripple.alpha <= 0 || ripple.scale > 1.8) {
           ripple.active = false;
+          rippleNodeRef.current.style.opacity = '0';
         } else {
-          ctx.save();
-          ctx.globalAlpha = ripple.alpha;
-          ctx.strokeStyle = '#F5B642';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
+          rippleNodeRef.current.style.transform = `translate3d(${ripple.x}px, ${ripple.y}px, 0) scale(${ripple.scale})`;
+          rippleNodeRef.current.style.opacity = String(ripple.alpha);
         }
       }
 
-      // Pause rendering if tab hidden
+      // 4. Trailing runes update (transform/opacity only)
+      const pool = runesPoolRef.current;
+      for (let i = 0; i < MAX_RUNES; i++) {
+        const rune = pool[i];
+        const el = runeElementsRef.current[i];
+        if (!el) continue;
+
+        if (rune.active) {
+          rune.alpha -= 0.025;
+          if (rune.alpha <= 0) {
+            rune.active = false;
+            el.style.opacity = '0';
+          } else {
+            el.style.transform = `translate3d(${rune.x}px, ${rune.y}px, 0)`;
+            el.style.opacity = String(rune.alpha);
+          }
+        }
+      }
+
       if (!document.hidden) {
         animId = requestAnimationFrame(render);
       }
@@ -226,7 +196,6 @@ export const StrangeCursor: FC = () => {
 
     return () => {
       cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -240,27 +209,123 @@ export const StrangeCursor: FC = () => {
       className="pointer-events-none fixed inset-0 z-50 overflow-hidden select-none"
       aria-hidden="true"
     >
-      {/* Lightweight 2D canvas for particle trail & click ripple */}
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-
-      {/* Small Glowing Orange/Gold Dot */}
+      {/* 1. Small orange/gold spell circle (thin double ring with tiny runes and tick marks, slowly rotating) */}
       <div
-        ref={dotRef}
-        className="absolute top-0 left-0 w-2.5 h-2.5 -ml-[5px] -mt-[5px] rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] shadow-[0_0_8px_#FF7A1A] will-change-transform"
-      />
+        ref={coreRef}
+        className="absolute top-0 left-0 w-7 h-7 -ml-3.5 -mt-3.5 will-change-transform"
+      >
+        <svg
+          viewBox="0 0 28 28"
+          fill="none"
+          className="w-full h-full animate-core-cw opacity-85"
+        >
+          {/* Outer thin ring */}
+          <circle cx="14" cy="14" r="12" stroke="#FF7A1A" strokeWidth="1" />
+          {/* Inner concentric ring with dashed runes */}
+          <circle cx="14" cy="14" r="9" stroke="#F5B642" strokeWidth="0.8" strokeDasharray="3 2" />
+          {/* Cardinal tick marks */}
+          <line x1="14" y1="0.5" x2="14" y2="3.5" stroke="#F5B642" strokeWidth="1" />
+          <line x1="14" y1="24.5" x2="14" y2="27.5" stroke="#F5B642" strokeWidth="1" />
+          <line x1="0.5" y1="14" x2="3.5" y2="14" stroke="#F5B642" strokeWidth="1" />
+          <line x1="24.5" y1="14" x2="27.5" y2="14" stroke="#F5B642" strokeWidth="1" />
+          {/* Central geometric rune node */}
+          <rect x="12" y="12" width="4" height="4" transform="rotate(45 14 14)" fill="#FF7A1A" opacity="0.9" />
+        </svg>
+      </div>
 
-      {/* Delicate Spell Glyph Ring on Interactive Hover */}
+      {/* 2. Expanded Mandala Sigil (over buttons, links, cards; rings rotating in opposite directions) */}
       <div
-        ref={ringRef}
-        className={`absolute top-0 left-0 w-8 h-8 -ml-4 -mt-4 rounded-full border border-[#F5B642]/60 transition-all duration-200 will-change-transform flex items-center justify-center ${
-          isInteractive
-            ? 'scale-100 opacity-90 animate-[spin_8s_linear_infinite]'
-            : 'scale-0 opacity-0'
+        ref={mandalaRef}
+        className={`absolute top-0 left-0 w-16 h-16 -ml-8 -mt-8 will-change-transform transition-all duration-300 ${
+          isInteractive ? 'scale-100 opacity-90' : 'scale-0 opacity-0'
         }`}
       >
-        <span className="w-1 h-1 rounded-full bg-[#FF7A1A] absolute -top-0.5" />
-        <span className="w-1 h-1 rounded-full bg-[#FF7A1A] absolute -bottom-0.5" />
+        <div className="relative w-full h-full">
+          {/* Outer Layer: Clockwise rotating ring with runes & tick marks */}
+          <svg
+            viewBox="0 0 64 64"
+            fill="none"
+            className="absolute inset-0 w-full h-full animate-sigil-cw"
+          >
+            {/* Outer perimeter double ring */}
+            <circle cx="32" cy="32" r="30" stroke="#FF7A1A" strokeWidth="1" />
+            <circle cx="32" cy="32" r="27" stroke="#F5B642" strokeWidth="0.8" strokeDasharray="4 2.5" />
+            {/* 8 Geometric tick runes */}
+            <path d="M32 0 L34 4 L30 4 Z" fill="#F5B642" />
+            <path d="M32 64 L34 60 L30 60 Z" fill="#F5B642" />
+            <path d="M0 32 L4 34 L4 30 Z" fill="#F5B642" />
+            <path d="M64 32 L60 34 L60 30 Z" fill="#F5B642" />
+            <circle cx="10" cy="10" r="1.5" fill="#FF7A1A" />
+            <circle cx="54" cy="10" r="1.5" fill="#FF7A1A" />
+            <circle cx="10" cy="54" r="1.5" fill="#FF7A1A" />
+            <circle cx="54" cy="54" r="1.5" fill="#FF7A1A" />
+          </svg>
+
+          {/* Inner Layer: Counter-clockwise rotating geometric star & inner rune marks */}
+          <svg
+            viewBox="0 0 64 64"
+            fill="none"
+            className="absolute inset-0 w-full h-full animate-sigil-ccw"
+          >
+            {/* Intersecting 8-pointed geometric star */}
+            <rect x="17" y="17" width="30" height="30" stroke="#F5B642" strokeWidth="0.8" opacity="0.8" />
+            <rect x="17" y="17" width="30" height="30" transform="rotate(45 32 32)" stroke="#FF7A1A" strokeWidth="0.8" opacity="0.8" />
+            {/* Mid ring */}
+            <circle cx="32" cy="32" r="21" stroke="#F5B642" strokeWidth="0.7" strokeDasharray="2 3" />
+            <circle cx="32" cy="32" r="12" stroke="#FF7A1A" strokeWidth="0.8" />
+          </svg>
+        </div>
       </div>
+
+      {/* 3. Click Spell-Circle Ripple Ring */}
+      <div
+        ref={rippleNodeRef}
+        className="absolute top-0 left-0 w-16 h-16 -ml-8 -mt-8 will-change-transform opacity-0"
+      >
+        <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+          <circle cx="32" cy="32" r="28" stroke="#F5B642" strokeWidth="1.2" strokeDasharray="5 3" />
+          <circle cx="32" cy="32" r="22" stroke="#FF7A1A" strokeWidth="0.8" />
+        </svg>
+      </div>
+
+      {/* 4. Pooled tiny rune glyphs (max 8 elements) that briefly fade near pointer while moving */}
+      {Array.from({ length: MAX_RUNES }).map((_, i) => (
+        <div
+          key={i}
+          ref={(el) => {
+            runeElementsRef.current[i] = el;
+          }}
+          className="absolute top-0 left-0 w-3.5 h-3.5 -ml-[7px] -mt-[7px] will-change-transform opacity-0"
+        >
+          <svg viewBox="0 0 14 14" fill="none" className="w-full h-full">
+            {i % 4 === 0 && (
+              /* Diamond with central cross */
+              <path d="M7 1 L13 7 L7 13 L1 7 Z M7 4 L7 10 M4 7 L10 7" stroke="#F5B642" strokeWidth="0.9" />
+            )}
+            {i % 4 === 1 && (
+              /* Concentric ring with equilateral triangle */
+              <>
+                <circle cx="7" cy="7" r="6" stroke="#FF7A1A" strokeWidth="0.8" />
+                <polygon points="7,3 11,10 3,10" stroke="#F5B642" strokeWidth="0.75" />
+              </>
+            )}
+            {i % 4 === 2 && (
+              /* Octagonal rune node with bisector */
+              <>
+                <polygon points="5,1 9,1 13,5 13,9 9,13 5,13 1,9 1,5" stroke="#F5B642" strokeWidth="0.8" />
+                <line x1="7" y1="2" x2="7" y2="12" stroke="#FF7A1A" strokeWidth="0.75" />
+              </>
+            )}
+            {i % 4 === 3 && (
+              /* Alchemical square & circle sigil */
+              <>
+                <rect x="3" y="3" width="8" height="8" stroke="#FF7A1A" strokeWidth="0.8" />
+                <circle cx="7" cy="7" r="3" stroke="#F5B642" strokeWidth="0.75" />
+              </>
+            )}
+          </svg>
+        </div>
+      ))}
     </div>
   );
 };
