@@ -375,7 +375,7 @@ export const EventCard: FC<EventCardProps> = ({
       </div>
     </Link>
 
-    {/* Heart (Favorites) toggle: a sibling of the Link (never nested inside it), placed in the card body next to the date row so it never overlaps image badges, z-index above the cloak lining, aria-pressed, aria-label "Add {name} to favorites" / "Remove {name} from favorites", 44px hit area, stopPropagation, filled orange when active, short scale-pop (none under reduced motion), no layout shift */}
+    {/* Heart (Favorites) toggle: a sibling of the Link (never nested inside it), placed in the card body next to the date row so it never overlaps image badges, z-index above the cloak lining, aria-pressed, aria-label "Add {name} to favorites" / "Remove {name} from favorites", 48px visual & hit area, stopPropagation, filled orange when active, thin border, short scale-pop (none under reduced motion), no layout shift */}
     <div className="absolute inset-0 pointer-events-none z-30 flex flex-col p-3 sm:p-3.5">
       <div className="w-full aspect-[3/2] shrink-0" aria-hidden="true" />
       <div className="pt-2 flex justify-end" aria-hidden="true">
@@ -388,11 +388,15 @@ export const EventCard: FC<EventCardProps> = ({
           }}
           aria-pressed={isFav}
           aria-label={isFav ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
-          className="pointer-events-auto -mt-1 -mr-1 w-11 h-11 flex items-center justify-center rounded-full text-[#B8B3C7] hover:text-[#FF7A1A] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-90 motion-reduce:active:scale-100"
+          className={`pointer-events-auto -mt-1 -mr-1 w-12 h-12 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full border bg-[#07060D]/85 backdrop-blur-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
+            isFav
+              ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
+              : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
+          }`}
         >
           <svg
-            className={`w-4 h-4 transition-transform ${
-              isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-110' : 'fill-none text-[#B8B3C7] hover:text-[#FF7A1A]'
+            className={`w-6 h-6 transition-transform ${
+              isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-105' : 'fill-none text-[#B8B3C7] hover:text-[#FF7A1A]'
             }`}
             viewBox="0 0 24 24"
             stroke="currentColor"

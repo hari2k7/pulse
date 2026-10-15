@@ -247,17 +247,21 @@ export const EventDetailPage: FC = () => {
                 </span>
               )}
 
-              {/* Heart Toggle Button */}
+              {/* Heart Toggle Button: 48px visual & hit area with 24px icon */}
               <button
                 type="button"
                 onClick={() => event && toggleFavorite(event.id)}
                 aria-pressed={isFav}
                 aria-label={isFav ? `Remove ${event.name} from favorites` : `Add ${event.name} to favorites`}
-                className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-[#0D1020] border border-white/10 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100"
+                className={`w-12 h-12 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl border bg-[#0D1020] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
+                  isFav
+                    ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
+                    : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
+                }`}
               >
                 <svg
-                  className={`w-5 h-5 transition-transform ${
-                    isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-110' : 'fill-none text-[#B8B3C7]'
+                  className={`w-6 h-6 transition-transform ${
+                    isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-105' : 'fill-none text-[#B8B3C7]'
                   }`}
                   viewBox="0 0 24 24"
                   stroke="currentColor"
