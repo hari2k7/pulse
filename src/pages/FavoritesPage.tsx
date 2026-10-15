@@ -1,4 +1,4 @@
-import { useMemo, type FC } from 'react';
+import { useState, useMemo, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
@@ -16,12 +16,21 @@ export const FavoritesPage: FC = () => {
   const { status, events, stale, error, retry } = useEvents();
   const { favorites } = useFavorites();
 
+  // Pagination per Task 5: 12 initial cards
+  const [visibleCount, setVisibleCount] = useState<number>(12);
+  const [announceText, setAnnounceText] = useState<string>('');
+
   // Filter events from useEvents() by saved ids in favorites (ignore obsolete ids)
   const favoriteEvents = useMemo(() => {
     if (!events || events.length === 0) return [];
     const favSet = new Set(favorites);
     return events.filter((e) => favSet.has(e.id));
   }, [events, favorites]);
+
+  // Visible batched favorite events per Task 5
+  const visibleEvents = useMemo(() => {
+    return favoriteEvents.slice(0, visibleCount);
+  }, [favoriteEvents, visibleCount]);
 
   // Error state with retry
   if (status === 'error' && favorites.length > 0 && favoriteEvents.length === 0) {
@@ -110,12 +119,34 @@ export const FavoritesPage: FC = () => {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-          {favoriteEvents.map((event) => (
-            <div key={event.id} className="h-full">
-              <EventCard event={event} className="h-full" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+            {visibleEvents.map((event, index) => (
+              <div key={event.id} className={`h-full ${index >= 3 ? 'content-visibility-card' : ''}`}>
+                <EventCard event={event} className="h-full" />
+              </div>
+            ))}
+          </div>
+
+          {/* Show 12 more pagination button per Task 5 */}
+          {visibleCount < favoriteEvents.length && (
+            <div className="flex flex-col items-center justify-center pt-8 pb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = Math.min(favoriteEvents.length, visibleCount + 12);
+                  setVisibleCount(next);
+                  setAnnounceText(`Showing ${next} of ${favoriteEvents.length} favorite events`);
+                }}
+                className="px-6 py-3 rounded-[4px] bg-[#0D1020] hover:bg-[#1A1030] text-[#F3EFE8] hover:text-[#FF7A1A] font-display font-semibold text-sm tracking-wider uppercase border border-[#FF7A1A]/40 transition-all hover:border-[#FF7A1A] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer"
+              >
+                Show 12 more
+              </button>
+              <div aria-live="polite" className="sr-only">
+                {announceText}
+              </div>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>

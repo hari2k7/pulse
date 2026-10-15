@@ -40,6 +40,18 @@ export const EventsPage: FC = () => {
   // Local state for immediate debounced search input feedback
   const [searchInput, setSearchInput] = useState<string>(filters.search);
 
+  // Pagination: render first 12 cards per Task 5
+  const filterKey = useMemo(() => JSON.stringify(filters), [filters]);
+  const [prevFilterKey, setPrevFilterKey] = useState<string>(filterKey);
+  const [visibleCount, setVisibleCount] = useState<number>(12);
+  const [announceText, setAnnounceText] = useState<string>('');
+
+  // Reset pagination to 12 when filters/search/sort change per Task 5
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setVisibleCount(12);
+  }
+
   // Mobile filter drawer state
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -85,10 +97,15 @@ export const EventsPage: FC = () => {
     setSearchParams(params, { replace: true });
   };
 
-  // Filtered and sorted event collection
+  // Filtered and sorted event collection (full number preserved for counters)
   const filteredEvents = useMemo(() => {
     return filterAndSortEvents(events, filters);
   }, [events, filters]);
+
+  // Visible batched events per Task 5 (12 initial, reveals 12 more on button click)
+  const visibleEvents = useMemo(() => {
+    return filteredEvents.slice(0, visibleCount);
+  }, [filteredEvents, visibleCount]);
 
   // Counts for each theme based on upcoming active events
   const themeCounts = useMemo(() => {
@@ -497,15 +514,15 @@ export const EventsPage: FC = () => {
               />
             </div>
           ) : view === 'timeline' ? (
-            /* Timeline View */
-            <EventTimeline events={filteredEvents} />
+            /* Timeline View batched by 12 per Task 5 */
+            <EventTimeline events={visibleEvents} />
           ) : (
             /* Uniform Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch">
-              {filteredEvents.map((event, index) => (
+              {visibleEvents.map((event, index) => (
                 <div
                   key={event.id}
-                  className={`h-full ${index >= 2 ? 'content-visibility-auto' : ''}`}
+                  className={`h-full ${index >= 3 ? 'content-visibility-card' : ''}`}
                 >
                   <EventCard
                     event={event}
@@ -513,6 +530,26 @@ export const EventsPage: FC = () => {
                   />
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Show 12 more pagination button per Task 5 */}
+          {visibleCount < filteredEvents.length && (
+            <div className="flex flex-col items-center justify-center pt-8 pb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = Math.min(filteredEvents.length, visibleCount + 12);
+                  setVisibleCount(next);
+                  setAnnounceText(`Showing ${next} of ${filteredEvents.length} events`);
+                }}
+                className="px-6 py-3 rounded-[4px] bg-[#0D1020] hover:bg-[#1A1030] text-[#F3EFE8] hover:text-[#FF7A1A] font-display font-semibold text-sm tracking-wider uppercase border border-[#FF7A1A]/40 transition-all hover:border-[#FF7A1A] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer"
+              >
+                Show 12 more
+              </button>
+              <div aria-live="polite" className="sr-only">
+                {announceText}
+              </div>
             </div>
           )}
         </main>
