@@ -137,7 +137,7 @@ export const EventCard: FC<EventCardProps> = ({
         <img
           src={optimizedUrl}
           srcSet={srcSet}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
           alt={event.cover_image_alt || title}
           width={600}
           height={400}

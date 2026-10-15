@@ -23,7 +23,7 @@ export function getOptimizedImageUrl(url?: string, width = 600, height = 400): s
 
 export function getImageSrcSet(
   url?: string,
-  widths: number[] = [400, 600, 900, 1200],
+  widths: number[] = [360, 480, 600],
   aspectRatio: number = 2 / 3
 ): string {
   if (!url || !url.includes('images.pexels.com')) return '';

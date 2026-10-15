@@ -290,7 +290,7 @@ export const EventDetailPage: FC = () => {
     ? getOptimizedImageUrl(bannerUrl, 1920, 1080)
     : FALLBACK_IMAGE_DATA_URI;
   const bannerSrcSet = hasValidImage
-    ? getImageSrcSet(bannerUrl, [640, 1024, 1440, 1920], 9 / 16)
+    ? getImageSrcSet(bannerUrl, [480, 800, 1200, 1920], 9 / 16)
     : undefined;
 
   const remaining = seatsLeft(event.total_seats, event.seats_filled);

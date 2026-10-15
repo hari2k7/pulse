@@ -343,7 +343,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
               >
                 <EventCard
                   event={event}
-                  priority={index < 2}
+                  priority={false}
                   className="h-full"
                 />
               </div>
