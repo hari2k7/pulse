@@ -55,86 +55,110 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
   useEffect(() => {
     if (typeof window === 'undefined' || !shouldRender) return;
 
-    let ctx: gsap.Context | null = null;
+    let mmRef: { revert: () => void } | null = null;
     let resizeTimer: number;
 
     const initScrollTrigger = async () => {
       try {
-        const isDesktop = window.matchMedia(
-          '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
-        ).matches;
-
-        if (!isDesktop) {
-          setSectionHeight('auto');
-          return;
-        }
 
         const { gsap } = await import('gsap');
         const { ScrollTrigger } = await import('gsap/ScrollTrigger');
         gsap.registerPlugin(ScrollTrigger);
 
-        ctx = gsap.context(() => {
-          const track = trackRef.current;
-          const section = sectionRef.current;
-          if (!track || !section) return;
+        const mm = gsap.matchMedia();
 
-          // Distance formula per spec: track.scrollWidth - viewportWidth + rightPadding
-          const getDistance = () => {
-            const total = track.scrollWidth;
-            const vw = window.innerWidth;
-            const pad = paddingLeft;
-            return Math.max(0, total - vw + pad);
-          };
+        // Desktop fine pointer with motion allowed: sticky horizontal scrub
+        mm.add(
+          '(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)',
+          () => {
+            const track = trackRef.current;
+            const section = sectionRef.current;
+            const stickyContainer = stickyContainerRef.current;
+            if (!track || !section || !stickyContainer) return;
 
-          const distance = getDistance();
-          // Proportional vertical scroll length (natural scroll travel)
-          const scrollDistance = Math.max(window.innerHeight * 0.8, distance * 0.85);
-          setSectionHeight(`${Math.round(window.innerHeight + scrollDistance)}px`);
+            // Distance formula per spec: track.scrollWidth - viewportWidth + rightPadding
+            const getDistance = () => {
+              const total = track.scrollWidth;
+              const vw = window.innerWidth;
+              const pad = paddingLeft;
+              return Math.max(0, total - vw + pad);
+            };
 
-          // Ensure track starts at x: 0 (first card fully visible)
-          gsap.set(track, { x: 0 });
+            const updateDimensions = () => {
+              const dist = getDistance();
+              const containerH = stickyContainer.offsetHeight;
+              setSectionHeight(`${Math.round(containerH + dist)}px`);
+              return dist;
+            };
 
-          gsap.fromTo(
-            track,
-            { x: 0 },
-            {
-              x: () => -getDistance(),
-              ease: 'none',
-              scrollTrigger: {
-                trigger: section,
-                start: 'top top',
-                end: 'bottom bottom',
-                scrub: 1,
-                invalidateOnRefresh: true,
-              },
-            }
-          );
+            updateDimensions();
+            gsap.set(track, { x: 0 });
 
-          // Refresh after images finish loading
-          const images = track.querySelectorAll('img');
-          let loaded = 0;
-          images.forEach((img) => {
-            if (img.complete) {
-              loaded++;
-            } else {
-              img.addEventListener(
-                'load',
-                () => {
-                  loaded++;
-                  if (loaded === images.length) {
-                    ScrollTrigger.refresh();
-                  }
+            gsap.fromTo(
+              track,
+              { x: 0 },
+              {
+                x: () => -getDistance(),
+                ease: 'none',
+                scrollTrigger: {
+                  trigger: section,
+                  start: 'top 64px',
+                  end: () => `+=${getDistance()}`,
+                  scrub: true,
+                  invalidateOnRefresh: true,
                 },
-                { once: true }
-              );
-            }
-          });
+              }
+            );
 
-          // Settle DOM measurements
-          requestAnimationFrame(() => {
-            ScrollTrigger.refresh();
-          });
-        }, sectionRef);
+            // Refresh after images finish loading
+            const images = track.querySelectorAll('img');
+            images.forEach((img) => {
+              if (!img.complete) {
+                img.addEventListener(
+                  'load',
+                  () => {
+                    updateDimensions();
+                    ScrollTrigger.refresh();
+                  },
+                  { once: true }
+                );
+              }
+            });
+
+            // Refresh after document fonts are loaded
+            if (typeof document !== 'undefined' && document.fonts?.ready) {
+              document.fonts.ready.then(() => {
+                updateDimensions();
+                ScrollTrigger.refresh();
+              });
+            }
+
+            // Settle DOM measurements
+            requestAnimationFrame(() => {
+              updateDimensions();
+              ScrollTrigger.refresh();
+            });
+
+            return () => {
+              setSectionHeight('auto');
+              gsap.set(track, { clearProps: 'transform' });
+            };
+          }
+        );
+
+        // Fallback for mobile, touch, and reduced-motion: native scroll-snap, auto height
+        mm.add(
+          '(max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce)',
+          () => {
+            setSectionHeight('auto');
+            const track = trackRef.current;
+            if (track) {
+              gsap.set(track, { clearProps: 'transform' });
+            }
+          }
+        );
+
+        mmRef = mm;
       } catch (err) {
         console.warn('GSAP ScrollTrigger horizontal scroll enhancement skipped:', err);
       }
@@ -152,7 +176,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
         } catch {
           // Ignore
         }
-      }, 150);
+      }, 100);
     };
 
     window.addEventListener('resize', handleResize, { passive: true });
@@ -161,7 +185,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
       clearTimeout(timer);
       clearTimeout(resizeTimer);
       window.removeEventListener('resize', handleResize);
-      ctx?.revert();
+      mmRef?.revert();
     };
   }, [featuredEvents.length, shouldRender, paddingLeft]);
 
@@ -203,9 +227,9 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
       {/* Sticky container during scrub scroll on desktop, relative on touch */}
       <div
         ref={stickyContainerRef}
-        className="lg:sticky lg:top-16 w-full py-12 sm:py-16 overflow-hidden flex flex-col justify-center"
+        className="lg:sticky lg:top-16 w-full pt-8 pb-6 sm:pt-10 sm:pb-8 overflow-hidden flex flex-col justify-center"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mb-6">
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
             <div>

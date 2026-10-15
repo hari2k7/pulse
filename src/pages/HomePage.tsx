@@ -105,7 +105,7 @@ export const HomePage: FC = () => {
   }
 
   return (
-    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] overflow-x-hidden">
+    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] overflow-x-clip">
       {/* 1. Multiverse Hero with Sling Ring Portal & Real H1 Text */}
       <MultiverseHero />
 

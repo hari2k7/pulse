@@ -7,7 +7,7 @@ export const SanctumAbout: FC = () => {
   return (
     <section
       id="about"
-      className="relative w-full py-20 sm:py-28 bg-[#07060D] border-t border-[#FF7A1A]/20 overflow-hidden"
+      className="relative w-full pt-8 pb-16 sm:pt-10 sm:pb-20 bg-[#07060D] border-t border-[#FF7A1A]/20 overflow-hidden"
       aria-labelledby="about-heading"
     >
       {/* Background Sanctum Seal Backdrop */}
