@@ -270,6 +270,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
         >
           <div
             ref={trackRef}
+            id="featured-multiverse-track"
             style={{
               paddingLeft: `${paddingLeft}px`,
               paddingRight: `${paddingLeft}px`,
