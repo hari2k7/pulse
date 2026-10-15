@@ -1,7 +1,7 @@
 import { useMemo, type FC } from 'react';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
-import { queryClient } from '../lib/queryClient';
+import { usePrizePool } from '../hooks/usePrizePool';
 import { MultiverseHero } from '../components/strange/MultiverseHero';
 import { EyeOfAgamotto } from '../components/strange/EyeOfAgamotto';
 import { StatsSection } from '../components/strange/StatsSection';
@@ -12,7 +12,6 @@ import { CloakSilhouette } from '../components/strange/CloakSilhouette';
 import { ErrorState } from '../components/states/ErrorState';
 import { EmptyState } from '../components/states/EmptyState';
 import { Button } from '../components/ui/Button';
-import type { EventDetail } from '../lib/types';
 
 export const HomePage: FC = () => {
   useDocumentMeta({
@@ -22,7 +21,7 @@ export const HomePage: FC = () => {
   });
 
   const { status, events, error, retry } = useEvents();
-
+  const prizePool = usePrizePool(events);
 
   // Earliest upcoming ACTIVE event date for Agamotto countdown fallback per Constraint 4
   const earliestActiveDate = useMemo(() => {
@@ -41,32 +40,6 @@ export const HomePage: FC = () => {
     if (!first?.start_date) return undefined;
     return `${first.start_date}T${first.start_time || '09:00'}:00+05:30`;
   }, [events]);
-
-  // Prize pool sum calculated strictly from events whose detail data is loaded in TanStack Query cache per Constraint 3
-  const totalPrizePool = useMemo(() => {
-    try {
-      const queryCache = queryClient.getQueryCache();
-      const eventQueries = queryCache.findAll({ queryKey: ['event'] });
-      let sum = 0;
-      let count = 0;
-
-      for (const q of eventQueries) {
-        const data = q.state.data as EventDetail | undefined;
-        if (data?.prizes && Array.isArray(data.prizes)) {
-          for (const p of data.prizes) {
-            if (typeof p.amount === 'number' && p.amount > 0) {
-              sum += p.amount;
-              count++;
-            }
-          }
-        }
-      }
-
-      return count > 0 ? sum : null;
-    } catch {
-      return null;
-    }
-  }, []);
 
   // Loading skeleton state
   if (status === 'loading') {
@@ -117,7 +90,7 @@ export const HomePage: FC = () => {
       </section>
 
       {/* 3. Festival Animated Counters */}
-      <StatsSection events={events} totalPrizePool={totalPrizePool} />
+      <StatsSection events={events} prizePool={prizePool} />
 
       {/* 4. Cloak of Levitation Sweeping Section Divider */}
       <CloakSilhouette variant="divider" />
