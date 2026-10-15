@@ -561,22 +561,41 @@ input[type="search"]::-ms-reveal {
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Back to top floating cloak animation */
+/* Back to top floating cloak animation: slow translateY & gentle skew/sway */
 @keyframes cloak-float {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translateY(0px) rotate(0deg) skewX(0deg);
+  }
+  30% {
+    transform: translateY(-4px) rotate(1.2deg) skewX(-1deg);
+  }
+  70% {
+    transform: translateY(-6px) rotate(-1deg) skewX(1deg);
+  }
+}
+
+@keyframes cloak-shadow {
+  0%, 100% {
+    transform: scale(1) scaleY(0.8);
+    opacity: 0.6;
   }
   50% {
-    transform: translateY(-5px);
+    transform: scale(0.82) scaleY(0.65);
+    opacity: 0.35;
   }
 }
 
 .animate-cloak-float {
-  animation: cloak-float 3.5s ease-in-out infinite;
+  animation: cloak-float 3.8s ease-in-out infinite;
+}
+
+.animate-cloak-shadow {
+  animation: cloak-shadow 3.8s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-cloak-float {
+  .animate-cloak-float,
+  .animate-cloak-shadow {
     animation: none !important;
   }
 }
