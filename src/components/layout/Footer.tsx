@@ -1,16 +1,64 @@
-import type { FC } from 'react';
+import { useEffect, useRef, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import { StrangeLogo } from '../strange/StrangeLogo';
 import { SanctumSeal } from '../strange/SanctumSeal';
 import { FESTIVAL_CONFIG } from '../../config/festival';
 
 export const Footer: FC = () => {
+  const footerRef = useRef<HTMLElement>(null);
+  const sealRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initScroll = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        if (!active || !footerRef.current || !sealRef.current) return;
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            if (!sealRef.current || !footerRef.current) return;
+            gsap.to(sealRef.current, {
+              rotate: 45,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: footerRef.current,
+                start: 'top bottom',
+                end: 'bottom bottom',
+                scrub: 0.5,
+              },
+            });
+          });
+        }, footerRef);
+      } catch {
+        // Fallback
+      }
+    };
+
+    initScroll();
+
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, []);
+
   return (
-    <footer className="content-visibility-auto-sm relative bg-[#07060D] border-t border-[#FF7A1A]/20 pt-16 pb-12 px-4 sm:px-6 lg:px-8 mt-auto text-sm text-[#B8B3C7] overflow-hidden">
-      {/* Background Sanctum Seal Backdrop with Slow CSS Rotation */}
+    <footer
+      ref={footerRef}
+      className="content-visibility-auto-sm relative bg-[#07060D] border-t border-[#FF7A1A]/20 pt-16 pb-12 px-4 sm:px-6 lg:px-8 mt-auto text-sm text-[#B8B3C7] overflow-hidden"
+    >
+      {/* Background Sanctum Seal Backdrop with Scroll Progress Rotation */}
       <div
-        className="absolute right-[-100px] sm:right-[-50px] bottom-[-80px] opacity-15 pointer-events-none select-none animate-spell-spin"
-        style={{ animationDuration: '60s', transformOrigin: 'center' }}
+        ref={sealRef}
+        className="absolute right-[-100px] sm:right-[-50px] bottom-[-80px] opacity-15 pointer-events-none select-none will-change-transform"
+        style={{ transformOrigin: 'center' }}
         aria-hidden="true"
       >
         <SanctumSeal size={420} glow={false} />

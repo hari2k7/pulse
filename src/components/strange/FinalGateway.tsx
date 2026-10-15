@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { useEffect, useRef, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventSummary } from '../../lib/types';
 import { FESTIVAL_CONFIG } from '../../config/festival';
@@ -20,8 +20,104 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
   const openCount = events.filter((e) => e.registration_status === 'OPEN').length;
   const registrationUrl = FESTIVAL_CONFIG.registrationUrl;
 
+  const sectionRef = useRef<HTMLElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const sublineRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initScroll = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        if (!active || !sectionRef.current) return;
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            // Heading line wipe & subline fade
+            if (headingRef.current && sublineRef.current) {
+              gsap.set(headingRef.current, {
+                clipPath: 'inset(0 100% 0 0)',
+                opacity: 0,
+              });
+              gsap.set(sublineRef.current, {
+                opacity: 0,
+                y: 16,
+              });
+
+              ScrollTrigger.create({
+                trigger: sectionRef.current,
+                start: 'top 85%',
+                once: true,
+                onEnter: () => {
+                  if (headingRef.current) {
+                    gsap.to(headingRef.current, {
+                      clipPath: 'inset(0 0% 0 0)',
+                      opacity: 1,
+                      duration: 0.6,
+                      ease: 'power2.out',
+                    });
+                  }
+                  if (sublineRef.current) {
+                    gsap.to(sublineRef.current, {
+                      opacity: 1,
+                      y: 0,
+                      duration: 0.5,
+                      delay: 0.2,
+                      ease: 'power2.out',
+                    });
+                  }
+                },
+              });
+            }
+
+            // Portal scales open as it enters view
+            if (portalRef.current) {
+              gsap.set(portalRef.current, {
+                scale: 0.85,
+                opacity: 0.4,
+              });
+
+              ScrollTrigger.create({
+                trigger: sectionRef.current,
+                start: 'top 85%',
+                once: true,
+                onEnter: () => {
+                  if (portalRef.current) {
+                    gsap.to(portalRef.current, {
+                      scale: 1,
+                      opacity: 1,
+                      duration: 0.7,
+                      ease: 'power2.out',
+                    });
+                  }
+                },
+              });
+            }
+          });
+        }, sectionRef);
+      } catch {
+        // Fallback
+      }
+    };
+
+    initScroll();
+
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       id="final-gateway"
       className="relative w-full py-20 sm:py-24 md:py-32 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex flex-col items-center justify-center overflow-hidden"
       aria-labelledby="gateway-heading"
@@ -32,7 +128,8 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
 
       {/* Background Large Portal Opening onto Bright Unfamiliar World */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[750px] md:w-[900px] h-[600px] sm:h-[750px] md:h-[900px] pointer-events-none select-none z-0"
+        ref={portalRef}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[750px] md:w-[900px] h-[600px] sm:h-[750px] md:h-[900px] pointer-events-none select-none z-0 will-change-transform"
         aria-hidden="true"
       >
         {/* Ambient Portal Radiance */}
@@ -105,6 +202,7 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
       {/* Foreground Content */}
       <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center text-center space-y-6">
         <h2
+          ref={headingRef}
           id="gateway-heading"
           className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-[#F3EFE8] tracking-wider leading-tight drop-shadow-xl"
         >
@@ -114,7 +212,10 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
         </h2>
 
         {/* Real Status Line */}
-        <p className="text-sm sm:text-base md:text-lg text-[#B8B3C7] max-w-xl font-medium">
+        <p
+          ref={sublineRef}
+          className="text-sm sm:text-base md:text-lg text-[#B8B3C7] max-w-xl font-medium"
+        >
           {openCount > 0 ? (
             <>
               Registration is open for <span className="text-[#3DDC97] font-semibold">{openCount} events</span>. Secure your dimensional coordinate.

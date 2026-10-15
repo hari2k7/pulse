@@ -1,8 +1,9 @@
-import { useState, useMemo, useRef, type FC, type ChangeEvent, type CSSProperties } from 'react';
+import { useState, useMemo, useRef, useEffect, type FC, type ChangeEvent, type CSSProperties } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
 import { useFavorites } from '../lib/favorites';
+import { useEffectsBudget } from '../hooks/useEffectsBudget';
 import { EventCard } from '../components/events/EventCard';
 import { EventFilters } from '../components/events/EventFilters';
 import { EventTimeline } from '../components/events/EventTimeline';
@@ -131,6 +132,133 @@ export const EventsPage: FC = () => {
     return filteredEvents.slice(0, visibleCount);
   }, [filteredEvents, visibleCount]);
 
+  const headerRef = useRef<HTMLDivElement>(null);
+  const portalRowRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const budget = useEffectsBudget();
+  const animatedCardsRef = useRef<Set<string>>(new Set());
+  const prevFilterKeyRef = useRef<string>(filterKey);
+
+  // 1. Heading and portal row fade/rise once on initial render
+  useEffect(() => {
+    if (budget === 'lite') return;
+
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initHeaderAnim = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        if (!active) return;
+
+        const targets = [headerRef.current, portalRowRef.current].filter(Boolean);
+        if (targets.length === 0) return;
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            gsap.from(targets, {
+              opacity: 0,
+              y: 20,
+              stagger: 0.1,
+              duration: 0.5,
+              ease: 'power2.out',
+            });
+          });
+        });
+      } catch {
+        // Fallback
+      }
+    };
+
+    initHeaderAnim();
+
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, [budget]);
+
+  // 2. Cards fade-rise in batches (ScrollTrigger.batch, new batches from "Show 12 more" animate only the newly added cards, never the whole grid again, and never re-trigger on filter changes)
+  useEffect(() => {
+    if (budget === 'lite' || view === 'timeline') return;
+
+    const isFilterChange = filterKey !== prevFilterKeyRef.current;
+    prevFilterKeyRef.current = filterKey;
+
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initBatch = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        if (!active || !gridRef.current) return;
+
+        // If this render was triggered by a filter change:
+        // "never re-trigger on filter changes"
+        if (isFilterChange) {
+          const cardEls = gridRef.current.querySelectorAll<HTMLElement>('.event-batch-card');
+          cardEls.forEach((el) => {
+            el.setAttribute('data-revealed', 'true');
+            const id = el.getAttribute('data-event-card-id');
+            if (id) animatedCardsRef.current.add(id);
+            gsap.set(el, { opacity: 1, y: 0 });
+          });
+          ScrollTrigger.refresh();
+          return;
+        }
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            const unrevealed = gridRef.current?.querySelectorAll<HTMLElement>(
+              '.event-batch-card:not([data-revealed])'
+            );
+            if (!unrevealed || unrevealed.length === 0) return;
+
+            unrevealed.forEach((el) => {
+              el.setAttribute('data-revealed', 'true');
+              const id = el.getAttribute('data-event-card-id');
+              if (id) animatedCardsRef.current.add(id);
+            });
+
+            gsap.set(unrevealed, { opacity: 0, y: 24 });
+
+            ScrollTrigger.batch(unrevealed, {
+              start: 'top 85%',
+              once: true,
+              onEnter: (batch) => {
+                gsap.to(batch, {
+                  opacity: 1,
+                  y: 0,
+                  stagger: 0.08,
+                  duration: 0.5,
+                  ease: 'power2.out',
+                  overwrite: 'auto',
+                });
+              },
+            });
+
+            ScrollTrigger.refresh();
+          });
+        }, gridRef);
+      } catch {
+        // Fallback
+      }
+    };
+
+    const timer = setTimeout(initBatch, 30);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      ctx?.revert();
+    };
+  }, [budget, visibleEvents, filterKey, view]);
+
   const handleShowMore = () => {
     const nextCount = visibleCount + 12;
     setVisibleCount(nextCount);
@@ -172,7 +300,10 @@ export const EventsPage: FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* 1. Page Header (Single H1 per page) */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+        <div
+          ref={headerRef}
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6"
+        >
           <div>
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-[#F3EFE8] tracking-wider leading-none">
               THE MULTIVERSE INDEX
@@ -224,7 +355,7 @@ export const EventsPage: FC = () => {
         </div>
 
         {/* 2. Interactive Realm Portal Selector Row (Multi-select filter controls) */}
-        <section aria-label="Realm Selector">
+        <section ref={portalRowRef} aria-label="Realm Selector">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-mono font-bold tracking-widest uppercase text-[#F5B642]">
               Choose Dimensional Realms
@@ -531,9 +662,15 @@ export const EventsPage: FC = () => {
             ) : (
               /* Uniform Grid View */
               <div className="space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {visibleEvents.map((event) => (
-                    <EventCard key={event.id} event={event} />
+                    <div
+                      key={event.id}
+                      data-event-card-id={event.id}
+                      className="event-batch-card h-full"
+                    >
+                      <EventCard event={event} />
+                    </div>
                   ))}
                 </div>
 

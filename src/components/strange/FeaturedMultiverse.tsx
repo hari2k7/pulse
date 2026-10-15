@@ -13,6 +13,8 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
   const stickyContainerRef = useRef<HTMLDivElement>(null);
   const trackWrapperRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const sublineRef = useRef<HTMLParagraphElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [paddingLeft, setPaddingLeft] = useState(16);
@@ -147,6 +149,65 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
           }
         );
 
+        // Shared heading line wipe, subline fade, and cards stagger across screens with motion allowed
+        mm.add('(prefers-reduced-motion: no-preference)', () => {
+          if (headingRef.current && sublineRef.current) {
+            gsap.set(headingRef.current, {
+              clipPath: 'inset(0 100% 0 0)',
+              opacity: 0,
+            });
+            gsap.set(sublineRef.current, {
+              opacity: 0,
+              y: 16,
+            });
+
+            ScrollTrigger.create({
+              trigger: sectionRef.current,
+              start: 'top 85%',
+              once: true,
+              onEnter: () => {
+                if (headingRef.current) {
+                  gsap.to(headingRef.current, {
+                    clipPath: 'inset(0 0% 0 0)',
+                    opacity: 1,
+                    duration: 0.6,
+                    ease: 'power2.out',
+                  });
+                }
+                if (sublineRef.current) {
+                  gsap.to(sublineRef.current, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.5,
+                    delay: 0.2,
+                    ease: 'power2.out',
+                  });
+                }
+              },
+            });
+          }
+
+          // Featured cards stagger in
+          if (trackRef.current) {
+            const cards = trackRef.current.children;
+            gsap.set(cards, { opacity: 0, y: 24 });
+            ScrollTrigger.create({
+              trigger: trackRef.current,
+              start: 'top 85%',
+              once: true,
+              onEnter: () => {
+                gsap.to(cards, {
+                  opacity: 1,
+                  y: 0,
+                  stagger: 0.08,
+                  duration: 0.5,
+                  ease: 'power2.out',
+                });
+              },
+            });
+          }
+        });
+
         // Fallback for mobile, touch, and reduced-motion: native scroll-snap, auto height
         mm.add(
           '(max-width: 1023px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce)',
@@ -261,6 +322,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
             <div>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <h2
+                  ref={headingRef}
                   id="featured-multiverse-heading"
                   className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]"
                 >
@@ -274,7 +336,10 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
                   Skip featured
                 </a>
               </div>
-              <p className="text-sm sm:text-base text-[#B8B3C7] mt-1 font-medium">
+              <p
+                ref={sublineRef}
+                className="text-sm sm:text-base text-[#B8B3C7] mt-1 font-medium"
+              >
                 Extraordinary experiences are waiting to be discovered.
               </p>
             </div>

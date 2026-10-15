@@ -178,6 +178,120 @@ export const EventDetailPage: FC = () => {
     };
   }, [event?.id, isLite]);
 
+  // ScrollTrigger reveals: panels rise/fade with stagger, prizes count up, schedule timeline draws down, related cards slide in
+  useEffect(() => {
+    if (typeof window === 'undefined' || isLite || !event) return;
+
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initDetailScroll = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        if (!active) return;
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            // 1. Panels rise and fade with short stagger
+            const panels = document.querySelectorAll<HTMLElement>('.detail-panel-item');
+            if (panels.length > 0) {
+              gsap.set(panels, { opacity: 0, y: 24 });
+              ScrollTrigger.batch(panels, {
+                start: 'top 85%',
+                once: true,
+                onEnter: (batch) => {
+                  gsap.to(batch, {
+                    opacity: 1,
+                    y: 0,
+                    stagger: 0.1,
+                    duration: 0.5,
+                    ease: 'power2.out',
+                    overwrite: 'auto',
+                  });
+                },
+              });
+            }
+
+            // 2. Schedule timeline line draws down as it scrolls (scaleY)
+            if (timelineLineRef.current && timelineLineRef.current.parentElement) {
+              gsap.set(timelineLineRef.current, { scaleY: 0, transformOrigin: 'top center' });
+              gsap.to(timelineLineRef.current, {
+                scaleY: 1,
+                ease: 'none',
+                scrollTrigger: {
+                  trigger: timelineLineRef.current.parentElement,
+                  start: 'top 80%',
+                  end: 'bottom 70%',
+                  scrub: 0.4,
+                },
+              });
+            }
+
+            // 3. Prize panels' amounts count up once
+            const prizeEls = document.querySelectorAll<HTMLElement>('.prize-counter-val');
+            if (prizeEls.length > 0) {
+              ScrollTrigger.create({
+                trigger: prizeEls[0],
+                start: 'top 85%',
+                once: true,
+                onEnter: () => {
+                  prizeEls.forEach((el) => {
+                    const target = Number(el.getAttribute('data-target') || 0);
+                    if (target > 0) {
+                      const counter = { val: 0 };
+                      gsap.to(counter, {
+                        val: target,
+                        duration: 1.0,
+                        ease: 'power2.out',
+                        onUpdate: () => {
+                          el.textContent = `₹${Math.round(counter.val).toLocaleString('en-IN')}`;
+                        },
+                      });
+                    }
+                  });
+                },
+              });
+            }
+
+            // 4. Related cards slide in
+            if (moreTrackRef.current) {
+              gsap.set(moreTrackRef.current, { opacity: 0, x: 24 });
+              ScrollTrigger.create({
+                trigger: moreTrackRef.current,
+                start: 'top 85%',
+                once: true,
+                onEnter: () => {
+                  if (moreTrackRef.current) {
+                    gsap.to(moreTrackRef.current, {
+                      opacity: 1,
+                      x: 0,
+                      duration: 0.6,
+                      ease: 'power2.out',
+                    });
+                  }
+                },
+              });
+            }
+          });
+        });
+      } catch {
+        // Fallback
+      }
+    };
+
+    const timer = setTimeout(initDetailScroll, 40);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      ctx?.revert();
+    };
+  }, [event, isLite]);
+
   // SEO metadata per route pattern: "{event name} — STRANGE"
   useDocumentMeta({
     title: event?.name ? `${event.name} — STRANGE` : 'Event Detail — STRANGE',
@@ -223,6 +337,7 @@ export const EventDetailPage: FC = () => {
   }, []);
   const { events: allEvents } = useEvents({ enabled: loadRelated });
   const moreTrackRef = useRef<HTMLDivElement>(null);
+  const timelineLineRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
   const [canScrollRight, setCanScrollRight] = useState<boolean>(false);
 
@@ -660,7 +775,7 @@ export const EventDetailPage: FC = () => {
         {/* ROW 1: Overview (Wide) + Sticky Summary Card (Narrow) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Summary Card: On mobile appears right under the hero; on desktop is sticky in the narrow column */}
-          <aside id="summary-card" className="order-1 lg:order-2 lg:col-span-4 lg:sticky lg:top-28 space-y-4">
+          <aside id="summary-card" className="detail-panel-item order-1 lg:order-2 lg:col-span-4 lg:sticky lg:top-28 space-y-4">
             <div className="p-5 sm:p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 shadow-xl space-y-5">
               {/* Price */}
               <div>
@@ -784,7 +899,7 @@ export const EventDetailPage: FC = () => {
           </aside>
 
           {/* Overview Content in Wide Column */}
-          <section className="order-2 lg:order-1 lg:col-span-8 space-y-6">
+          <section className="detail-panel-item order-2 lg:order-1 lg:col-span-8 space-y-6">
             <div className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-5">
               <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                 Overview
@@ -823,17 +938,32 @@ export const EventDetailPage: FC = () => {
         {(hasSchedule || hasPrizes) && (
           <div className={`grid grid-cols-1 ${hasSchedule && hasPrizes ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
             {hasSchedule && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+              <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
                 <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Schedule
                 </h3>
-                <div className="space-y-3">
+                <div className="relative pl-6 sm:pl-7 space-y-3">
+                  {/* Vertical Timeline Guide Track (Background) */}
+                  <div className="absolute left-2 sm:left-2.5 top-2 bottom-2 w-[2px] bg-white/10 pointer-events-none" aria-hidden="true" />
+                  {/* Animated Drawing Down Gold Timeline Line (scaleY with scroll) */}
+                  <div
+                    ref={timelineLineRef}
+                    className="absolute left-2 sm:left-2.5 top-2 bottom-2 w-[2px] bg-gradient-to-b from-[#FF7A1A] via-[#F5B642] to-[#FFE8A3] origin-top pointer-events-none z-10 shadow-[0_0_8px_rgba(245,182,66,0.6)] motion-reduce:scale-y-100"
+                    style={{ transformOrigin: 'top center' }}
+                    aria-hidden="true"
+                  />
+
                   {event.schedules && event.schedules.length > 0 ? (
                     event.schedules.map((item, idx) => (
                       <div
                         key={idx}
-                        className="p-3.5 rounded-lg bg-[#07060D] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                        className="relative p-3.5 rounded-lg bg-[#07060D] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                       >
+                        {/* Timeline Milestone Dot */}
+                        <div
+                          className="absolute -left-[21px] sm:-left-[23px] top-4 w-2.5 h-2.5 rounded-full border border-[#FF7A1A] bg-[#07060D] shadow-[0_0_6px_#FF7A1A] z-20 pointer-events-none"
+                          aria-hidden="true"
+                        />
                         <div>
                           <span className="font-mono text-xs font-bold block" style={{ color: realm.accentColor }}>
                             Day {idx + 1} • {item.event_date ? formatDateIST(item.event_date) : 'TBA'}
@@ -850,7 +980,11 @@ export const EventDetailPage: FC = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="p-3.5 rounded-lg bg-[#07060D] border border-white/10 text-xs">
+                    <div className="relative p-3.5 rounded-lg bg-[#07060D] border border-white/10 text-xs">
+                      <div
+                        className="absolute -left-[21px] sm:-left-[23px] top-4 w-2.5 h-2.5 rounded-full border border-[#FF7A1A] bg-[#07060D] shadow-[0_0_6px_#FF7A1A] z-20 pointer-events-none"
+                        aria-hidden="true"
+                      />
                       <p className="text-[#F3EFE8] font-semibold">
                         {formatDateIST(event.schedule_summary)}
                       </p>
@@ -864,7 +998,7 @@ export const EventDetailPage: FC = () => {
             )}
 
             {hasPrizes && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-[#F5B642]/30 space-y-4">
+              <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[#F5B642]/30 space-y-4">
                 <h3 className="text-xl font-display font-bold text-[#F5B642] uppercase tracking-wide">
                   Prizes & Rewards
                 </h3>
@@ -892,7 +1026,10 @@ export const EventDetailPage: FC = () => {
                           )}
                         </div>
                         {typeof prize.amount === 'number' && prize.amount > 0 && (
-                          <div className="font-mono text-xl font-bold text-[#F5B642] pt-2 border-t border-white/5">
+                          <div
+                            className="prize-counter-val font-mono text-xl font-bold text-[#F5B642] pt-2 border-t border-white/5"
+                            data-target={prize.amount}
+                          >
                             ₹{prize.amount.toLocaleString('en-IN')}
                           </div>
                         )}
@@ -909,7 +1046,7 @@ export const EventDetailPage: FC = () => {
         {(hasExpect || hasEligibility) && (
           <div className={`grid grid-cols-1 ${hasExpect && hasEligibility ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
             {hasExpect && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+              <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
                 <h3 className="text-xl font-display font-bold text-[#3BA3FF] uppercase tracking-wide">
                   What to Expect
                 </h3>
@@ -925,7 +1062,7 @@ export const EventDetailPage: FC = () => {
             )}
 
             {hasEligibility && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+              <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
                 <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Eligibility & Prerequisites
                 </h3>
@@ -973,7 +1110,7 @@ export const EventDetailPage: FC = () => {
         {(hasRules || hasFaqs) && (
           <div className={`grid grid-cols-1 ${hasRules && hasFaqs ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
             {hasRules && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+              <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
                 <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Rules & Guidelines
                 </h3>
@@ -994,7 +1131,7 @@ export const EventDetailPage: FC = () => {
             )}
 
             {hasFaqs && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+              <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
                 <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Frequently Asked Questions
                 </h3>
@@ -1044,7 +1181,7 @@ export const EventDetailPage: FC = () => {
 
         {/* ROW 5: Gallery Mosaic & Contacts */}
         {hasGallery && (
-          <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+          <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
             <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
               Gallery
             </h3>
@@ -1095,7 +1232,7 @@ export const EventDetailPage: FC = () => {
         )}
 
         {hasContacts && (
-          <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+          <section className="detail-panel-item p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
             <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
               Contacts
             </h3>
@@ -1157,7 +1294,7 @@ export const EventDetailPage: FC = () => {
             ------------------------------------------------------------- */}
         <section
           aria-label="Registration confirmation panel"
-          className="p-6 sm:p-7 rounded-xl bg-gradient-to-r from-[#07060D] via-[#0D1020] to-[#07060D] border-2 border-[var(--realm,#F5B642)]/40 relative overflow-hidden shadow-2xl"
+          className="detail-panel-item p-6 sm:p-7 rounded-xl bg-gradient-to-r from-[#07060D] via-[#0D1020] to-[#07060D] border-2 border-[var(--realm,#F5B642)]/40 relative overflow-hidden shadow-2xl"
         >
           {/* Sanctum corner brackets */}
           <div

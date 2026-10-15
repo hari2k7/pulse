@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { useEffect, useRef, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import { FESTIVAL_CONFIG } from '../../config/festival';
 
@@ -10,8 +10,94 @@ import { FESTIVAL_CONFIG } from '../../config/festival';
  * - Original artwork, no stock photos
  */
 export const SanctumAbout: FC = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const sigilRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initScroll = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        if (!active || !sectionRef.current) return;
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            // Heading line wipe & copy fade
+            if (headingRef.current && copyRef.current) {
+              gsap.set(headingRef.current, {
+                clipPath: 'inset(0 100% 0 0)',
+                opacity: 0,
+              });
+              gsap.set(copyRef.current, {
+                opacity: 0,
+                y: 16,
+              });
+
+              ScrollTrigger.create({
+                trigger: sectionRef.current,
+                start: 'top 85%',
+                once: true,
+                onEnter: () => {
+                  if (headingRef.current) {
+                    gsap.to(headingRef.current, {
+                      clipPath: 'inset(0 0% 0 0)',
+                      opacity: 1,
+                      duration: 0.6,
+                      ease: 'power2.out',
+                    });
+                  }
+                  if (copyRef.current) {
+                    gsap.to(copyRef.current, {
+                      opacity: 1,
+                      y: 0,
+                      duration: 0.5,
+                      delay: 0.2,
+                      ease: 'power2.out',
+                    });
+                  }
+                },
+              });
+            }
+
+            // Sigil / columns rotate slowly with scroll scrub (small angle)
+            if (sigilRef.current && sectionRef.current) {
+              gsap.to(sigilRef.current, {
+                rotate: 8,
+                ease: 'none',
+                scrollTrigger: {
+                  trigger: sectionRef.current,
+                  start: 'top bottom',
+                  end: 'bottom top',
+                  scrub: 0.5,
+                },
+              });
+            }
+          });
+        }, sectionRef);
+      } catch {
+        // Fallback
+      }
+    };
+
+    initScroll();
+
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       id="about"
       className="scroll-mt-24 relative w-full py-16 sm:py-20 md:py-24 bg-[#07060D] border-t border-[#FF7A1A]/20 overflow-hidden"
       aria-labelledby="about-heading"
@@ -21,7 +107,8 @@ export const SanctumAbout: FC = () => {
 
       {/* Background Layer: Quieter Sanctum Arched-Window & Sigil Artwork */}
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[550px] opacity-15 pointer-events-none select-none z-0"
+        ref={sigilRef}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[550px] opacity-15 pointer-events-none select-none z-0 will-change-transform"
         aria-hidden="true"
       >
         <svg
@@ -68,6 +155,7 @@ export const SanctumAbout: FC = () => {
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-8">
         {/* Heading */}
         <h2
+          ref={headingRef}
           id="about-heading"
           tabIndex={-1}
           className="text-2xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8] leading-tight tracking-wider outline-none"
@@ -78,7 +166,10 @@ export const SanctumAbout: FC = () => {
         </h2>
 
         {/* Honest Copy */}
-        <div className="max-w-2xl space-y-4 text-sm sm:text-base md:text-lg text-[#B8B3C7] leading-relaxed">
+        <div
+          ref={copyRef}
+          className="max-w-2xl space-y-4 text-sm sm:text-base md:text-lg text-[#B8B3C7] leading-relaxed"
+        >
           <p>
             STRANGE is a gathering of builders, hackers, and creators navigating multi-dimensional
             crucibles of software, autonomous robotics, algorithms, and interdisciplinary arts.

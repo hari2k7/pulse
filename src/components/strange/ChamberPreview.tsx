@@ -1,4 +1,4 @@
-import { useMemo, type FC } from 'react';
+import { useMemo, useEffect, useRef, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventSummary } from '../../lib/types';
 import { getRealms } from '../../lib/realms';
@@ -19,9 +19,100 @@ export interface ChamberPreviewProps {
  */
 export const ChamberPreview: FC<ChamberPreviewProps> = ({ events }) => {
   const realms = useMemo(() => getRealms(events), [events]);
+  const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const sublineRef = useRef<HTMLParagraphElement>(null);
+  const portalsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initScroll = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        if (!active || !sectionRef.current) return;
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            // Heading clip-path line wipe & subline fade
+            if (headingRef.current && sublineRef.current) {
+              gsap.set(headingRef.current, {
+                clipPath: 'inset(0 100% 0 0)',
+                opacity: 0,
+              });
+              gsap.set(sublineRef.current, {
+                opacity: 0,
+                y: 16,
+              });
+
+              ScrollTrigger.create({
+                trigger: sectionRef.current,
+                start: 'top 85%',
+                once: true,
+                onEnter: () => {
+                  if (headingRef.current) {
+                    gsap.to(headingRef.current, {
+                      clipPath: 'inset(0 0% 0 0)',
+                      opacity: 1,
+                      duration: 0.6,
+                      ease: 'power2.out',
+                    });
+                  }
+                  if (sublineRef.current) {
+                    gsap.to(sublineRef.current, {
+                      opacity: 1,
+                      y: 0,
+                      duration: 0.5,
+                      delay: 0.2,
+                      ease: 'power2.out',
+                    });
+                  }
+                },
+              });
+            }
+
+            // Realm portals rise with small stagger
+            if (portalsRef.current) {
+              const items = portalsRef.current.children;
+              gsap.set(items, { opacity: 0, y: 24 });
+              ScrollTrigger.create({
+                trigger: portalsRef.current,
+                start: 'top 85%',
+                once: true,
+                onEnter: () => {
+                  gsap.to(items, {
+                    opacity: 1,
+                    y: 0,
+                    stagger: 0.08,
+                    duration: 0.5,
+                    ease: 'power2.out',
+                  });
+                },
+              });
+            }
+          });
+        }, sectionRef);
+      } catch {
+        // Fallback
+      }
+    };
+
+    initScroll();
+
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, []);
 
   return (
     <section
+      ref={sectionRef}
       id="chamber-preview"
       className="relative w-full py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-[#07060D] overflow-hidden"
       aria-labelledby="chamber-heading"
@@ -63,18 +154,25 @@ export const ChamberPreview: FC<ChamberPreviewProps> = ({ events }) => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mb-12 sm:mb-16">
           <h2
+            ref={headingRef}
             id="chamber-heading"
             className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8] tracking-wider leading-tight"
           >
             EVERY REALITY HAS AN EVENT.
           </h2>
-          <p className="mt-3 text-sm sm:text-base md:text-lg text-[#B8B3C7] font-medium tracking-wide">
+          <p
+            ref={sublineRef}
+            className="mt-3 text-sm sm:text-base md:text-lg text-[#B8B3C7] font-medium tracking-wide"
+          >
             Choose your universe. Discover what awaits beyond it.
           </p>
         </div>
 
         {/* Portals: Desktop Staggered Depths, Mobile 2x2 Grid */}
-        <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 items-center">
+        <div
+          ref={portalsRef}
+          className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 items-center"
+        >
           {realms.map((realm, idx) => {
             // Slight staggered vertical depths for desktop floating effect
             const depthClasses = [

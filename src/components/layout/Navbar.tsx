@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type FC, type KeyboardEvent } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { StrangeLogo } from '../strange/StrangeLogo';
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
 
 export const Navbar: FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,12 +9,59 @@ export const Navbar: FC = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const firstFocusableRef = useRef<HTMLAnchorElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const budget = useEffectsBudget();
 
   const [prevPath, setPrevPath] = useState(location.pathname);
   if (prevPath !== location.pathname) {
     setPrevPath(location.pathname);
     setIsOpen(false);
   }
+
+  // Global scroll progress line under navbar (2px gold, scaleX with scroll)
+  useEffect(() => {
+    if (budget === 'lite') return;
+
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+
+    const initProgress = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        if (!active || !progressRef.current) return;
+
+        ctx = gsap.context(() => {
+          const mm = gsap.matchMedia();
+          mm.add('(prefers-reduced-motion: no-preference)', () => {
+            if (!progressRef.current) return;
+            gsap.set(progressRef.current, { scaleX: 0, transformOrigin: 'left center' });
+            gsap.to(progressRef.current, {
+              scaleX: 1,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: document.documentElement,
+                start: 'top top',
+                end: 'bottom bottom',
+                scrub: 0.1,
+              },
+            });
+          });
+        });
+      } catch {
+        // Fallback
+      }
+    };
+
+    initProgress();
+
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, [budget, location.pathname]);
 
   // Close mobile menu on resize to desktop (>= 1024px)
   useEffect(() => {
@@ -124,6 +172,16 @@ export const Navbar: FC = () => {
           <div className="w-full h-[1px] bg-[#FF7A1A]/80 shadow-[0_0_8px_rgba(255,122,26,0.6)]" />
           <div className="w-full h-[1px] mt-[1px] bg-[#F5B642]/60 shadow-[0_0_6px_rgba(245,182,66,0.5)]" />
         </div>
+
+        {/* Global Scroll-Progress Line under navbar (scaleX with scroll, 2px, hidden in lite/reduced motion) */}
+        {budget !== 'lite' && (
+          <div
+            ref={progressRef}
+            className="absolute -bottom-[2px] inset-x-0 h-[2px] bg-gradient-to-r from-[#FF7A1A] via-[#F5B642] to-[#FFE8A3] origin-left pointer-events-none z-20 shadow-[0_0_8px_rgba(245,182,66,0.8)] motion-reduce:hidden"
+            style={{ transform: 'scaleX(0)', transformOrigin: 'left center' }}
+            aria-hidden="true"
+          />
+        )}
 
         {/* Small Diamond Ornament at Exact Center of Top Line */}
         <div
