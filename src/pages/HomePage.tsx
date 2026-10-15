@@ -1,14 +1,13 @@
 import { useMemo, type FC } from 'react';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
-import { usePrizePool } from '../hooks/usePrizePool';
 import { MultiverseHero } from '../components/strange/MultiverseHero';
-import { EyeOfAgamotto } from '../components/strange/EyeOfAgamotto';
-import { StatsSection } from '../components/strange/StatsSection';
+import { ChamberPreview } from '../components/strange/ChamberPreview';
 import { FeaturedMultiverse } from '../components/strange/FeaturedMultiverse';
-import { SponsorMarquee } from '../components/strange/SponsorMarquee';
+import { EyeOfAgamotto } from '../components/strange/EyeOfAgamotto';
 import { SanctumAbout } from '../components/strange/SanctumAbout';
-import { CloakSilhouette } from '../components/strange/CloakSilhouette';
+import { SponsorMarquee } from '../components/strange/SponsorMarquee';
+import { FinalGateway } from '../components/strange/FinalGateway';
 import { ErrorState } from '../components/states/ErrorState';
 import { EmptyState } from '../components/states/EmptyState';
 import { Button } from '../components/ui/Button';
@@ -22,9 +21,8 @@ export const HomePage: FC = () => {
   });
 
   const { status, events, error, retry } = useEvents();
-  const prizePool = usePrizePool(events);
 
-  // Earliest upcoming ACTIVE event date for Agamotto countdown fallback per Constraint 4
+  // Earliest upcoming ACTIVE event date for Agamotto countdown fallback
   const earliestActiveDate = useMemo(() => {
     const activeEvents = events.filter(
       (e) => e.event_status === 'ACTIVE' && e.schedule_summary?.start_date
@@ -80,40 +78,48 @@ export const HomePage: FC = () => {
 
   return (
     <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] overflow-x-clip">
-      {/* 1. Multiverse Hero with Sling Ring Portal & Real H1 Text */}
+      {/* Scene 1 & 2: Multiverse Hero with Dominant Sling Ring Portal & Scroll Scrub */}
       <MultiverseHero />
 
-      {/* 2. Temporal Convergence: Eye of Agamotto Countdown */}
-      <SectionErrorBoundary sectionName="countdown">
-        <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center -mt-8 z-20 content-visibility-auto">
-          <div className="w-full max-w-xl">
-            <EyeOfAgamotto fallbackDate={earliestActiveDate} />
-          </div>
-        </section>
+      {/* Scene 3: Multiverse Chamber Preview (4 Realm Portals) */}
+      <SectionErrorBoundary sectionName="chamber-preview">
+        <div className="content-visibility-auto">
+          <ChamberPreview events={events} />
+        </div>
       </SectionErrorBoundary>
 
-      {/* 3. Festival Animated Counters */}
-      <div className="content-visibility-auto-sm">
-        <StatsSection events={events} prizePool={prizePool} />
-      </div>
-
-      {/* 4. Cloak of Levitation Sweeping Section Divider */}
-      <CloakSilhouette variant="divider" />
-
-      {/* 5. Featured Multiverse Events (Asymmetric Layout) */}
-      <SectionErrorBoundary sectionName="featured-row">
+      {/* Scene 4: Featured Artifacts of this Reality (Max 6 Cards) */}
+      <SectionErrorBoundary sectionName="featured-artifacts">
         <div className="content-visibility-auto-lg">
           <FeaturedMultiverse events={events} />
         </div>
       </SectionErrorBoundary>
 
-      {/* 6. Multiverse Partner Marquee (Rendered only if festival.ts sponsors exist) */}
+      {/* Scene 5: Time is Converging (Eye of Agamotto Countdown) */}
+      <SectionErrorBoundary sectionName="countdown">
+        <section className="relative w-full py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center z-20 content-visibility-auto">
+          <div className="w-full max-w-2xl">
+            <EyeOfAgamotto fallbackDate={earliestActiveDate} />
+          </div>
+        </section>
+      </SectionErrorBoundary>
+
+      {/* Scene 6: Sanctum About Narrative */}
+      <SectionErrorBoundary sectionName="about">
+        <div className="content-visibility-auto">
+          <SanctumAbout />
+        </div>
+      </SectionErrorBoundary>
+
+      {/* Multiverse Partner Marquee (Rendered only if festival.ts sponsors exist) */}
       <SponsorMarquee />
 
-      {/* 7. Sanctum Sanctorum About Narrative */}
-      <div className="content-visibility-auto">
-        <SanctumAbout />
-      </div>
+      {/* Scene 7: Final Gateway (Register for Strange / Live Open Status) */}
+      <SectionErrorBoundary sectionName="final-gateway">
+        <div className="content-visibility-auto">
+          <FinalGateway events={events} />
+        </div>
+      </SectionErrorBoundary>
     </div>
   );
 };

@@ -31,7 +31,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
     return bScore - aScore;
   });
 
-  const featuredEvents = eligible.slice(0, 8);
+  const featuredEvents = eligible.slice(0, 6);
   const shouldRender = eligible.length >= 3;
 
   // Calculate container padding-left so first card aligns perfectly with page container heading
@@ -267,16 +267,19 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
                   id="featured-multiverse-heading"
                   className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]"
                 >
-                  FEATURED EVENTS
+                  ARTIFACTS OF THIS REALITY
                 </h2>
                 <a
-                  href="#about"
+                  href="#countdown"
                   onClick={handleSkipFeatured}
                   className="px-3 py-1.5 rounded-lg bg-[#0D1020] border border-white/10 text-xs font-semibold text-[#F3EFE8] hover:border-[#FF7A1A] hover:text-[#FF7A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] inline-flex items-center"
                 >
-                  Skip featured events
+                  Skip featured
                 </a>
               </div>
+              <p className="text-sm sm:text-base text-[#B8B3C7] mt-1 font-medium">
+                Extraordinary experiences are waiting to be discovered.
+              </p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -308,9 +311,9 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
 
               <Link
                 to="/events"
-                className="text-xs font-bold uppercase tracking-wider text-[#F5B642] hover:text-[#FF7A1A] transition-colors"
+                className="px-4 py-2 rounded-md bg-[#FF7A1A]/15 border border-[#FF7A1A]/60 text-xs font-bold uppercase tracking-wider text-[#FF7A1A] hover:bg-[#FF7A1A] hover:text-[#07060D] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
               >
-                View all events
+                VIEW ALL EVENTS
               </Link>
             </div>
           </div>

@@ -103,9 +103,9 @@ export const Navbar: FC = () => {
 
   return (
     <header className="fixed top-2 sm:top-4 inset-x-0 z-40 px-2 sm:px-4 md:px-6 pointer-events-none flex justify-center">
-      {/* Floating Centered Bar (max-width ~1100px, near-black fill #07060D, no blur) */}
+      {/* Floating Centered Bar (max-width ~1100px, translucent near-black fill rgba, no blur) */}
       <div
-        className="pointer-events-auto relative w-full max-w-[1100px] h-[58px] sm:h-[64px] bg-[#07060D] px-3 sm:px-6 select-none grid grid-cols-[1fr_auto_1fr] items-center"
+        className="pointer-events-auto relative w-full max-w-[1100px] h-[58px] sm:h-[64px] bg-[#07060D]/90 px-3 sm:px-6 select-none grid grid-cols-[1fr_auto_1fr] items-center"
         style={{
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 122, 26, 0.3)',
         }}
