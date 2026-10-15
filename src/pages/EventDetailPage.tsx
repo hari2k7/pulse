@@ -33,6 +33,7 @@ import {
 import { useFavorites } from '../lib/favorites';
 import { getThemeForCategory, isUpcomingEvent } from '../lib/themes';
 import { EventDetailSkeleton } from '../components/events/EventDetailSkeleton';
+import { runAfterLoadAndIdle } from '../lib/idle';
 
 const GalleryLightbox = lazy(() =>
   import('../components/events/GalleryLightbox').then((m) => ({ default: m.GalleryLightbox }))
@@ -105,12 +106,21 @@ export const EventDetailPage: FC = () => {
   }, [event?.id]);
 
   // Subtle parallax on scroll (image translateY at most 40px) via GSAP ScrollTrigger
+  // Starts after load + idle; disabled on non-fine pointer or saveData to protect LCP
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     let mmRef: { revert: () => void } | null = null;
 
     const initParallax = async () => {
+      if (
+        (typeof navigator !== 'undefined' &&
+          Boolean((navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData)) ||
+        !window.matchMedia('(pointer: fine)').matches
+      ) {
+        return;
+      }
+
       try {
         const { gsap } = await import('gsap');
         const { ScrollTrigger } = await import('gsap/ScrollTrigger');
@@ -139,9 +149,9 @@ export const EventDetailPage: FC = () => {
       }
     };
 
-    const timer = setTimeout(initParallax, 80);
+    const cancelIdle = runAfterLoadAndIdle(initParallax);
     return () => {
-      clearTimeout(timer);
+      cancelIdle();
       mmRef?.revert();
     };
   }, [event?.id]);
@@ -290,7 +300,7 @@ export const EventDetailPage: FC = () => {
     ? getOptimizedImageUrl(bannerUrl, 1920, 1080)
     : FALLBACK_IMAGE_DATA_URI;
   const bannerSrcSet = hasValidImage
-    ? getImageSrcSet(bannerUrl, [480, 800, 1200, 1920], 9 / 16)
+    ? getImageSrcSet(bannerUrl, [380, 600, 900, 1400, 1920], 9 / 16)
     : undefined;
 
   const remaining = seatsLeft(event.total_seats, event.seats_filled);

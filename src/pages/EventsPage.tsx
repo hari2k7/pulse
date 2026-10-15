@@ -266,7 +266,7 @@ export const EventsPage: FC = () => {
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
               aria-expanded={mobileDrawerOpen}
-              aria-label="Open filter drawer"
+              aria-label="Filters"
               className="lg:hidden inline-flex items-center gap-1.5 px-3 py-2 bg-[#0D1020] hover:bg-[#1A1030] border border-[#FF7A1A]/40 text-[#F3EFE8] rounded-md text-xs font-semibold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -506,7 +506,7 @@ export const EventsPage: FC = () => {
                 <div key={event.id} className="h-full">
                   <EventCard
                     event={event}
-                    priority={index < 4}
+                    priority={index === 0}
                   />
                 </div>
               ))}
