@@ -1,11 +1,15 @@
 import type { EventSummary } from './types';
-import { getThemeForCategory, isUpcomingEvent, THEMES, type ThemeId } from './themes';
+import { isUpcomingEvent } from './themes';
+import { realmIdOf, isRealmId, type RealmId } from './realms';
 
 export type EventSortOption = 'soonest' | 'price-asc' | 'price-desc';
+export type DatePreset = 'all' | 'today' | 'this_week' | 'this_month';
 
 export interface EventFilterState {
   search: string;
-  themes: ThemeId[];
+  realms: RealmId[];
+  datePreset: DatePreset;
+  savedOnly: boolean;
   modes: ('OFFLINE' | 'ONLINE')[];
   types: ('EVENT' | 'WORKSHOP')[];
   prices: ('free' | 'paid')[];
@@ -17,7 +21,9 @@ export interface EventFilterState {
 
 export const DEFAULT_FILTERS: Readonly<EventFilterState> = {
   search: '',
-  themes: [],
+  realms: [],
+  datePreset: 'all',
+  savedOnly: false,
   modes: [],
   types: [],
   prices: [],
@@ -25,33 +31,6 @@ export const DEFAULT_FILTERS: Readonly<EventFilterState> = {
   technical: [],
   showPast: false,
   sort: 'soonest',
-};
-
-// Theme slug mapping for clean URL parameters (?theme=tech,design)
-const THEME_SLUG_MAP: Record<string, ThemeId> = {
-  tech: 'Tech & Code',
-  'tech-code': 'Tech & Code',
-  robotics: 'Robotics & Engineering',
-  'robotics-engineering': 'Robotics & Engineering',
-  design: 'Design & Visual Arts',
-  'design-visual-arts': 'Design & Visual Arts',
-  performing: 'Performing & Music',
-  'performing-music': 'Performing & Music',
-  words: 'Words & Culture',
-  'words-culture': 'Words & Culture',
-  science: 'Science & Startups',
-  'science-startups': 'Science & Startups',
-  more: 'More',
-};
-
-const THEME_TO_SLUG: Record<ThemeId, string> = {
-  'Tech & Code': 'tech',
-  'Robotics & Engineering': 'robotics',
-  'Design & Visual Arts': 'design',
-  'Performing & Music': 'performing',
-  'Words & Culture': 'words',
-  'Science & Startups': 'science',
-  More: 'more',
 };
 
 /**
@@ -95,14 +74,44 @@ export function matchesSearch(event: EventSummary, rawQuery: string): boolean {
 }
 
 /**
+ * Date helper for IST (+05:30) date comparisons
+ */
+export function getIstDateInfo(): { todayStr: string; weekStartStr: string; weekEndStr: string; monthStr: string } {
+  const now = new Date();
+  // IST is UTC + 5.5 hours
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(now.getTime() + istOffsetMs);
+
+  const y = istDate.getUTCFullYear();
+  const m = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(istDate.getUTCDate()).padStart(2, '0');
+  const todayStr = `${y}-${m}-${d}`;
+  const monthStr = `${y}-${m}`;
+
+  // Current day of week in IST (0 is Sunday)
+  const dayOfWeek = istDate.getUTCDay();
+  // Monday as week start
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const mondayDate = new Date(istDate.getTime() + diffToMonday * 24 * 60 * 60 * 1000);
+  const sundayDate = new Date(mondayDate.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+  const weekStartStr = `${mondayDate.getUTCFullYear()}-${String(mondayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(mondayDate.getUTCDate()).padStart(2, '0')}`;
+  const weekEndStr = `${sundayDate.getUTCFullYear()}-${String(sundayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(sundayDate.getUTCDate()).padStart(2, '0')}`;
+
+  return { todayStr, weekStartStr, weekEndStr, monthStr };
+}
+
+/**
  * Pure function: Filters events according to the multi-select filter state.
  * Within a group use OR logic, across groups use AND logic.
- * Free/Paid together means all.
  */
 export function filterEvents(
   events: EventSummary[],
-  filters: EventFilterState
+  filters: EventFilterState,
+  favoriteIds?: string[]
 ): EventSummary[] {
+  const ist = getIstDateInfo();
+
   return events.filter((event) => {
     // 1. Past events check (default hidden unless showPast is true)
     if (!filters.showPast && isPastEvent(event)) {
@@ -114,29 +123,50 @@ export function filterEvents(
       return false;
     }
 
-    // 3. Theme filter (OR logic within group)
-    if (filters.themes.length > 0) {
-      const eventTheme = getThemeForCategory(event.category);
-      if (!filters.themes.includes(eventTheme)) {
+    // 3. Realm filter (OR logic within group)
+    if (filters.realms.length > 0) {
+      const eventRealm = realmIdOf(event);
+      if (!filters.realms.includes(eventRealm)) {
         return false;
       }
     }
 
-    // 4. Delivery Mode filter (OR logic within group)
+    // 4. Date presets (in IST)
+    if (filters.datePreset && filters.datePreset !== 'all') {
+      const startDate = event.schedule_summary?.start_date;
+      if (!startDate) return false;
+
+      if (filters.datePreset === 'today') {
+        if (startDate !== ist.todayStr) return false;
+      } else if (filters.datePreset === 'this_week') {
+        if (startDate < ist.weekStartStr || startDate > ist.weekEndStr) return false;
+      } else if (filters.datePreset === 'this_month') {
+        if (!startDate.startsWith(ist.monthStr)) return false;
+      }
+    }
+
+    // 5. Saved only (favorites)
+    if (filters.savedOnly && favoriteIds) {
+      if (!favoriteIds.includes(event.id)) {
+        return false;
+      }
+    }
+
+    // 6. Delivery Mode filter (OR logic within group)
     if (filters.modes.length > 0) {
       if (!event.event_mode || !filters.modes.includes(event.event_mode as 'OFFLINE' | 'ONLINE')) {
         return false;
       }
     }
 
-    // 5. Type filter (OR logic within group)
+    // 7. Type filter (OR logic within group)
     if (filters.types.length > 0) {
       if (!event.event_type || !filters.types.includes(event.event_type as 'EVENT' | 'WORKSHOP')) {
         return false;
       }
     }
 
-    // 6. Price filter: Free/Paid together means all
+    // 8. Price filter: Free/Paid together means all
     if (filters.prices.length === 1) {
       const p = filters.prices[0];
       if (p === 'free' && event.price !== 0) {
@@ -147,7 +177,7 @@ export function filterEvents(
       }
     }
 
-    // 7. Registration status (OR logic within group)
+    // 9. Registration status (OR logic within group)
     if (filters.statuses.length > 0) {
       if (
         !event.registration_status ||
@@ -157,7 +187,7 @@ export function filterEvents(
       }
     }
 
-    // 8. Technical track filter: Both together means all
+    // 10. Technical track filter: Both together means all
     if (filters.technical.length === 1) {
       const t = filters.technical[0];
       if (t === 'technical' && !event.is_technical) {
@@ -215,9 +245,10 @@ export function sortEvents(
  */
 export function filterAndSortEvents(
   events: EventSummary[],
-  filters: EventFilterState
+  filters: EventFilterState,
+  favoriteIds?: string[]
 ): EventSummary[] {
-  const filtered = filterEvents(events, filters);
+  const filtered = filterEvents(events, filters, favoriteIds);
   return sortEvents(filtered, filters.sort);
 }
 
@@ -253,15 +284,23 @@ export function parseFiltersFromSearchParams(
   const validSort: EventSortOption =
     sortParam === 'price-asc' || sortParam === 'price-desc' ? sortParam : 'soonest';
 
-  // 1. Themes (accepts slug e.g. 'tech,design' or full name e.g. 'Tech & Code')
-  const themeParam = searchParams.get('theme') || searchParams.get('themes');
-  const themes = parseCommaSeparated(themeParam, (item) => {
-    if (THEME_SLUG_MAP[item]) return THEME_SLUG_MAP[item];
-    const match = THEMES.find((t) => t.toLowerCase() === item);
-    return match || null;
+  // 1. Realms (?realm=tech,challenge)
+  const realmParam = searchParams.get('realm') || searchParams.get('realms');
+  const realms = parseCommaSeparated(realmParam, (item) => {
+    return isRealmId(item) ? item : null;
   });
 
-  // 2. Modes ('online', 'offline')
+  // 2. Date preset (?date=today|this_week|this_month|all)
+  const dateParam = searchParams.get('date');
+  const datePreset: DatePreset =
+    dateParam === 'today' || dateParam === 'this_week' || dateParam === 'this_month'
+      ? dateParam
+      : 'all';
+
+  // 3. Saved only (?saved=true)
+  const savedOnly = searchParams.get('saved') === 'true';
+
+  // 4. Modes ('online', 'offline')
   const modeParam = searchParams.get('mode') || searchParams.get('modes');
   const modes = parseCommaSeparated(modeParam, (item) => {
     if (item === 'offline') return 'OFFLINE';
@@ -269,7 +308,7 @@ export function parseFiltersFromSearchParams(
     return null;
   });
 
-  // 3. Types ('event', 'workshop')
+  // 5. Types ('event', 'workshop')
   const typeParam = searchParams.get('type') || searchParams.get('types');
   const types = parseCommaSeparated(typeParam, (item) => {
     if (item === 'event') return 'EVENT';
@@ -277,7 +316,7 @@ export function parseFiltersFromSearchParams(
     return null;
   });
 
-  // 4. Prices ('free', 'paid')
+  // 6. Prices ('free', 'paid')
   const priceParam = searchParams.get('price') || searchParams.get('prices');
   const prices = parseCommaSeparated(priceParam, (item) => {
     if (item === 'free') return 'free';
@@ -285,8 +324,8 @@ export function parseFiltersFromSearchParams(
     return null;
   });
 
-  // 5. Statuses ('open', 'closed', 'sold_out')
-  const statusParam = searchParams.get('status') || searchParams.get('statuses') || searchParams.get('registration_status');
+  // 7. Statuses ('open', 'closed', 'sold_out')
+  const statusParam = searchParams.get('status') || searchParams.get('statuses') || searchParams.get('registration');
   const statuses = parseCommaSeparated(statusParam, (item) => {
     if (item === 'open') return 'OPEN';
     if (item === 'closed') return 'CLOSED';
@@ -294,7 +333,7 @@ export function parseFiltersFromSearchParams(
     return null;
   });
 
-  // 6. Technical track ('technical', 'non-technical', 'tech', 'non-tech', 'true', 'false')
+  // 8. Technical track ('technical', 'non-technical', 'tech', 'non-tech', 'true', 'false')
   const techParam = searchParams.get('tech') || searchParams.get('technical');
   const technical = parseCommaSeparated(techParam, (item) => {
     if (item === 'technical' || item === 'tech' || item === 'true') return 'technical';
@@ -304,7 +343,9 @@ export function parseFiltersFromSearchParams(
 
   return {
     search: searchParams.get('q') || searchParams.get('search') || '',
-    themes,
+    realms,
+    datePreset,
+    savedOnly,
     modes,
     types,
     prices,
@@ -325,9 +366,16 @@ export function filtersToSearchParams(filters: EventFilterState): URLSearchParam
     params.set('q', filters.search.trim());
   }
 
-  if (filters.themes.length > 0) {
-    const slugs = filters.themes.map((t) => THEME_TO_SLUG[t] || t.toLowerCase());
-    params.set('theme', slugs.join(','));
+  if (filters.realms.length > 0) {
+    params.set('realm', filters.realms.join(','));
+  }
+
+  if (filters.datePreset && filters.datePreset !== 'all') {
+    params.set('date', filters.datePreset);
+  }
+
+  if (filters.savedOnly) {
+    params.set('saved', 'true');
   }
 
   if (filters.modes.length > 0) {
@@ -367,7 +415,9 @@ export function filtersToSearchParams(filters: EventFilterState): URLSearchParam
 export function hasActiveFilters(filters: EventFilterState): boolean {
   return (
     filters.search.trim() !== '' ||
-    filters.themes.length > 0 ||
+    filters.realms.length > 0 ||
+    filters.datePreset !== 'all' ||
+    filters.savedOnly ||
     filters.modes.length > 0 ||
     filters.types.length > 0 ||
     filters.prices.length > 0 ||

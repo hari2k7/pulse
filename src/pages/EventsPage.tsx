@@ -1,12 +1,15 @@
-import { useState, useMemo, useRef, type FC, type ChangeEvent } from 'react';
+import { useState, useMemo, useRef, type FC, type ChangeEvent, type CSSProperties } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
+import { useFavorites } from '../lib/favorites';
 import { EventCard } from '../components/events/EventCard';
 import { EventFilters } from '../components/events/EventFilters';
 import { EventTimeline } from '../components/events/EventTimeline';
 import { FilterDrawer } from '../components/events/FilterDrawer';
 import { EventsGridSkeleton } from '../components/events/EventsGridSkeleton';
+import { PortalSelectorRow } from '../components/events/PortalSelectorRow';
+import { ArrivalRingTrace } from '../components/events/ArrivalRingTrace';
 import { EmptyState } from '../components/states/EmptyState';
 import { ErrorState } from '../components/states/ErrorState';
 import { Button } from '../components/ui/Button';
@@ -15,38 +18,55 @@ import {
   parseFiltersFromSearchParams,
   filtersToSearchParams,
   hasActiveFilters,
+  toggleArrayItem,
   type EventFilterState,
   type EventSortOption,
 } from '../lib/filters';
-import { getThemeForCategory } from '../lib/themes';
+import { getRealms, getRealmMetadata, type RealmId } from '../lib/realms';
 
 export const EventsPage: FC = () => {
   useDocumentMeta({
-    title: 'Events — STRANGE',
-    description: 'Events Index. Search, filter, and explore hackathons, technical challenges, and workshops at STRANGE.',
+    title: 'The Multiverse Index — STRANGE',
+    description: 'Explore dimensional competitions, hackathons, and workshops across the STRANGE multiverse.',
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
   const { status, events, stale, fetchedAt, error, retry } = useEvents();
+  const { favorites } = useFavorites();
 
   // Active view: grid | timeline (synced to query param)
   const view = (searchParams.get('view') === 'timeline' ? 'timeline' : 'grid') as 'grid' | 'timeline';
 
-  // Parse filters from URL search params (supports multi-select comma values)
+  // Parse filters from URL search params (URL-synced)
   const filters = useMemo<EventFilterState>(() => {
     return parseFiltersFromSearchParams(searchParams);
   }, [searchParams]);
 
+  // Derived real realms from live data
+  const realms = useMemo(() => getRealms(events), [events]);
+
+  // Dynamic Page Accent (--realm): tints borders/glows when exactly one realm is selected
+  const singleRealm = useMemo(() => {
+    if (filters.realms.length !== 1) return null;
+    return realms.find((r) => r.id === filters.realms[0]) || getRealmMetadata(filters.realms[0]);
+  }, [filters.realms, realms]);
+
+  const realmAccent = singleRealm ? singleRealm.accentColor : '#FF7A1A';
+  const singleRealmDescriptor = singleRealm
+    ? 'descriptor' in singleRealm
+      ? singleRealm.descriptor
+      : singleRealm.defaultDescriptor
+    : null;
+
   // Local state for immediate debounced search input feedback
   const [searchInput, setSearchInput] = useState<string>(filters.search);
 
-  // Pagination: render first 12 cards per Task 5
+  // Pagination: render first 12 cards, reset on filter change
   const filterKey = useMemo(() => JSON.stringify(filters), [filters]);
   const [prevFilterKey, setPrevFilterKey] = useState<string>(filterKey);
   const [visibleCount, setVisibleCount] = useState<number>(12);
   const [announceText, setAnnounceText] = useState<string>('');
 
-  // Reset pagination to 12 when filters/search/sort change per Task 5
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
     setVisibleCount(12);
@@ -63,6 +83,11 @@ export const EventsPage: FC = () => {
     const params = filtersToSearchParams(next);
     if (view === 'timeline') params.set('view', 'timeline');
     setSearchParams(params, { replace: true });
+  };
+
+  const handleToggleRealm = (realmId: RealmId) => {
+    const updatedRealms = toggleArrayItem(filters.realms, realmId);
+    updateFilters({ realms: updatedRealms });
   };
 
   const setView = (newView: 'grid' | 'timeline') => {
@@ -97,60 +122,35 @@ export const EventsPage: FC = () => {
     setSearchParams(params, { replace: true });
   };
 
-  // Filtered and sorted event collection (full number preserved for counters)
+  // Filtered and sorted event collection
   const filteredEvents = useMemo(() => {
-    return filterAndSortEvents(events, filters);
-  }, [events, filters]);
+    return filterAndSortEvents(events, filters, favorites);
+  }, [events, filters, favorites]);
 
-  // Visible batched events per Task 5 (12 initial, reveals 12 more on button click)
+  // Visible batched events (12 initial, reveals 12 more on button click)
   const visibleEvents = useMemo(() => {
     return filteredEvents.slice(0, visibleCount);
   }, [filteredEvents, visibleCount]);
 
-  // Counts for each theme based on upcoming active events
-  const themeCounts = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const e of events) {
-      if (!filters.showPast && (e.event_status === 'COMPLETED' || e.event_status === 'CLOSED')) continue;
-      const theme = getThemeForCategory(e.category);
-      map[theme] = (map[theme] || 0) + 1;
-    }
-    return map;
-  }, [events, filters.showPast]);
-
-  // Active filter detection for UI chips
-  const activeFiltersPresent = hasActiveFilters(filters);
-
-  const activeFiltersCount =
-    (filters.search.trim() ? 1 : 0) +
-    filters.themes.length +
-    filters.modes.length +
-    filters.types.length +
-    filters.prices.length +
-    filters.statuses.length +
-    filters.technical.length +
-    (filters.showPast ? 1 : 0);
-
-  const formattedFetchedAt = fetchedAt
-    ? new Date(fetchedAt).toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })
-    : null;
+  const handleShowMore = () => {
+    const nextCount = visibleCount + 12;
+    setVisibleCount(nextCount);
+    const shown = Math.min(nextCount, filteredEvents.length);
+    setAnnounceText(`Showing ${shown} of ${filteredEvents.length} events`);
+  };
 
   // Loading skeleton state
   if (status === 'loading') {
-    return <EventsGridSkeleton count={9} />;
+    return <EventsGridSkeleton count={12} />;
   }
 
   // Error state
   if (status === 'error') {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-16 min-h-[60vh] flex items-center justify-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 min-h-[60vh] flex items-center justify-center">
         <ErrorState
-          title="Multiverse Portal Disrupted"
-          message={error?.message || 'Unable to load event listings across these dimensional coordinates.'}
+          title="Multiverse Index Unreachable"
+          message={error?.message || 'Unable to load dimensional event coordinates.'}
           errorKind={error?.kind}
           onRetry={retry}
         />
@@ -158,41 +158,58 @@ export const EventsPage: FC = () => {
     );
   }
 
+  const hasFilters = hasActiveFilters(filters);
+  const remainingCount = filteredEvents.length - visibleCount;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8]">
-      {/* -------------------------------------------------------------
-          Header & Multiverse Search Bar
-          ------------------------------------------------------------- */}
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
-              EVENTS
+    <div
+      className="w-full min-h-screen bg-[#07060D] text-[#F3EFE8] pt-[calc(var(--navbar-height)+20px)] md:pt-[calc(var(--navbar-height)+32px)] pb-24"
+      style={{ '--realm': realmAccent } as CSSProperties}
+    >
+      {/* 0. Arrival Ring Trace (In-app navigation only, <=600ms, skippable) */}
+      <ArrivalRingTrace />
+
+      {/* Screen reader live announcement */}
+      <div className="sr-only" aria-live="polite">
+        {announceText}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* 1. Page Header (Single H1 per page) */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-[#FF7A1A]/10 border border-[#FF7A1A]/30 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A1A] animate-pulse" />
+              <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#FF7A1A]">
+                {events.length} Available Coordinates
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-[#F3EFE8] tracking-wider leading-none">
+              THE MULTIVERSE INDEX
             </h1>
-            <p className="text-sm text-[#B8B3C7] max-w-2xl leading-relaxed">
-              Explore 30+ competitions, hackathons, and masterclasses across alternate reality tracks.
+            <p className="text-sm sm:text-base text-[#B8B3C7] mt-2 font-medium tracking-wide">
+              Every reality has something waiting for you.
             </p>
           </div>
 
-          {/* Grid vs Timeline View Selector */}
-          <div className="flex items-center gap-1.5 p-1 rounded-md bg-[#0D1020] border border-white/10 self-start md:self-auto shrink-0" role="group" aria-label="View format">
+          {/* View Mode Toggle: Grid vs Timeline */}
+          <div
+            className="flex items-center gap-1 p-1 rounded-lg bg-[#0D1020] border border-white/10 self-start md:self-auto shrink-0"
+            role="group"
+            aria-label="View layout switch"
+          >
             <button
               type="button"
               aria-pressed={view === 'grid'}
               onClick={() => setView('grid')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] ${
                 view === 'grid'
-                  ? 'bg-[#FF7A1A] text-[#07060D] shadow-md'
+                  ? 'bg-[#FF7A1A] text-[#07060D]'
                   : 'text-[#B8B3C7] hover:text-[#F3EFE8]'
               }`}
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                />
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
               <span>Grid</span>
             </button>
@@ -200,70 +217,63 @@ export const EventsPage: FC = () => {
               type="button"
               aria-pressed={view === 'timeline'}
               onClick={() => setView('timeline')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] ${
                 view === 'timeline'
-                  ? 'bg-[#FF7A1A] text-[#07060D] shadow-md'
+                  ? 'bg-[#FF7A1A] text-[#07060D]'
                   : 'text-[#B8B3C7] hover:text-[#F3EFE8]'
               }`}
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span>Timeline</span>
             </button>
           </div>
         </div>
 
-        {/* Stale cache indicator banner per Section 7 & Item 4 */}
-        {stale && (
-          <div
-            role="status"
-            className="flex items-center justify-between gap-3 p-3.5 rounded-lg bg-[#2E2005] border border-[#FF7A1A]/40 text-[#F5B642] text-xs font-medium"
-          >
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#FF7A1A] shrink-0 animate-pulse" />
-              <span>Showing saved data (offline mode / connection issue).</span>
-              {formattedFetchedAt && (
-                <span className="text-[#B8B3C7] text-[11px]">• Saved at {formattedFetchedAt}</span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={retry}
-              className="px-2.5 py-1 rounded bg-[#FF7A1A]/20 hover:bg-[#FF7A1A]/30 border border-[#FF7A1A]/50 text-xs font-bold text-[#F3EFE8] cursor-pointer"
-            >
-              Retry
-            </button>
+        {/* 2. Interactive Realm Portal Selector Row (Multi-select filter controls) */}
+        <section aria-label="Realm Selector">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-mono font-bold tracking-widest uppercase text-[#F5B642]">
+              Choose Dimensional Realms
+            </span>
+            {filters.realms.length > 0 && (
+              <button
+                type="button"
+                onClick={() => updateFilters({ realms: [] })}
+                className="text-xs text-[#FF7A1A] hover:text-[#F5B642] underline underline-offset-4 font-mono font-semibold"
+              >
+                Clear realms ({filters.realms.length})
+              </button>
+            )}
           </div>
-        )}
+          <PortalSelectorRow
+            realms={realms}
+            selectedRealms={filters.realms}
+            onToggleRealm={handleToggleRealm}
+          />
+        </section>
 
-        {/* Search Bar + Controls Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          {/* Search Input (250ms debounced) */}
+        {/* 3. Search Bar, Sort Dropdown & Mobile Filter Button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+          {/* Search Input */}
           <div className="relative flex-1">
+            <label htmlFor="multiverse-search" className="sr-only">
+              Search by title, description, category, or tags
+            </label>
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#B8B3C7]">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
             <input
+              id="multiverse-search"
               ref={searchInputRef}
               type="search"
               value={searchInput}
               onChange={handleSearchChange}
-              placeholder="Search by event name, blurb, category, or tags..."
-              aria-label="Search events"
-              className="w-full bg-[#0D1020] border border-[#FF7A1A]/30 rounded-md pl-10 pr-12 py-2.5 text-sm text-[#F3EFE8] placeholder-[#B8B3C7]/60 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] focus:border-transparent transition-all"
+              placeholder="Search across all realities, technologies, or tags..."
+              className="w-full pl-10 pr-9 py-2.5 rounded-lg bg-[#0D1020] border border-white/15 text-sm text-[#F3EFE8] placeholder-[#B8B3C7]/60 focus:outline-none focus:border-[#FF7A1A] focus:ring-1 focus:ring-[#FF7A1A] transition-colors"
             />
             {searchInput && (
               <button
@@ -273,314 +283,290 @@ export const EventsPage: FC = () => {
                   updateFilters({ search: '' });
                   searchInputRef.current?.focus();
                 }}
-                aria-label="Clear search"
-                className="absolute inset-y-0 right-0 w-11 h-full flex items-center justify-center text-[#B8B3C7] hover:text-[#F3EFE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#B8B3C7] hover:text-white"
+                aria-label="Clear search input"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
           </div>
 
-          {/* Sort Selector Dropdown */}
-          <div className="flex items-center gap-2 shrink-0">
-            <label htmlFor="events-sort-select" className="text-xs text-[#B8B3C7] font-medium hidden sm:inline">
-              Sort:
-            </label>
-            <select
-              id="events-sort-select"
-              value={filters.sort}
-              onChange={(e) => updateFilters({ sort: e.target.value as EventSortOption })}
-              aria-label="Sort events by"
-              className="bg-[#0D1020] border border-[#FF7A1A]/30 rounded-md px-3 py-2 text-xs text-[#F3EFE8] font-medium focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] cursor-pointer"
-            >
-              <option value="soonest">Soonest Date First</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-[170px]">
+              <label htmlFor="multiverse-sort" className="sr-only">
+                Sort events
+              </label>
+              <select
+                id="multiverse-sort"
+                value={filters.sort}
+                onChange={(e) => updateFilters({ sort: e.target.value as EventSortOption })}
+                className="w-full appearance-none pl-3.5 pr-8 py-2.5 rounded-lg bg-[#0D1020] border border-white/15 text-xs font-semibold text-[#F3EFE8] focus:outline-none focus:border-[#FF7A1A] focus:ring-1 focus:ring-[#FF7A1A] transition-colors cursor-pointer"
+              >
+                <option value="soonest">Sort: Soonest First</option>
+                <option value="price-asc">Sort: Price Low → High</option>
+                <option value="price-desc">Sort: Price High → Low</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-[#B8B3C7]">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
 
-            {/* Mobile Filter Trigger Button */}
+            {/* Mobile Filter Drawer Trigger */}
             <button
               ref={filterButtonRef}
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
-              aria-expanded={mobileDrawerOpen}
-              aria-label="Filters"
-              className="lg:hidden inline-flex items-center gap-1.5 px-3 py-2 bg-[#0D1020] hover:bg-[#1A1030] border border-[#FF7A1A]/40 text-[#F3EFE8] rounded-md text-xs font-semibold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
+              className="lg:hidden flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#0D1020] border border-[#FF7A1A]/40 text-xs font-bold uppercase tracking-wider text-[#F3EFE8] hover:border-[#FF7A1A] transition-colors"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
+              <svg className="w-4 h-4 text-[#FF7A1A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
               <span>Filters</span>
-              {activeFiltersCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[#FF7A1A] text-[10px] text-[#07060D] font-bold flex items-center justify-center font-mono">
-                  {activeFiltersCount}
-                </span>
+              {hasFilters && (
+                <span className="w-2 h-2 rounded-full bg-[#FF7A1A]" />
               )}
             </button>
           </div>
         </div>
 
-        {/* Active Filter Chips & Live Result Count */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          {/* Visible Result Count with aria-live="polite" */}
-          <div
-            aria-live="polite"
-            className="text-xs sm:text-sm font-mono text-[#B8B3C7] font-semibold"
-          >
-            Showing <span className="text-[#F3EFE8] font-bold">{filteredEvents.length}</span>{' '}
-            {filteredEvents.length === 1 ? 'event' : 'events'}
-          </div>
+        {/* 4. Active Filters Chips & Matching Count Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-white/5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-mono font-bold text-[#F3EFE8]">
+              {filteredEvents.length} {filteredEvents.length === 1 ? 'event matches' : 'events match'}
+            </span>
 
-          {/* Active Filter Removable Tags */}
-          {activeFiltersPresent && (
-            <div className="flex flex-wrap items-center gap-1.5" aria-label="Active filters">
-              {filters.search && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Search: "{filters.search}"</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchInput('');
-                      updateFilters({ search: '' });
-                    }}
-                    aria-label="Remove search filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              )}
+            {/* Removable Realm Chips */}
+            {filters.realms.map((rId) => {
+              const meta = getRealmMetadata(rId);
+              return (
+                <button
+                  key={rId}
+                  type="button"
+                  onClick={() => handleToggleRealm(rId)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#F3EFE8] hover:border-[#FF7A1A] transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.accentColor }} />
+                  <span>{meta.name}</span>
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              );
+            })}
 
-              {filters.themes.map((theme) => (
-                <span key={`theme-${theme}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Theme: {theme}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ themes: filters.themes.filter((t) => t !== theme) })}
-                    aria-label={`Remove theme filter ${theme}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-
-              {filters.modes.map((mode) => (
-                <span key={`mode-${mode}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Mode: {mode === 'OFFLINE' ? 'In-Person' : 'Online'}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ modes: filters.modes.filter((m) => m !== mode) })}
-                    aria-label={`Remove mode filter ${mode}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-
-              {filters.types.map((type) => (
-                <span key={`type-${type}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Format: {type === 'WORKSHOP' ? 'Workshop' : 'Competition'}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ types: filters.types.filter((t) => t !== type) })}
-                    aria-label={`Remove format filter ${type}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-
-              {filters.prices.map((price) => (
-                <span key={`price-${price}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Admission: {price === 'free' ? 'Free Admission' : 'Paid Entry'}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ prices: filters.prices.filter((p) => p !== price) })}
-                    aria-label={`Remove admission filter ${price}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-
-              {filters.statuses.map((status) => (
-                <span key={`status-${status}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 text-xs text-[#F3EFE8]">
-                  <span>Status: {status === 'OPEN' ? 'Registration Open' : status === 'CLOSED' ? 'Registration Closed' : 'Sold Out'}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ statuses: filters.statuses.filter((s) => s !== status) })}
-                    aria-label={`Remove status filter ${status}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-
-              {filters.technical.map((tech) => (
-                <span key={`tech-${tech}`} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-[#3BA3FF]/40 text-xs text-[#3BA3FF]">
-                  <span>Track: {tech === 'technical' ? 'Technical' : 'Non-Technical'}</span>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ technical: filters.technical.filter((t) => t !== tech) })}
-                    aria-label={`Remove track filter ${tech}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              ))}
-
-              {filters.showPast && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#0D1020] border border-white/20 text-xs text-[#B8B3C7]">
-                  <span>Including closed</span>
-                  <button
-                    type="button"
-                    onClick={() => updateFilters({ showPast: false })}
-                    aria-label="Remove past events filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </span>
-              )}
-
+            {/* Removable Date Preset Chip */}
+            {filters.datePreset !== 'all' && (
               <button
                 type="button"
-                onClick={handleResetFilters}
-                className="text-xs text-[#FF7A1A] hover:text-[#F5B642] font-semibold underline underline-offset-2 ml-1"
+                onClick={() => updateFilters({ datePreset: 'all' })}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#F3EFE8] hover:border-[#FF7A1A] transition-colors"
               >
-                Clear all
+                <span>Date: {filters.datePreset.replace('_', ' ')}</span>
+                <span aria-hidden="true">&times;</span>
               </button>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
 
-      {/* Stale Cache Notice */}
-      {stale && (
-        <div
-          className="bg-[#1A1030] border border-amber-500/40 rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md"
-          role="status"
-        >
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
-            <p className="text-xs sm:text-sm text-[#F3EFE8]">
-              <strong className="text-amber-400">Showing astral cached data</strong>
-              {formattedFetchedAt ? ` (${formattedFetchedAt})` : ''}: Live temporal connection interrupted.
-            </p>
-          </div>
-          <Button variant="secondary" size="sm" onClick={retry}>
-            Retry Portal
-          </Button>
-        </div>
-      )}
+            {/* Removable Saved Only Chip */}
+            {filters.savedOnly && (
+              <button
+                type="button"
+                onClick={() => updateFilters({ savedOnly: false })}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-[#E11D48]/50 bg-[#E11D48]/20 text-[#F3EFE8] hover:border-[#E11D48] transition-colors"
+              >
+                <span>Saved Only</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            )}
 
-      {/* -------------------------------------------------------------
-          Main Content: Desktop Filter Sidebar + Mixed-Size Event Display
-          ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        {/* Desktop Filter Sidebar (Sticky) */}
-        <aside className="hidden lg:block lg:col-span-1 bg-[#0D1020] border border-[#FF7A1A]/20 rounded-xl p-5 sticky top-24 shadow-xl">
-          <EventFilters
-            filters={filters}
-            onChange={updateFilters}
-            onReset={handleResetFilters}
-            hasActive={activeFiltersPresent}
-            themeCounts={themeCounts}
-          />
-        </aside>
+            {/* Removable Status Chips */}
+            {filters.statuses.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => updateFilters({ statuses: toggleArrayItem(filters.statuses, s) })}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#B8B3C7] hover:border-[#FF7A1A] transition-colors"
+              >
+                <span>Status: {s.toLowerCase()}</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            ))}
 
-        {/* Events Display Container (Mixed-Size Grid or Timeline) */}
-        <main className="lg:col-span-3 space-y-6">
-          <h2 className="sr-only">Events Directory</h2>
-          {/* Empty State */}
-          {filteredEvents.length === 0 ? (
-            <div className="py-16 bg-[#0D1020]/40 border border-white/5 rounded-xl flex items-center justify-center">
-              <EmptyState
-                title="No Events Found"
-                description="We couldn't find any events matching your selected filters. Try adjusting your filters or search query."
-                action={
-                  activeFiltersPresent ? (
-                    <Button variant="secondary" size="sm" onClick={handleResetFilters}>
-                      Reset all filters
-                    </Button>
-                  ) : undefined
-                }
-              />
-            </div>
-          ) : view === 'timeline' ? (
-            /* Timeline View batched by 12 per Task 5 */
-            <EventTimeline events={visibleEvents} />
-          ) : (
-            /* Uniform Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch">
-              {visibleEvents.map((event, index) => (
-                <div
-                  key={event.id}
-                  className={`h-full ${index >= 3 ? 'content-visibility-card' : ''}`}
-                >
-                  <EventCard
-                    event={event}
-                    priority={index === 0}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+            {/* Removable Price Chips */}
+            {filters.prices.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => updateFilters({ prices: toggleArrayItem(filters.prices, p) })}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#B8B3C7] hover:border-[#FF7A1A] transition-colors"
+              >
+                <span>Price: {p}</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            ))}
 
-          {/* Show 12 more pagination button per Task 5 */}
-          {visibleCount < filteredEvents.length && (
-            <div className="flex flex-col items-center justify-center pt-8 pb-4">
+            {/* Removable Format Chips */}
+            {filters.types.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => updateFilters({ types: toggleArrayItem(filters.types, t) })}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#B8B3C7] hover:border-[#FF7A1A] transition-colors"
+              >
+                <span>{t === 'EVENT' ? 'Competitions' : 'Workshops'}</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            ))}
+
+            {/* Removable Mode Chips */}
+            {filters.modes.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => updateFilters({ modes: toggleArrayItem(filters.modes, m) })}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#B8B3C7] hover:border-[#FF7A1A] transition-colors"
+              >
+                <span>Mode: {m.toLowerCase()}</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            ))}
+
+            {/* Removable Track Chips */}
+            {filters.technical.map((tk) => (
+              <button
+                key={tk}
+                type="button"
+                onClick={() => updateFilters({ technical: toggleArrayItem(filters.technical, tk) })}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#B8B3C7] hover:border-[#FF7A1A] transition-colors"
+              >
+                <span>{tk}</span>
+                <span aria-hidden="true">&times;</span>
+              </button>
+            ))}
+
+            {/* Removable Search Chip */}
+            {filters.search && (
               <button
                 type="button"
                 onClick={() => {
-                  const next = Math.min(filteredEvents.length, visibleCount + 12);
-                  setVisibleCount(next);
-                  setAnnounceText(`Showing ${next} of ${filteredEvents.length} events`);
+                  setSearchInput('');
+                  updateFilters({ search: '' });
                 }}
-                className="px-6 py-3 rounded-[4px] bg-[#0D1020] hover:bg-[#1A1030] text-[#F3EFE8] hover:text-[#FF7A1A] font-display font-semibold text-sm tracking-wider uppercase border border-[#FF7A1A]/40 transition-all hover:border-[#FF7A1A] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/20 bg-[#0D1020] text-[#F3EFE8] hover:border-[#FF7A1A] transition-colors"
               >
-                Show 12 more
+                <span>q: &quot;{filters.search}&quot;</span>
+                <span aria-hidden="true">&times;</span>
               </button>
-              <div aria-live="polite" className="sr-only">
-                {announceText}
-              </div>
-            </div>
+            )}
+          </div>
+
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-xs text-[#FF7A1A] hover:text-[#F5B642] underline underline-offset-4 font-mono font-semibold"
+            >
+              Clear all filters
+            </button>
           )}
-        </main>
+        </div>
+
+        {/* 5. Main Section: Sidebar Controls + Archive Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start pt-2">
+          {/* Desktop Filter Sidebar */}
+          <aside className="hidden lg:block lg:col-span-1 sticky top-24 bg-[#0D1020]/90 border border-white/10 rounded-xl p-5 shadow-xl">
+            <EventFilters
+              filters={filters}
+              onChange={updateFilters}
+              onReset={handleResetFilters}
+              hasActive={hasFilters}
+            />
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="lg:col-span-3">
+            {/* Archive Section Heading: Realm name when 1 realm selected, else DISCOVER WHAT EXISTS BEYOND */}
+            <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
+              <h2 className="text-xl sm:text-2xl font-display font-bold tracking-wider" style={{ color: realmAccent }}>
+                {singleRealm ? singleRealm.name.toUpperCase() : 'DISCOVER WHAT EXISTS BEYOND.'}
+              </h2>
+              {singleRealmDescriptor && (
+                <span className="text-xs font-mono text-[#B8B3C7]">
+                  {singleRealmDescriptor}
+                </span>
+              )}
+            </div>
+
+            {/* Stale State Banner */}
+            {stale && (
+              <div
+                className="mb-6 p-4 rounded-xl bg-[#F5B642]/10 border border-[#F5B642]/30 flex items-center justify-between"
+                role="status"
+              >
+                <div className="flex items-center gap-2 text-xs font-medium text-[#F5B642]">
+                  <span className="w-2 h-2 rounded-full bg-[#F5B642] animate-pulse" />
+                  <span>
+                    Viewing cached coordinates{fetchedAt ? ` (${new Date(fetchedAt).toLocaleTimeString()})` : ''}.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="text-xs text-[#F5B642] underline underline-offset-4 font-semibold hover:text-white"
+                >
+                  Reconnect
+                </button>
+              </div>
+            )}
+
+            {/* Empty State when no events match */}
+            {filteredEvents.length === 0 ? (
+              <EmptyState
+                title="No Dimensional Events Match"
+                description="No events match your current filter criteria across these coordinates."
+                action={
+                  <Button variant="secondary" size="sm" onClick={handleResetFilters}>
+                    Reset All Filters
+                  </Button>
+                }
+              />
+            ) : view === 'timeline' ? (
+              /* Timeline View */
+              <EventTimeline events={filteredEvents} />
+            ) : (
+              /* Uniform Grid View */
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {visibleEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                </div>
+
+                {/* Show 12 More Pagination Button */}
+                {remainingCount > 0 && (
+                  <div className="flex flex-col items-center justify-center pt-4 pb-8 space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleShowMore}
+                      className="px-8 py-3.5 rounded-lg bg-[#0D1020] border border-[#FF7A1A]/60 text-xs font-bold uppercase tracking-wider text-[#F3EFE8] hover:bg-[#FF7A1A] hover:text-[#07060D] transition-colors shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95"
+                    >
+                      Show {Math.min(12, remainingCount)} more events
+                    </button>
+                    <span className="text-[11px] font-mono text-[#B8B3C7]">
+                      Viewing {visibleEvents.length} of {filteredEvents.length} total events
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
 
-      {/* -------------------------------------------------------------
-          Mobile Filter Drawer (Focus Trap & Scroll Lock)
-          ------------------------------------------------------------- */}
+      {/* Mobile Filter Drawer */}
       <FilterDrawer
         isOpen={mobileDrawerOpen}
         onClose={() => setMobileDrawerOpen(false)}
@@ -589,9 +575,11 @@ export const EventsPage: FC = () => {
         <EventFilters
           filters={filters}
           onChange={updateFilters}
-          onReset={handleResetFilters}
-          hasActive={activeFiltersPresent}
-          themeCounts={themeCounts}
+          onReset={() => {
+            handleResetFilters();
+            setMobileDrawerOpen(false);
+          }}
+          hasActive={hasFilters}
         />
       </FilterDrawer>
     </div>

@@ -452,6 +452,26 @@ input[type="search"]::-ms-reveal {
     }
   }
 
+  @keyframes portalArrivalExpand {
+    0% {
+      transform: scale(0.15);
+      opacity: 1;
+    }
+    60% {
+      transform: scale(1.05);
+      opacity: 0.85;
+    }
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+
+  .animate-portal-arrival-expand {
+    animation: portalArrivalExpand 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: center;
+  }
+
   /* Spark orbits around ring circumference - only active when card is hovered/focused */
   .card-portal-spark-orbit {
     transform-origin: 60px 60px;

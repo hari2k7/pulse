@@ -1,6 +1,5 @@
 import type { FC } from 'react';
-import { THEMES } from '../../lib/themes';
-import { toggleArrayItem, type EventFilterState } from '../../lib/filters';
+import { toggleArrayItem, type EventFilterState, type DatePreset } from '../../lib/filters';
 
 export interface EventFiltersProps {
   filters: EventFilterState;
@@ -8,7 +7,6 @@ export interface EventFiltersProps {
   onReset: () => void;
   hasActive: boolean;
   className?: string;
-  themeCounts?: Record<string, number>;
 }
 
 export const EventFilters: FC<EventFiltersProps> = ({
@@ -17,14 +15,13 @@ export const EventFilters: FC<EventFiltersProps> = ({
   onReset,
   hasActive,
   className = '',
-  themeCounts = {},
 }) => {
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header with Clear All button */}
       <div className="flex items-center justify-between pb-3 border-b border-[#FF7A1A]/20">
         <h2 className="text-xs font-bold text-[#F3EFE8] uppercase tracking-wider font-display">
-          Filters
+          Archive Controls
         </h2>
         {hasActive && (
           <button
@@ -37,44 +34,101 @@ export const EventFilters: FC<EventFiltersProps> = ({
         )}
       </div>
 
-      {/* 1. Themes */}
+      {/* 1. Date Presets (Today, This week, This month, All) */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
-          Theme
+          Schedule Preset
         </legend>
         <div className="flex flex-wrap gap-1.5">
-          {THEMES.filter((t) => t !== 'More').map((theme) => {
-            const isSelected = filters.themes.includes(theme);
-            const count = themeCounts[theme] ?? 0;
+          {[
+            { value: 'all' as DatePreset, label: 'All Dates' },
+            { value: 'today' as DatePreset, label: 'Today' },
+            { value: 'this_week' as DatePreset, label: 'This Week' },
+            { value: 'this_month' as DatePreset, label: 'This Month' },
+          ].map((preset) => {
+            const isSelected = filters.datePreset === preset.value;
             return (
               <button
-                key={theme}
+                key={preset.value}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => onChange({ themes: toggleArrayItem(filters.themes, theme) })}
-                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors inline-flex items-center gap-1.5 ${
+                onClick={() => onChange({ datePreset: preset.value })}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
                   isSelected
                     ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
                     : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
                 }`}
               >
-                <span>{theme}</span>
-                {count > 0 && (
-                  <span
-                    className={`text-[10px] px-1.5 rounded-full ${
-                      isSelected ? 'bg-black/30 text-white' : 'bg-[#1A1030] text-[#B8B3C7]'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
+                {preset.label}
               </button>
             );
           })}
         </div>
       </fieldset>
 
-      {/* 2. Format / Type */}
+      {/* 2. Curated Saved Only Toggle (Favorites) */}
+      <div className="pt-1">
+        <button
+          type="button"
+          aria-pressed={filters.savedOnly}
+          onClick={() => onChange({ savedOnly: !filters.savedOnly })}
+          className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-md font-semibold border transition-colors ${
+            filters.savedOnly
+              ? 'bg-[#E11D48]/20 border-[#E11D48] text-[#F3EFE8]'
+              : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#E11D48]/40 hover:text-[#F3EFE8]'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <svg
+              className={`w-3.5 h-3.5 ${filters.savedOnly ? 'fill-[#E11D48] text-[#E11D48]' : 'text-[#B8B3C7]'}`}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              fill={filters.savedOnly ? '#E11D48' : 'none'}
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <span>Saved Only (Favorites)</span>
+          </span>
+          {filters.savedOnly && (
+            <span className="text-[10px] font-mono text-[#E11D48] font-bold uppercase">Active</span>
+          )}
+        </button>
+      </div>
+
+      {/* 3. Registration Status (Open, Closed, Sold Out) */}
+      <fieldset className="space-y-2.5">
+        <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
+          Registration
+        </legend>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { value: 'OPEN' as const, label: 'Open' },
+            { value: 'CLOSED' as const, label: 'Closed' },
+            { value: 'SOLD_OUT' as const, label: 'Sold Out' },
+          ].map((opt) => {
+            const isSelected = filters.statuses.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ statuses: toggleArrayItem(filters.statuses, opt.value) })}
+                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
+                  isSelected
+                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
+                    : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      {/* 4. Format / Type (Competitions, Workshops) */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
           Format
@@ -104,40 +158,10 @@ export const EventFilters: FC<EventFiltersProps> = ({
         </div>
       </fieldset>
 
-      {/* 3. Delivery Mode */}
+      {/* 5. Access / Pricing (Free, Paid) */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
-          Mode
-        </legend>
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            { value: 'OFFLINE' as const, label: 'In-Person' },
-            { value: 'ONLINE' as const, label: 'Virtual' },
-          ].map((opt) => {
-            const isSelected = filters.modes.includes(opt.value);
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => onChange({ modes: toggleArrayItem(filters.modes, opt.value) })}
-                className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
-                  isSelected
-                    ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
-                    : 'bg-[#0D1020] text-[#B8B3C7] border-white/10 hover:border-[#FF7A1A]/40 hover:text-[#F3EFE8]'
-                }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      {/* 4. Pricing / Admission */}
-      <fieldset className="space-y-2.5">
-        <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
-          Admission
+          Access
         </legend>
         <div className="flex flex-wrap gap-1.5">
           {[
@@ -164,24 +188,23 @@ export const EventFilters: FC<EventFiltersProps> = ({
         </div>
       </fieldset>
 
-      {/* 5. Registration Status */}
+      {/* 6. Delivery Mode (Offline, Online) */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
-          Status
+          Delivery Mode
         </legend>
         <div className="flex flex-wrap gap-1.5">
           {[
-            { value: 'OPEN' as const, label: 'Open' },
-            { value: 'CLOSED' as const, label: 'Closed' },
-            { value: 'SOLD_OUT' as const, label: 'Sold Out' },
+            { value: 'OFFLINE' as const, label: 'In-Person (Campus)' },
+            { value: 'ONLINE' as const, label: 'Online' },
           ].map((opt) => {
-            const isSelected = filters.statuses.includes(opt.value);
+            const isSelected = filters.modes.includes(opt.value);
             return (
               <button
                 key={opt.value}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => onChange({ statuses: toggleArrayItem(filters.statuses, opt.value) })}
+                onClick={() => onChange({ modes: toggleArrayItem(filters.modes, opt.value) })}
                 className={`text-xs px-2.5 py-1 rounded-md font-medium border transition-colors ${
                   isSelected
                     ? 'bg-[#FF7A1A] text-[#07060D] font-bold border-[#FF7A1A]'
@@ -195,7 +218,7 @@ export const EventFilters: FC<EventFiltersProps> = ({
         </div>
       </fieldset>
 
-      {/* 6. Technical Track */}
+      {/* 7. Technical Track (Technical, Non-technical) */}
       <fieldset className="space-y-2.5">
         <legend className="text-xs font-semibold text-[#B8B3C7] uppercase tracking-wider">
           Track
@@ -224,6 +247,21 @@ export const EventFilters: FC<EventFiltersProps> = ({
           })}
         </div>
       </fieldset>
+
+      {/* 8. Past Events Toggle */}
+      <div className="pt-2 border-t border-white/10">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={filters.showPast}
+            onChange={(e) => onChange({ showPast: e.target.checked })}
+            className="w-4 h-4 rounded bg-[#0D1020] border-white/20 text-[#FF7A1A] focus:ring-[#FF7A1A]"
+          />
+          <span className="text-xs font-medium text-[#B8B3C7]">
+            Include past events
+          </span>
+        </label>
+      </div>
     </div>
   );
 };

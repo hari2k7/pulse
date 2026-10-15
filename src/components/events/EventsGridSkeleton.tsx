@@ -4,148 +4,103 @@ export interface EventsGridSkeletonProps {
   count?: number;
 }
 
-export const EventsGridSkeleton: FC<EventsGridSkeletonProps> = ({ count = 9 }) => {
+/**
+ * Loading Skeleton for /events (The Multiverse Index)
+ * Mirrors the real layout:
+ * - Header with H1 "THE MULTIVERSE INDEX"
+ * - Realm Portal Selector Row (4 circular placeholders with labels)
+ * - Search bar + Sort controls
+ * - Filter Sidebar + Uniform Grid of 12 card skeletons
+ */
+export const EventsGridSkeleton: FC<EventsGridSkeletonProps> = ({ count = 12 }) => {
   return (
     <div
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] w-full"
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+24px)] md:pt-[calc(var(--navbar-height)+36px)] pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] w-full"
       role="status"
-      aria-label="Loading events"
+      aria-label="Loading Multiverse Index"
     >
-      <span className="sr-only">Loading events</span>
+      <span className="sr-only">Loading Multiverse Index</span>
 
-      {/* 1. Header & View Toggle Row */}
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
-              EVENTS
-            </h1>
-            <p className="text-sm text-[#B8B3C7] max-w-2xl leading-relaxed">
-              Explore 30+ competitions, hackathons, and masterclasses across alternate reality tracks.
-            </p>
+      {/* 1. Header Row */}
+      <div className="border-b border-white/10 pb-6 space-y-2">
+        <div className="h-4 w-32 rounded bg-white/10 animate-pulse" />
+        <div className="h-10 sm:h-12 w-80 max-w-full rounded bg-white/15 animate-pulse" />
+        <div className="h-4 w-64 max-w-full rounded bg-white/5 animate-pulse" />
+      </div>
+
+      {/* 2. Portal Selector Row Skeleton (4 portals) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 py-2">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center p-4 rounded-xl bg-[#0D1020]/70 border border-white/10 space-y-3 animate-pulse"
+          >
+            <div className="w-full flex justify-between">
+              <div className="h-3 w-6 rounded bg-white/10" />
+              <div className="h-3 w-12 rounded bg-white/10" />
+            </div>
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-white/10 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-white/5" />
+            </div>
+            <div className="h-4 w-24 rounded bg-white/15" />
+            <div className="h-3 w-32 rounded bg-white/5" />
           </div>
+        ))}
+      </div>
 
-          {/* Grid/Timeline Toggle Placeholder */}
-          <div className="flex items-center gap-1.5 p-1 rounded-md bg-[#0D1020] border border-white/10 self-start md:self-auto shrink-0 w-36 h-9" />
+      {/* 3. Search Bar + Sort + Mobile Filter Button Row */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+        <div className="h-11 flex-1 rounded-md bg-[#0D1020] border border-white/10 flex items-center px-3.5">
+          <div className="w-4 h-4 rounded-full bg-white/10 mr-2" />
+          <div className="h-3.5 w-48 rounded bg-white/5" />
         </div>
-
-        {/* 2. Search Bar + Sort + Mobile Filter Button Row */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="h-10 flex-1 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30 flex items-center px-3.5">
-            <div className="w-4 h-4 rounded-full bg-white/10 mr-2" />
-            <div className="h-3 w-48 rounded bg-white/5" />
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Sort Dropdown Placeholder */}
-            <div className="h-9 w-36 rounded-md bg-[#0D1020] border border-[#FF7A1A]/30" />
-            {/* Mobile Filter Button Placeholder (visible only on mobile) */}
-            <div className="lg:hidden h-9 w-24 rounded-md bg-[#0D1020] border border-[#FF7A1A]/40" />
-          </div>
-        </div>
-
-        {/* 3. Active Filter & Result Count Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <div className="h-4 w-32 rounded bg-white/10 animate-pulse motion-reduce:animate-none" />
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="h-11 w-36 rounded-md bg-[#0D1020] border border-white/10" />
+          <div className="lg:hidden h-11 w-24 rounded-md bg-[#0D1020] border border-white/10" />
         </div>
       </div>
 
-      {/* 4. Main Section: Desktop Filter Sidebar + Mixed-Size Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        {/* Desktop Filter Sidebar (Exact match to real sidebar width) */}
-        <aside className="hidden lg:block lg:col-span-1 bg-[#0D1020] border border-[#FF7A1A]/20 rounded-xl p-5 space-y-6 shadow-xl">
-          {/* Filter Group 1: Themes */}
-          <div className="space-y-3">
-            <div className="h-4 w-20 rounded bg-white/15 animate-pulse motion-reduce:animate-none" />
-            <div className="space-y-2">
-              <div className="h-3.5 w-3/4 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-              <div className="h-3.5 w-5/6 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-              <div className="h-3.5 w-2/3 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-              <div className="h-3.5 w-1/2 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
+      {/* 4. Main Section: Desktop Filter Sidebar + Uniform Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start pt-2">
+        {/* Desktop Filter Sidebar Skeleton */}
+        <aside className="hidden lg:block lg:col-span-1 bg-[#0D1020]/80 border border-white/10 rounded-xl p-5 space-y-6 shadow-xl">
+          <div className="h-4 w-28 rounded bg-white/15 animate-pulse" />
+          <div className="space-y-3 pt-2">
+            <div className="h-3.5 w-20 rounded bg-white/10 animate-pulse" />
+            <div className="flex flex-wrap gap-1.5">
+              <div className="h-6 w-16 rounded bg-white/5 animate-pulse" />
+              <div className="h-6 w-20 rounded bg-white/5 animate-pulse" />
+              <div className="h-6 w-14 rounded bg-white/5 animate-pulse" />
             </div>
           </div>
-
-          {/* Filter Group 2: Mode */}
-          <div className="space-y-3 pt-4 border-t border-white/5">
-            <div className="h-4 w-24 rounded bg-white/15 animate-pulse motion-reduce:animate-none" />
-            <div className="space-y-2">
-              <div className="h-3.5 w-1/2 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-              <div className="h-3.5 w-2/3 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
+          <div className="space-y-3 pt-3 border-t border-white/5">
+            <div className="h-3.5 w-20 rounded bg-white/10 animate-pulse" />
+            <div className="flex flex-wrap gap-1.5">
+              <div className="h-6 w-14 rounded bg-white/5 animate-pulse" />
+              <div className="h-6 w-16 rounded bg-white/5 animate-pulse" />
             </div>
-          </div>
-
-          {/* Filter Group 3: Event Type */}
-          <div className="space-y-3 pt-4 border-t border-white/5">
-            <div className="h-4 w-20 rounded bg-white/15 animate-pulse motion-reduce:animate-none" />
-            <div className="space-y-2">
-              <div className="h-3.5 w-3/5 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-              <div className="h-3.5 w-1/2 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-            </div>
-          </div>
-
-          {/* Filter Group 4: Registration Status */}
-          <div className="space-y-3 pt-4 border-t border-white/5">
-            <div className="h-4 w-28 rounded bg-white/15 animate-pulse motion-reduce:animate-none" />
-            <div className="space-y-2">
-              <div className="h-3.5 w-2/3 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-              <div className="h-3.5 w-1/2 rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
-            </div>
-          </div>
-
-          {/* Filter Group 5: Past Events Toggle */}
-          <div className="pt-4 border-t border-white/5">
-            <div className="h-6 w-full rounded bg-white/5 animate-pulse motion-reduce:animate-none" />
           </div>
         </aside>
 
-        {/* Uniform Grid: exact match to real grid classes */}
-        <main className="lg:col-span-3 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch">
-            {Array.from({ length: count }).map((_, index) => (
+        {/* Uniform Grid of Card Skeletons */}
+        <main className="lg:col-span-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: count }).map((_, i) => (
               <div
-                key={index}
-                className="h-full"
+                key={i}
+                className="w-full h-[440px] rounded-xl bg-[#0D1020]/80 border border-white/10 overflow-hidden flex flex-col justify-between animate-pulse"
               >
-                <div
-                  className="flex flex-col h-full bg-[#0D1020] rounded-xl border border-white/10 p-3 sm:p-3.5 select-none animate-pulse motion-reduce:animate-none"
-                  aria-hidden="true"
-                >
-                    {/* 3:2 Image block with ONLY top-right slots pill */}
-                    <div className="relative aspect-[3/2] w-full rounded-lg bg-white/5 mb-3 overflow-hidden border border-white/10">
-                      <div className="absolute top-2.5 right-2.5 w-20 h-4 rounded bg-white/15" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0D1020] via-transparent to-transparent pointer-events-none" />
-                    </div>
-
-                    {/* Card Body */}
-                    <div className="space-y-3 px-0.5 flex-1 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        {/* Type line placeholder */}
-                        <div className="h-3.5 w-24 rounded bg-white/10" />
-                        {/* Three-line title placeholder */}
-                        <div className="space-y-1.5 min-h-[4.2rem]">
-                          <div className="h-4.5 w-4/5 rounded bg-white/15" />
-                          <div className="h-4.5 w-3/5 rounded bg-white/10" />
-                          <div className="h-4.5 w-2/5 rounded bg-white/5" />
-                        </div>
-                        {/* Date line with heart button placeholder */}
-                        <div className="flex items-center justify-between gap-2 pt-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-3.5 h-3.5 rounded-sm bg-white/15" />
-                            <div className="h-3 w-28 rounded bg-white/10" />
-                          </div>
-                          <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5" />
-                        </div>
-                      </div>
-
-                      {/* Full-width button block */}
-                      <div className="h-10 w-full rounded-xl bg-white/10 mt-1" />
-
-                      {/* Footer bar */}
-                      <div className="pt-2.5 border-t border-white/10 flex items-center justify-between">
-                        <div className="h-3 w-16 rounded bg-white/10" />
-                        <div className="h-3.5 w-14 rounded bg-white/15" />
-                      </div>
-                    </div>
+                <div className="w-full h-48 bg-white/5" />
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="h-3 w-20 rounded bg-white/10" />
+                    <div className="h-5 w-4/5 rounded bg-white/15" />
+                    <div className="h-4 w-3/5 rounded bg-white/10" />
+                  </div>
+                  <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                    <div className="h-4 w-16 rounded bg-white/10" />
+                    <div className="h-7 w-28 rounded bg-white/15" />
+                  </div>
                 </div>
               </div>
             ))}
