@@ -42,7 +42,10 @@
             }).join(', ');
           }
 
-          if (p === '/events' || p === '/favorites') {
+          var isSim = window.location.search.indexOf('sim=') !== -1;
+          var UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+          if (!isSim && (p === '/events' || p === '/favorites')) {
             window.__EARLY_EVENTS_PROMISE__ = fetch('https://render72.pages.dev/api/test/events')
               .then(function(r) { return r.json(); })
               .then(function(d) {
@@ -65,10 +68,10 @@
                 return d;
               })
               .catch(function() {});
-          } else if (p.indexOf('/events/') === 0 && p.length > 8) {
+          } else if (!isSim && p.indexOf('/events/') === 0 && p.length > 8) {
             var parts = p.split('/');
             var id = parts[2];
-            if (id) {
+            if (id && UUID_REGEX.test(id)) {
               window.__EARLY_EVENT_PROMISE__ = fetch('https://render72.pages.dev/api/test/events/' + encodeURIComponent(id))
                 .then(function(r) { return r.json(); })
                 .then(function(d) {

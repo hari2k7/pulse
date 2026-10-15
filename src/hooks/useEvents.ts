@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, getEvent, getEvents, getStoredEventsCache } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
+import { getSimMode } from '../lib/sim';
 import type { EventDetail, EventSummary, GetEventsResult } from '../lib/types';
 
 export type EventsStatus = 'loading' | 'success' | 'error';
@@ -56,28 +57,31 @@ function canPrefetch(): boolean {
 export function useEvents(options?: { enabled?: boolean }): UseEventsResult {
   const enabled = options?.enabled !== false;
   const [state, setState] = useState<EventsState>(() => {
-    // 1. Check in-memory query cache
-    const cached = queryClient.getQueryData<GetEventsResult>(['events']);
-    if (cached) {
-      return {
-        status: 'success',
-        events: cached.events,
-        stale: cached.stale,
-        fetchedAt: cached.fetchedAt,
-        error: null,
-      };
-    }
+    const isSim = Boolean(getSimMode());
+    if (!isSim) {
+      // 1. Check in-memory query cache
+      const cached = queryClient.getQueryData<GetEventsResult>(['events']);
+      if (cached) {
+        return {
+          status: 'success',
+          events: cached.events,
+          stale: cached.stale,
+          fetchedAt: cached.fetchedAt,
+          error: null,
+        };
+      }
 
-    // 2. Check 24h localStorage cache for instant render on repeat visits
-    const stored = getStoredEventsCache();
-    if (stored) {
-      return {
-        status: 'success',
-        events: stored.events,
-        stale: false, // Do NOT show banner during silent revalidation!
-        fetchedAt: stored.timestamp,
-        error: null,
-      };
+      // 2. Check 24h localStorage cache for instant render on repeat visits
+      const stored = getStoredEventsCache();
+      if (stored) {
+        return {
+          status: 'success',
+          events: stored.events,
+          stale: false, // Do NOT show banner during silent revalidation!
+          fetchedAt: stored.timestamp,
+          error: null,
+        };
+      }
     }
 
     return {
@@ -119,9 +123,9 @@ export function useEvents(options?: { enabled?: boolean }): UseEventsResult {
       .catch((err: unknown) => {
         if (ignore) return;
 
-        // If live call fails and stored data exists, serve stored data as stale
+        // If live call fails and stored data exists, serve stored data as stale (unless simulating)
         const stored = getStoredEventsCache();
-        if (stored) {
+        if (stored && !getSimMode()) {
           setState({
             status: 'success',
             events: stored.events,

@@ -27,10 +27,6 @@ export class SimulatedApiError extends Error {
 }
 
 export function getSimMode(): SimMode | null {
-  if (!import.meta.env?.DEV) {
-    return null;
-  }
-
   if (typeof window === 'undefined') {
     return null;
   }
@@ -60,9 +56,6 @@ export function getSimMode(): SimMode | null {
 }
 
 export async function checkDevSimulation(url: string): Promise<Response | null> {
-  if (!import.meta.env?.DEV) {
-    return null;
-  }
 
   const mode = getSimMode();
   if (!mode) {

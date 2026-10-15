@@ -6,7 +6,7 @@ import type {
   GetEventsOptions,
   GetEventsResult,
 } from './types';
-import { checkDevSimulation, SimulatedApiError } from './sim';
+import { checkDevSimulation, getSimMode, SimulatedApiError } from './sim';
 
 export const API_BASE_URL = 'https://render72.pages.dev';
 export const LOCAL_STORAGE_KEY = 'strange_events_cache';
@@ -408,7 +408,7 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
       );
     }
 
-    if (memoryCache) {
+    if (memoryCache && !getSimMode()) {
       return Promise.resolve({
         events: memoryCache.events,
         stale: false,
@@ -416,7 +416,7 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
       });
     }
 
-    if (inFlightGetEvents) {
+    if (inFlightGetEvents && !getSimMode()) {
       return inFlightGetEvents;
     }
   }
@@ -424,7 +424,7 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
   const fetchPromise = (async (): Promise<GetEventsResult> => {
     try {
       let events: EventSummary[] | null = null;
-      if (!force && typeof window !== 'undefined') {
+      if (!force && !getSimMode() && typeof window !== 'undefined') {
         const earlyEvents = (
           window as unknown as { __EARLY_EVENTS__?: unknown[] }
         ).__EARLY_EVENTS__;
@@ -479,7 +479,8 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
         const rawList = (data as { events: unknown[] }).events;
         const validList = rawList.filter(isValidEventItem).map(sanitizeEventSummary);
 
-        if (validList.length === 0) {
+        // If the array had items but all of them were malformed, throw invalid
+        if (rawList.length > 0 && validList.length === 0) {
           throw new ApiError(
             'No valid events found in API response',
             'invalid',
@@ -519,9 +520,9 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
     } catch (err: unknown) {
       recordFailure();
 
-      // If live call fails and cache exists in localStorage, return cached data as stale
+      // If live call fails and cache exists in localStorage, return cached data as stale (unless simulating)
       const stored = getStoredEventsCache();
-      if (stored) {
+      if (stored && !getSimMode()) {
         return {
           events: stored.events,
           stale: true,
@@ -584,7 +585,7 @@ export async function getEvent(id: string, options?: GetEventOptions): Promise<E
     );
   }
 
-  if (typeof window !== 'undefined') {
+  if (!getSimMode() && typeof window !== 'undefined') {
     const earlyEvent = (window as unknown as { __EARLY_EVENT__?: Record<string, unknown> })
       .__EARLY_EVENT__;
     if (earlyEvent && earlyEvent.id === id && isValidEventItem(earlyEvent)) {

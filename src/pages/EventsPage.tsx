@@ -219,6 +219,29 @@ export const EventsPage: FC = () => {
           </div>
         </div>
 
+        {/* Stale cache indicator banner per Section 7 & Item 4 */}
+        {stale && (
+          <div
+            role="status"
+            className="flex items-center justify-between gap-3 p-3.5 rounded-lg bg-[#2E2005] border border-[#FF7A1A]/40 text-[#F5B642] text-xs font-medium"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#FF7A1A] shrink-0 animate-pulse" />
+              <span>Showing saved data (offline mode / connection issue).</span>
+              {formattedFetchedAt && (
+                <span className="text-[#B8B3C7] text-[11px]">• Saved at {formattedFetchedAt}</span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={retry}
+              className="px-2.5 py-1 rounded bg-[#FF7A1A]/20 hover:bg-[#FF7A1A]/30 border border-[#FF7A1A]/50 text-xs font-bold text-[#F3EFE8] cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Search Bar + Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Search Input (250ms debounced) */}
