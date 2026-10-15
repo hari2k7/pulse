@@ -410,10 +410,15 @@ input[type="search"]::-ms-reveal {
     }
   }
 
-  /* Outer fiery ring slow rotation */
+  /* Outer fiery ring slow rotation - only active when card is hovered/focused */
   .card-portal-outer-ring {
     transform-origin: 60px 60px;
     animation: cardPortalRingRotate 14s linear infinite;
+    animation-play-state: paused;
+  }
+  .card-strange:hover .card-portal-outer-ring,
+  .card-strange:focus-visible .card-portal-outer-ring {
+    animation-play-state: running;
   }
 
   @keyframes cardPortalRingRotate {
@@ -425,10 +430,15 @@ input[type="search"]::-ms-reveal {
     }
   }
 
-  /* Inner faint ring breathing & depth */
+  /* Inner faint ring breathing & depth - only active when card is hovered/focused */
   .card-portal-inner-ring {
     transform-origin: 60px 60px;
     animation: cardPortalInnerBreathe 4s ease-in-out infinite alternate;
+    animation-play-state: paused;
+  }
+  .card-strange:hover .card-portal-inner-ring,
+  .card-strange:focus-visible .card-portal-inner-ring {
+    animation-play-state: running;
   }
 
   @keyframes cardPortalInnerBreathe {
@@ -442,11 +452,16 @@ input[type="search"]::-ms-reveal {
     }
   }
 
-  /* Spark orbits around ring circumference */
+  /* Spark orbits around ring circumference - only active when card is hovered/focused */
   .card-portal-spark-orbit {
     transform-origin: 60px 60px;
     animation: cardPortalSparkSpin 2.6s linear infinite;
+    animation-play-state: paused;
     will-change: transform;
+  }
+  .card-strange:hover .card-portal-spark-orbit,
+  .card-strange:focus-visible .card-portal-spark-orbit {
+    animation-play-state: running;
   }
 
   @keyframes cardPortalSparkSpin {

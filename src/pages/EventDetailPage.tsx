@@ -362,7 +362,7 @@ export const EventDetailPage: FC = () => {
             viewTransitionName: `event-img-${event.id}`,
             animationPlayState: isDrifting ? 'running' : 'paused',
           }}
-          className="w-full h-full object-cover object-center animate-ken-burns motion-reduce:transform-none"
+          className="w-full h-full object-cover object-center md:animate-ken-burns motion-reduce:transform-none"
         />
 
         {/* The ONLY scrim: light gradient at the very bottom edge (last ~25%) blending into page bg */}
@@ -378,7 +378,7 @@ export const EventDetailPage: FC = () => {
         >
           <svg
             viewBox="0 0 200 200"
-            className="w-full h-full motion-safe:animate-[spin_75s_linear_infinite] motion-reduce:animate-none"
+            className="w-full h-full md:motion-safe:animate-[spin_75s_linear_infinite] motion-reduce:animate-none"
             fill="none"
           >
             <circle cx="100" cy="100" r="92" stroke="#FF7A1A" strokeWidth="1.5" strokeDasharray="6 4" />
