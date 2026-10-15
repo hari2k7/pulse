@@ -1,6 +1,6 @@
 # STRANGE: A Tech Fest Beyond Reality
 
-> Read this file first in every session and follow the **Hard rules**.
+> Read this file first in every session and follow the **Hard rules**. This spec is the FINAL source of truth.
 
 ## 1. Goal
 
@@ -17,20 +17,21 @@ backend error handling, scalability readiness, design & creativity, features & U
 React 18 + TypeScript (strict) + Vite + React Router + Tailwind CSS.
 TanStack Query is the application cache layer for robust query synchronization, prefetching, and state resilience.
 GSAP + ScrollTrigger (dynamic import only). ESLint with `eslint-plugin-jsx-a11y`.
-No backend, no database, no auth.
+No other animation, 3D or carousel libraries. No backend, no database, no auth.
 Deploy: Cloudflare Pages or Vercel (build `npm run build`, output `dist`, SPA rewrite).
 
 ## 3. Routes
 
 | Route | Purpose |
 |---|---|
-| `/` | Landing: Sling Ring portal hero, stats, countdown, featured multiverse events, sanctum footer |
-| `/events` | Discovery (Multiverse Index): search, filters, sort, grid + timeline views, dimension badges |
-| `/events/:id` | Detail (Dimensional Index): cinematic banner, summary card, vertical section rail, deep hash links |
-| `/schedule` | Schedule timeline: all upcoming events grouped by day (IST) with filter integration |
+| `/` | Landing: Sling Ring portal hero, stats, countdown (Eye of Agamotto), featured horizontal scrub track, Sanctum footer |
+| `/events` | Discovery (Multiverse Index): search, multi-select filters, sort, uniform grid + timeline views |
+| `/events/:id` | Detail (Composed Layout): hero facts strip, overview + sticky summary, schedule & prizes, rules & FAQs, gallery & contacts |
+| `/favorites` | Curated Saved Events: cross-tab synchronized favorites with uniform EventCard grid |
 | `*` | Not found |
 
-Pages `/events`, `/events/:id`, and `/schedule` are lazy-loaded (`React.lazy` + `Suspense`).
+Pages `/events`, `/events/:id`, and `/favorites` are lazy-loaded (`React.lazy` + `Suspense`).
+There is NO `/schedule` page, route, or sitemap entry.
 
 ## 4. Events API (public, no auth, JSON, CORS open)
 
@@ -51,23 +52,23 @@ Base URL: `https://render72.pages.dev`
 `banner_image_alt`, `gallery_images[]`, `highlights[]`, `what_to_expect[]`, `eligibility[]`,
 `prerequisites[]`, `rules[]`, `prizes[]`, `faqs[]`, `schedules[]`, `organizers[]`, `coordinators[]`.
 
-**Nested shapes (verified on a real event; keep every field optional because other events may differ):**
+**Nested shapes (verified on real event data; every field optional):**
 
 ```ts
 type Schedule    = { event_date?: string; start_time?: string; end_time?: string; venue?: string }  // "2026-11-13", "09:00" (IST, no offset)
 type Prize       = { rank?: number; title?: string; amount?: number; description?: string }          // amount in INR
 type Faq         = { question?: string; answer?: string }
 type Organizer   = { id?: string; name?: string; org_type?: string }                                  // e.g. "CLUB"
-type Coordinator = { id?: string; name?: string; role?: string; contact?: string }                    // contact is an email here; may be a phone elsewhere
+type Coordinator = { id?: string; name?: string; role?: string; contact?: string }                    // contact is email or phone
 ```
 
 Detail rules from this data:
 - `schedules` items have no end date. A multi-day event is several items (one per day). Venue exists only here.
-- The API gives no registration URL. Do not build a fake register form. If an event supplies a registration URL, link out (`rel="noopener"`); otherwise show registration status + deadline and anchor to event details.
+- The API gives no registration URL. Do not build a fake register form. Register routes to `/events/:id` and anchors to the summary card displaying registration status and deadline.
 - When `is_per_head` is false the seats are **team slots** (e.g. 24 teams). Say "team slots left" instead of "seats left".
   Say "Only N left" when 5 or fewer remain.
 - `coordinators[].contact`: if it contains "@" render a `mailto:` link, if it is mostly digits render `tel:`, else plain text.
-- `rules`, `highlights` etc. are arrays of strings and can be long. Render as lists. They may contain symbols like ×.
+- `rules`, `highlights` etc. are arrays of strings and can be long. Render as lists.
 - `description` paragraphs are separated by `\n\n`.
 - Gallery images come as Pexels URLs with `w=1400` (no height). Render with a fixed aspect ratio and `object-cover`.
 - `.ics`: convert IST (UTC+5:30) times to UTC and use `Z` timestamps so every calendar app agrees.
@@ -77,24 +78,27 @@ Detail rules from this data:
 Festival metadata is configured in `src/config/festival.ts`:
 - Optional fields: `festivalName`, `tagline`, `startDate` (ISO with +05:30), `endDate`, `venue`, `collegeName`, `organizers[]`, `sponsors[] {name, logoUrl, href, tier}`, `socials[]`, `contactEmail`, `expectedParticipants`, `participatingColleges`.
 - **Strict honesty rule**: Anything unset is HIDDEN, never faked. Clear TODO comments indicate user-configurable fields.
+- There is NO `signInUrl` field. Sign In button is a dummy non-navigational button.
 - Countdown targets `festival.ts` `startDate`; if unset, falls back to the earliest upcoming ACTIVE event start from the API and labels it "Next event in". If neither exists, the countdown is hidden.
 - Counters: Real event list length live from API. Prize pool is summed ONLY from events whose detail data is loaded/cached in TanStack Query; if unavailable, the counter is hidden. Participants and colleges come ONLY from `festival.ts`, else hidden.
 
 ## 5. Design & Tokens
 
-Immersive mystical tech fest aesthetic ("STRANGE — A Tech Fest Beyond Reality").
+Immersive mystical tech fest aesthetic inspired by Doctor Strange ("STRANGE — A Tech Fest Beyond Reality").
 Original branding, spell-circle geometry, glowing Sling Ring portal accents, Sanctum Sanctorum motifs.
+No Marvel logos, screenshots, or copyrighted character artwork. Tone: confident, plain, non-AI.
+No gradient text, no glow on everything, no glassmorphism, no identical-rounded-card sameness, no pill/eyebrow badges with pulsing dots, no emojis anywhere, no decorative unicode symbols.
 
 | Token | Value | Semantic Role |
 |---|---|---|
-| Background Midnight | `#07060D` | Deep cosmic void |
-| Background Navy | `#0D1020` | Surface cards & panels |
-| Background Violet-Dark | `#1A1030` | Elevated surfaces & overlays |
+| Midnight | `#07060D` | Deep cosmic void (base background) |
+| Navy | `#0D1020` | Surface cards & panels |
+| Violet-Dark | `#1A1030` | Elevated surfaces & overlays |
 | Portal Orange | `#FF7A1A` | Sling ring fire, primary CTAs, Hackathons |
-| Portal Gold | `#F5B642` | Magic glow, accents, secondary highlights |
+| Gold | `#F5B642` | Magic glow, accents, secondary highlights |
 | Electric Blue | `#3BA3FF` | Technical dimension |
-| Magic Green | `#3DDC97` | Workshops dimension |
-| Mystic Violet | `#A66BFF` | Non-technical dimension |
+| Green | `#3DDC97` | Workshops dimension |
+| Violet | `#A66BFF` | Non-technical dimension |
 | Cloak Red | `#C8102E` | Cloak of Levitation motif (used sparingly) |
 | Text Primary | `#F3EFE8` | High contrast body & titles (AA verified) |
 | Text Muted | `#B8B3C7` | Subtle labels, secondary text (AA verified) |
@@ -102,108 +106,66 @@ Original branding, spell-circle geometry, glowing Sling Ring portal accents, San
 - **Typography**:
   - Display: `Cinzel` (Google Fonts / `@fontsource/cinzel`, weights 400 & 700), self-hosted with metric-matched fallback for 0 CLS. Preload display font.
   - Body: `Inter` (weights 400 & 600), self-hosted with metric-matched fallback.
-  - `font-display: swap` on all fonts.
-- **Motion & Spacing**:
-  - Durations: 150ms (micro), 300ms (standard), 500ms (transition), 800ms (cinematic).
-  - Primary easing: `cubic-bezier(0.16, 1, 0.3, 1)`.
-  - Radii: 6px (`rounded-sm`), 12px (`rounded-md`), 20px (`rounded-lg`), 9999px (`rounded-full`).
-- **Original SVG Assets**:
-  - STRANGE logo (wordmark + circular sigil), spell-circle concentric rings, glyph set (Overview, Schedule, Prizes, Rules, FAQs, Contacts), Eye of Agamotto artifact, Sanctum seal, Cloak silhouette. No Marvel logos or copyrighted images.
-- **Cards**: Shared structure with category-specific portal colorways (electric blue, orange, green, violet), mixed-size layout with flagship span, red cloak sweep reveal, View Transitions API support.
-- **Status Badges**: Always accompanied by explicit text labels, never color alone.
+  - `font-display: swap` on all fonts. Max 2 weights each.
+- **Original Inline SVG Assets**:
+  - STRANGE logo (wordmark + circular sigil), spell circles, Eye of Agamotto, Sanctum seal, Cloak silhouette.
+- **Cards**:
+  - ALL CARDS THE SAME SIZE across Home, `/events`, and `/favorites`.
+  - Single `<Link>` to `/events/:id` inside a relative wrapper.
+  - Sibling heart toggle next to date row with 44px hit area and `stopPropagation`.
+  - 3:2 image ratio, explicit width/height (600x400), lazy except LCP images.
+  - Category pill top-left, slot status pill top-right (each max-w 45%, min-w-0 to prevent overlap).
+  - Footer bar pinned with `mt-auto`.
+  - Cloak peel + rotating portal on hover and focus-visible (~500ms). Reverses smoothly on leave.
+  - Completely static under `prefers-reduced-motion` and touch devices.
 
-## 6. Display rules
+## 6. Global Shell
 
-- `price === 0` means "Free". `is_per_head` decides "per person" / "per team".
-- Show `event_status` and `registration_status` as separate badges.
-- Never show "registration open" unless `registration_status === "OPEN"`. Never infer it from `ACTIVE`.
-- `seats_left = total_seats - seats_filled`, only when both are valid numbers. Clamp at 0.
-- Format dates in IST. Tolerate missing or invalid dates (show nothing or "TBA").
-- Hide any section whose data is missing or empty. Never render `undefined` or `null`.
-- "Closing soon" = `registration_status === "OPEN"` and a future `registration_deadline`, nearest first.
-- Event categories mapped to themes in `src/lib/themes.ts`.
-- Event images are Pexels URLs with `w=1200&h=800&fit=crop` in the query string. Keep 3:2 ratio.
+- **Navbar**:
+  - Floating centered bar (max-width ~1100px), near-black `#07060D` fill, no blur.
+  - Double gold/orange lines along top/bottom with pointed diamond-shaped ends and fine lattice pattern.
+  - Small diamond ornaments at center top/bottom lines, thin vertical dividers.
+  - Items: Home (house icon), Events (mandala icon), Favorites (heart icon) with always-visible uppercase labels.
+  - Active route: orange underline with small diamond, `aria-current="page"`.
+  - Center: STRANGE wordmark.
+  - Right: pill button "Sign In" with glowing orange outline and up-right arrow (`<button type="button">`, dummy, no onClick/navigation/modal/auth).
+  - Mobile: compact version fitting 375px without horizontal scroll.
+  - One shared CSS variable `--navbar-height`; pages start with `padding-top = var(--navbar-height) + 32px` mobile / `48px` desktop.
+- **ScrollToTop**:
+  - Enforces `window.scrollTo({ top: 0, left: 0, behavior: "instant" })` on pathname changes (NOT search param changes) when navigation is not "POP".
+  - Preserves back/forward scroll restoration. Scrolls hash element into view if present.
+- **Cursor**:
+  - Custom cursor active only on `(hover: hover)` and `(pointer: fine)` without reduced motion.
+  - Small gold/orange diamond (10px square rotated 45deg) following within 1 frame.
+  - Music-note trail from a pool of max 10 reused inline SVG notes drifting and fading in ~900ms.
+  - Class `has-custom-cursor` on `<html>` hides native cursor on interactive elements while preserving native text cursor on inputs/textareas/selects.
+- **Footer**:
+  - Sanctum Sanctorum backdrop with slowly rotating seal (60s CSS).
+  - Only real links to Events, Favorites, and config-driven items.
+  - Copyright line and "SEE YOU IN ANOTHER REALITY."
+  - Zero "Built with" text anywhere in the project.
 
 ## 7. Resilience & Caching
 
-- Timeout 8 s via `AbortController`. Up to 2 retries with backoff. No retry on 404. Never retry forever.
+- Timeout 8 s via internal `AbortController`. Up to 2 retries with backoff. No retry on 404.
+- `getEvents` does NOT forward caller signal to fetch to avoid premature cancellation by unmounting components.
 - Validate responses (`events` is an array, `event` exists). Handle invalid JSON.
 - Typed error kinds: `network | timeout | http | notfound | invalid`.
-- **TanStack Query Cache Layer**: In-memory query caching, stale-while-revalidate, background refetching, and synchronous placeholder data propagation.
-- `localStorage` fallback persistence (`pulse_events_cache`). If live call fails and cache exists, show "Showing saved data" banner with Retry button.
-- States for every data view: skeleton, success, empty (not an error), error + Retry, not-found.
+- **TanStack Query Layer**: retry false, staleTime 5 min, gcTime 30 min, refetchOnWindowFocus false.
+- `localStorage` fallback persistence (`strange_events_cache`). If live call fails and cache exists, show "Showing astral cached data" banner with Retry button.
+- States for every data view: skeleton, success, empty (not an error), error + Retry, not-found, stale banner.
 - Dev-only failure simulation via `?sim=timeout|500|empty|badjson|404` (disabled in production).
-
-## 7b. Page structure and shell
-
-- `index.html` contains a static, styled shell (midnight background, navbar, headline) with inline critical CSS
-  and default meta tags (title, description, Open Graph, theme-color), so first paint and SEO do not
-  depend on JS.
-- Per-route `<title>` and meta description. Pattern: `STRANGE — A Tech Fest Beyond Reality`, `Events — STRANGE`, `Schedule — STRANGE`, `{event name} — STRANGE`.
-- `public/` contains `robots.txt`, `sitemap.xml` (`/`, `/events`, `/schedule`), and an SPA rewrite.
-
-### Real data facts (checked against the live API, 30 events)
-
-- 27 distinct `category` values across 30 events (almost all have exactly 1 event). **Never make one row or
-  one filter chip per raw category.** Group them into themes with a client-side map in `src/lib/themes.ts`
-  (unknown categories fall into "More"). Show the raw category as a small label on each card.
-  - Tech & Code: Coding, Hackathon, Artificial Intelligence, Web Development, Cybersecurity, Gaming
-  - Robotics & Engineering: Robotics, Engineering, Aerial Robotics, Robotics & Electronics
-  - Design & Visual Arts: Design & Product, Visual Arts, Art & Design, Arts & Craft, Design, Photography, Film & Media
-  - Performing & Music: Dance, Music, Theatre
-  - Words & Culture: Debate & Literary, Literary Arts, Quiz & Culture, Food & Culture
-  - Science & Startups: Sustainability, Astronomy, Entrepreneurship
-- `event_status`: ACTIVE 27, COMPLETED 2, CLOSED 1. `registration_status`: OPEN 24, CLOSED 3, SOLD_OUT 3.
-  `event_mode`: OFFLINE 26, ONLINE 4. `event_type`: EVENT 23, WORKSHOP 7. Featured 6. Free 7.
-- The list is sorted by start date, so the first items are in the past (COMPLETED/CLOSED, deadlines already gone).
-  - Billboard = a featured event that is ACTIVE with registration OPEN (fallback: any ACTIVE OPEN event).
-  - Default `/events` view hides past events; a "Show past events" toggle reveals them (they are labelled).
-  - Completed events show "Completed", never a seats-left bar or open-registration wording.
-  - SOLD_OUT events stay visible with a "Sold out" badge.
-- Row plan for the landing page (hide any row with fewer than 3 events):
-  Featured, Closing soon, Free to join, Workshops, then one row per **theme** that has 3 or more events.
-  "Online" has only 4 events, so use it as a filter chip rather than a row.
-- Event images are Pexels URLs with `w=1200&h=800&fit=crop` in the query string. Cards request a smaller size
-- Event images are Pexels URLs with `w=1200&h=800&fit=crop` in the query string. Cards request a smaller size
-  (e.g. `w=600&h=400`), the billboard a larger one, with `srcset`/`sizes`. Keep the 3:2 ratio.
 
 ## 8. Hard rules
 
 1. Runtime fetching only. Never fetch event data at build time.
-2. Never hide the LCP element (billboard image / h1) with JS. It must be visible without waiting for scripts.
+2. Never hide the LCP element (h1/tagline) with JS. It must be visible without waiting for scripts.
 3. Animate only `transform` and `opacity`. No layout-shifting animation. CLS should be 0.
 4. Respect `prefers-reduced-motion`. Content must be fully usable without animation.
-5. GSAP is loaded via dynamic `import()` after first paint. No pinning, no scroll-jacking.
-6. Images: fixed aspect ratio, explicit `width`/`height`, `loading="lazy"` except the LCP image
-   (`fetchpriority="high"`, eager).
-7. Carousels use CSS scroll-snap with focusable prev/next buttons and `aria-label`s. No carousel library.
-8. Accessibility: landmarks, skip link, one `h1` per page, logical heading order, labelled inputs,
-   visible `:focus-visible`, AA contrast, alt text from `*_image_alt`, modal/drawer focus trap + Escape.
-9. Keep dependencies minimal. After every step, review `package.json` and the build output size.
-10. No fake registration, payment or auth. Only link out if the API supplies a URL.
-11. No console errors, no leftover `console.log`, no secrets committed.
-12. Work in small steps. Do only what the current prompt asks. Do not refactor unrelated code.
-13. `npm run lint`, `npx tsc --noEmit` and `npm run build` must pass before you finish a step.
-
-## 9. Folder structure (suggested)
-
-```
-src/
-  app/        App.tsx, routes.tsx
-  components/ layout/ events/ states/ ui/
-  pages/      HomePage.tsx, EventsPage.tsx, EventDetailPage.tsx, NotFoundPage.tsx
-  lib/        api.ts, types.ts, format.ts, filters.ts, calendar.ts, sim.ts
-  hooks/      useEvents.ts, useReveal.ts, useDocumentMeta.ts
-  styles/     index.css
-```
-
-## 10. Definition of done
-
-- [ ] Landing, events list and event detail work from the live API
-- [ ] No horizontal scroll at 375, 768, 1280 px
-- [ ] Every `?sim=` failure renders a clean state; Retry works; no blank screen or endless spinner
-- [ ] Lighthouse (PageSpeed Insights) reviewed on the deployed URL for mobile and desktop
-- [ ] Keyboard-only navigation works everywhere
-- [ ] Deep links (`/events/:id`) work on refresh in production
-- [ ] README complete (setup, architecture, design rationale, AI + third-party assets disclosure)
-- [ ] Repo public, URL opens in a private window
+5. GSAP is loaded via dynamic `import()` after first paint. No pinning, no scroll-jacking that traps scrolling.
+6. Images: fixed 3:2 aspect ratio, explicit `width`/`height`, `loading="lazy"` except LCP image (`fetchpriority="high"`, eager).
+7. Accessibility: landmarks, skip link, one `h1` per page, logical heading order, labelled inputs, visible `:focus-visible`, AA contrast, alt text from `*_image_alt`, modal/drawer focus trap + Escape.
+8. No fake registration, payment or auth. Only link out if the API supplies a URL.
+9. No console errors, no leftover debug logs, no secrets committed.
+10. `npm run lint`, `npx tsc --noEmit` and `npm run build` must pass before completing.
+11. NEVER run `git push`.
