@@ -238,12 +238,12 @@ export const EventDetailPage: FC = () => {
                   Register
                 </a>
               ) : (
-                <span className="inline-block px-3 py-2 rounded bg-white/10 text-xs font-semibold text-[#B8B3C7]">
+                <span className="inline-block px-2.5 py-1 rounded-[4px] border border-white/10 bg-[#141416] text-[12px] font-semibold font-sans normal-case text-[#9CA3AF]">
                   {event.registration_status === 'SOLD_OUT'
-                    ? 'SOLD OUT'
+                    ? 'Sold out'
                     : event.event_status === 'COMPLETED'
-                    ? 'COMPLETED'
-                    : 'REGISTRATION CLOSED'}
+                    ? 'Completed'
+                    : 'Registration closed'}
                 </span>
               )}
 
