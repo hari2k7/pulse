@@ -84,7 +84,7 @@ export const MultiverseHero: FC = () => {
     };
   }, [isLite, skipIntro]);
 
-  // Scene 2 (Scroll): GSAP ScrollTrigger scrub contracts ring, peels sparks, recedes inner world
+  // Scene 2 (Scroll): GSAP ScrollTrigger scrub - text and button enter portal, ring contracts and collapses to point
   useEffect(() => {
     if (typeof window === 'undefined' || isLite) return;
 
@@ -106,29 +106,128 @@ export const MultiverseHero: FC = () => {
             const chamber = chamberRef.current;
             const textGroup = textGroupRef.current;
 
-            if (!hero || !portal) return;
+            if (!hero || !portal || !textGroup) return;
+
+            const isMobile = window.innerWidth < 768;
+            const ctaLink = textGroup.querySelector<HTMLAnchorElement>('a');
 
             const tl = gsap.timeline({
               scrollTrigger: {
                 trigger: hero,
                 start: 'top top',
-                end: 'bottom top',
-                scrub: 0.6,
+                end: isMobile ? 'bottom 20%' : 'bottom top',
+                scrub: 0.5,
+                onUpdate: (self) => {
+                  // Content shrinks below ~50% scale at ~20% scroll progress (0-40% scale tween)
+                  const isShrunkBelowHalf = self.progress >= 0.2;
+                  if (isShrunkBelowHalf) {
+                    textGroup.style.pointerEvents = 'none';
+                    if (ctaLink) ctaLink.setAttribute('tabindex', '-1');
+                  } else {
+                    textGroup.style.pointerEvents = 'auto';
+                    if (ctaLink) ctaLink.removeAttribute('tabindex');
+                  }
+                },
               },
             });
 
-            // As hero scrolls out: contract ring to bright point, peel sparks, recede inner world
+            // 1. Sequence 0% - 40%: Headline, tagline, copy, and button travel INTO the portal
+            // Scaling down toward portal center, losing opacity at the very end of this phase
+            tl.to(
+              textGroup,
+              {
+                scale: 0.04,
+                duration: 0.4,
+                ease: 'power2.in',
+                transformOrigin: 'center center',
+              },
+              0
+            );
+            tl.to(
+              textGroup,
+              {
+                opacity: 0,
+                duration: 0.12,
+                ease: 'power1.in',
+              },
+              0.28
+            );
+
+            // 2. Sequence 40% - 75%: Ring contracts, sparks peel, inner world recedes
             if (ring) {
-              tl.to(ring, { scale: 0.15, opacity: 0.3, ease: 'power2.in' }, 0);
+              tl.to(
+                ring,
+                {
+                  scale: 0.45,
+                  opacity: 0.85,
+                  duration: 0.35,
+                  ease: 'power2.in',
+                  transformOrigin: 'center center',
+                },
+                0.4
+              );
             }
             if (chamber) {
-              tl.to(chamber, { scale: 0.45, opacity: 0, ease: 'power2.in' }, 0);
+              tl.to(
+                chamber,
+                {
+                  scale: 0.3,
+                  opacity: 0.25,
+                  duration: 0.35,
+                  ease: 'power2.in',
+                  transformOrigin: 'center center',
+                },
+                0.4
+              );
             }
-            tl.to(portal, { scale: 0.3, opacity: 0, y: 100, ease: 'power2.in' }, 0);
+            tl.to(
+              portal,
+              {
+                scale: 0.65,
+                duration: 0.35,
+                ease: 'power2.in',
+                transformOrigin: 'center center',
+              },
+              0.4
+            );
 
-            // Subtle counter parallax on headline text
-            if (textGroup) {
-              tl.to(textGroup, { y: -50, opacity: 0.8, ease: 'none' }, 0);
+            // 3. Sequence 75% - 100%: Portal collapses to a small bright point and vanishes
+            tl.to(
+              portal,
+              {
+                scale: 0.02,
+                opacity: 0,
+                duration: 0.25,
+                ease: 'power3.in',
+                transformOrigin: 'center center',
+              },
+              0.75
+            );
+            if (ring) {
+              tl.to(
+                ring,
+                {
+                  scale: 0.05,
+                  opacity: 0,
+                  duration: 0.25,
+                  ease: 'power3.in',
+                  transformOrigin: 'center center',
+                },
+                0.75
+              );
+            }
+            if (chamber) {
+              tl.to(
+                chamber,
+                {
+                  scale: 0.05,
+                  opacity: 0,
+                  duration: 0.25,
+                  ease: 'power3.in',
+                  transformOrigin: 'center center',
+                },
+                0.75
+              );
             }
           });
         }, heroRef);
@@ -137,7 +236,7 @@ export const MultiverseHero: FC = () => {
       }
     };
 
-    const cancelIdle = runAfterLoadAndIdle(initScrollTrigger, 1200);
+    const cancelIdle = runAfterLoadAndIdle(initScrollTrigger, 1000);
 
     return () => {
       cancelIdle();
