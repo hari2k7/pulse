@@ -163,6 +163,32 @@ body {
   overflow-x: hidden;
 }
 
+/* -------------------------------------------------------------
+   Custom Cursor — Hide native cursor when diamond cursor active
+   Preserves native text cursor on inputs/textareas/selects
+   ------------------------------------------------------------- */
+html.has-custom-cursor,
+html.has-custom-cursor body,
+html.has-custom-cursor a,
+html.has-custom-cursor button,
+html.has-custom-cursor [role="button"],
+html.has-custom-cursor label,
+html.has-custom-cursor summary,
+html.has-custom-cursor .card-strange {
+  cursor: none !important;
+}
+
+html.has-custom-cursor input,
+html.has-custom-cursor textarea,
+html.has-custom-cursor [contenteditable="true"],
+html.has-custom-cursor [contenteditable=""] {
+  cursor: text !important;
+}
+
+html.has-custom-cursor select {
+  cursor: pointer !important;
+}
+
 /* Custom utilities */
 .font-display {
   font-family: var(--font-display);

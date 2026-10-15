@@ -19,6 +19,8 @@ const NOTE_COLORS = ['#FF7A1A', '#F5B642'];
 
 export const StrangeCursor: FC = () => {
   const [enabled, setEnabled] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isOnInput, setIsOnInput] = useState<boolean>(false);
   const [isInteractive, setIsInteractive] = useState<boolean>(false);
   const [isDown, setIsDown] = useState<boolean>(false);
 
@@ -26,7 +28,7 @@ export const StrangeCursor: FC = () => {
   const diamondRef = useRef<HTMLDivElement>(null);
   const noteElementsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Smooth lerp coordinates
+  // Smooth coordinates (1-frame direct follow for zero lag)
   const posRef = useRef({
     currentX: -100,
     currentY: -100,
@@ -79,12 +81,19 @@ export const StrangeCursor: FC = () => {
       window.clearTimeout(checkTimer);
       motionQuery.removeEventListener('change', handleChange);
       pointerQuery.removeEventListener('change', handleChange);
+      document.documentElement.classList.remove('has-custom-cursor');
     };
   }, []);
 
-  // Main rAF animation & event management
+  // Main rAF animation, native cursor suppression & event management
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      document.documentElement.classList.remove('has-custom-cursor');
+      return;
+    }
+
+    // Apply has-custom-cursor to <html> when mounted & capable
+    document.documentElement.classList.add('has-custom-cursor');
 
     let animId: number;
 
@@ -115,6 +124,8 @@ export const StrangeCursor: FC = () => {
     const handlePointerMove = (e: PointerEvent) => {
       posRef.current.targetX = e.clientX;
       posRef.current.targetY = e.clientY;
+      setIsVisible(true);
+      document.documentElement.classList.add('has-custom-cursor');
 
       // Spawn one note every ~45px of movement (never when still)
       const dx = e.clientX - posRef.current.lastSpawnX;
@@ -126,12 +137,20 @@ export const StrangeCursor: FC = () => {
         spawnNote(e.clientX, e.clientY);
       }
 
-      // Check if over interactive elements (buttons, links, cards)
+      // Check if target is inside an input/textarea/select/contenteditable
       const target = e.target as HTMLElement | null;
       if (target) {
-        const interactive = !!target.closest(
-          'a, button, [role="button"], input, select, textarea, .card-strange, [data-interactive="true"]'
+        const inputElement = !!target.closest(
+          'input, textarea, select, [contenteditable="true"], [contenteditable=""]'
         );
+        setIsOnInput(inputElement);
+
+        // Check if over interactive elements (buttons, links, cards)
+        const interactive =
+          !inputElement &&
+          !!target.closest(
+            'a, button, [role="button"], label, summary, .card-strange, [data-interactive="true"]'
+          );
         setIsInteractive(interactive);
       }
     };
@@ -154,17 +173,44 @@ export const StrangeCursor: FC = () => {
       setIsDown(false);
     };
 
+    // Remove custom cursor styling and hide diamond when pointer leaves document or window blurs
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (!e.relatedTarget) {
+        document.documentElement.classList.remove('has-custom-cursor');
+        setIsVisible(false);
+      }
+    };
+
+    const handleMouseEnter = () => {
+      document.documentElement.classList.add('has-custom-cursor');
+      setIsVisible(true);
+    };
+
+    const handleWindowBlur = () => {
+      document.documentElement.classList.remove('has-custom-cursor');
+      setIsVisible(false);
+    };
+
+    const handleWindowFocus = () => {
+      document.documentElement.classList.add('has-custom-cursor');
+      setIsVisible(true);
+    };
+
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('pointerdown', handlePointerDown, { passive: true });
     window.addEventListener('pointerup', handlePointerUp, { passive: true });
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseenter', handleMouseEnter);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
 
-    // Single rAF loop for transform/opacity updates only
+    // Single rAF loop: diamond updates within 1 frame (zero lerp lag)
     const render = () => {
       const pos = posRef.current;
-      pos.currentX += (pos.targetX - pos.currentX) * 0.35;
-      pos.currentY += (pos.targetY - pos.currentY) * 0.35;
+      pos.currentX = pos.targetX;
+      pos.currentY = pos.targetY;
 
-      // 1. Diamond cursor position
+      // 1. Diamond cursor position (follows within ~1 frame, perfectly centered)
       if (diamondRef.current) {
         diamondRef.current.style.transform = `translate3d(${pos.currentX}px, ${pos.currentY}px, 0)`;
       }
@@ -210,9 +256,14 @@ export const StrangeCursor: FC = () => {
 
     return () => {
       cancelAnimationFrame(animId);
+      document.documentElement.classList.remove('has-custom-cursor');
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mouseenter', handleMouseEnter);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled]);
@@ -221,16 +272,20 @@ export const StrangeCursor: FC = () => {
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-50 overflow-hidden select-none"
+      className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden select-none"
       aria-hidden="true"
     >
       {/* 1. Small Diamond: roughly 10px square rotated 45deg, gold/orange fill with lighter outline */}
       <div
         ref={diamondRef}
         className="absolute top-0 left-0 w-0 h-0 will-change-transform"
+        style={{
+          opacity: isVisible && !isOnInput ? 1 : 0,
+          transition: 'opacity 150ms ease-out',
+        }}
       >
         <div
-          className={`w-2.5 h-2.5 -ml-[5px] -mt-[5px] bg-[#FF7A1A] border border-[#FCE881] shadow-[0_0_8px_rgba(255,122,26,0.65)] transition-transform duration-300 ease-out ${
+          className={`w-2.5 h-2.5 -ml-[5px] -mt-[5px] bg-[#FF7A1A] border border-[#FCE881] shadow-[0_0_8px_rgba(255,122,26,0.65)] transition-transform duration-200 ease-out ${
             isDown
               ? 'scale-75 rotate-[45deg]'
               : isInteractive
