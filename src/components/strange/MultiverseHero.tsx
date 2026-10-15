@@ -3,13 +3,7 @@ import { Link } from 'react-router-dom';
 import { SlingRingPortal } from './SlingRingPortal';
 import { CloakSilhouette } from './CloakSilhouette';
 import { FESTIVAL_CONFIG } from '../../config/festival';
-import type { EventSummary } from '../../lib/types';
-
-export interface MultiverseHeroProps {
-  firstOpenEvent?: EventSummary | null;
-}
-
-export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
+export const MultiverseHero: FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const portalWrapperRef = useRef<HTMLDivElement>(null);
   const textGroupRef = useRef<HTMLDivElement>(null);
@@ -76,16 +70,6 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
     };
   }, []);
 
-  // Registration CTA behavior per 1.2 and 4.1 (plain text Register label, no arrows)
-  const registerCta = firstOpenEvent?.registration_status === 'OPEN'
-    ? {
-        label: 'Register',
-        to: `/events/${firstOpenEvent.id}`,
-      }
-    : {
-        label: 'Register',
-        to: '/events',
-      };
 
   return (
     <section
@@ -152,20 +136,13 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
           Step through the Sling Ring and push the boundaries of engineering.
         </p>
 
-        {/* Primary CTAs */}
-        <div className="flex flex-wrap gap-4 justify-center pt-2">
+        {/* Primary CTA */}
+        <div className="pt-2">
           <Link
             to="/events"
             className="inline-flex items-center justify-center font-bold text-sm sm:text-base uppercase tracking-wider px-6 sm:px-8 py-3.5 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95"
           >
             Explore Events
-          </Link>
-
-          <Link
-            to={registerCta.to}
-            className="inline-flex items-center justify-center font-semibold text-sm sm:text-base uppercase tracking-wider px-6 sm:px-8 py-3.5 rounded-md bg-[#1A1030] border border-[#FF7A1A]/40 text-[#F3EFE8] hover:border-[#FF7A1A] hover:bg-[#261845] transition-colors active:scale-95"
-          >
-            {registerCta.label}
           </Link>
         </div>
       </div>

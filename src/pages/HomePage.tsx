@@ -23,14 +23,6 @@ export const HomePage: FC = () => {
 
   const { status, events, error, retry } = useEvents();
 
-  // Find the first ACTIVE and OPEN event for registration routing per Constraint 2
-  const firstOpenEvent = useMemo(() => {
-    return (
-      events.find((e) => e.event_status === 'ACTIVE' && e.registration_status === 'OPEN') ||
-      events.find((e) => e.registration_status === 'OPEN') ||
-      null
-    );
-  }, [events]);
 
   // Earliest upcoming ACTIVE event date for Agamotto countdown fallback per Constraint 4
   const earliestActiveDate = useMemo(() => {
@@ -115,7 +107,7 @@ export const HomePage: FC = () => {
   return (
     <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] overflow-x-hidden">
       {/* 1. Multiverse Hero with Sling Ring Portal & Real H1 Text */}
-      <MultiverseHero firstOpenEvent={firstOpenEvent} />
+      <MultiverseHero />
 
       {/* 2. Temporal Convergence: Eye of Agamotto Countdown */}
       <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center -mt-8 z-20">
