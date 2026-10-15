@@ -75,6 +75,7 @@ export const MultiverseHero: FC = () => {
     <section
       ref={heroRef}
       className="relative w-full min-h-[90vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-[#07060D] pt-24 pb-16 px-4 sm:px-6 lg:px-8"
+      id="festival-hero"
       aria-label="Festival Hero"
     >
       {/* Background Layer 1: Ambient Stars & Crimson Cloak Silhouette */}

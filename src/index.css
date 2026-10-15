@@ -487,3 +487,23 @@ html.has-custom-cursor:has(input:hover, textarea:hover, select:hover, input:focu
   animation-duration: 350ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* Back to top floating cloak animation */
+@keyframes cloak-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-cloak-float {
+  animation: cloak-float 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cloak-float {
+    animation: none !important;
+  }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense, type FC, type ReactNode } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Footer } from './Footer';
 import { Navbar } from './Navbar';
 
@@ -8,12 +8,19 @@ const StrangeCursor = lazy(() =>
   import('../strange/StrangeCursor').then((m) => ({ default: m.StrangeCursor }))
 );
 
+// Lazy-load BackToTop button after first paint (Home and /events only)
+const BackToTop = lazy(() =>
+  import('../strange/BackToTop').then((m) => ({ default: m.BackToTop }))
+);
+
 export interface LayoutProps {
   children?: ReactNode;
 }
 
 export const Layout: FC<LayoutProps> = ({ children }) => {
+  const location = useLocation();
   const [mountCursor, setMountCursor] = useState(false);
+  const showBackToTop = location.pathname === '/' || location.pathname === '/events';
 
   useEffect(() => {
     // Mount cursor after first paint
@@ -57,6 +64,13 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       {mountCursor && (
         <Suspense fallback={null}>
           <StrangeCursor />
+        </Suspense>
+      )}
+
+      {/* Lazy-loaded Back to Top Cloak Button (Home and /events only) */}
+      {mountCursor && showBackToTop && (
+        <Suspense fallback={null}>
+          <BackToTop />
         </Suspense>
       )}
     </div>
