@@ -57,6 +57,23 @@ export const EventDetailSkeleton: FC = () => {
           <div className="h-48 rounded-xl bg-[#0D1020] border border-white/10 p-6" />
           <div className="h-48 rounded-xl bg-[#0D1020] border border-white/10 p-6" />
         </div>
+
+        {/* ROW 3: More in Theme Skeleton Row */}
+        <div className="space-y-4 pt-4">
+          <div className="h-6 w-56 rounded bg-[#1A1030]" />
+          <div className="flex gap-4 md:gap-6 overflow-hidden">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 w-[260px] sm:w-[280px] md:w-[320px] h-[360px] rounded-xl bg-[#0D1020] border border-white/10 p-4 space-y-3"
+              >
+                <div className="w-full aspect-[16/10] rounded-lg bg-[#1A1030]" />
+                <div className="h-5 w-3/4 rounded bg-[#1A1030]/80" />
+                <div className="h-4 w-1/2 rounded bg-[#1A1030]/50" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
