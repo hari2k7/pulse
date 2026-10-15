@@ -43,6 +43,7 @@ export const EventsPage: FC = () => {
   // Mobile filter drawer state
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Update URL search parameters when filters change
   const updateFilters = (updated: Partial<EventFilterState>) => {
@@ -216,12 +217,13 @@ export const EventsPage: FC = () => {
               </svg>
             </div>
             <input
+              ref={searchInputRef}
               type="search"
               value={searchInput}
               onChange={handleSearchChange}
               placeholder="Search by event name, blurb, category, or tags..."
               aria-label="Search events"
-              className="w-full bg-[#0D1020] border border-[#FF7A1A]/30 rounded-md pl-10 pr-9 py-2.5 text-sm text-[#F3EFE8] placeholder-[#B8B3C7]/60 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] focus:border-transparent transition-all"
+              className="w-full bg-[#0D1020] border border-[#FF7A1A]/30 rounded-md pl-10 pr-12 py-2.5 text-sm text-[#F3EFE8] placeholder-[#B8B3C7]/60 focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] focus:border-transparent transition-all"
             />
             {searchInput && (
               <button
@@ -229,9 +231,10 @@ export const EventsPage: FC = () => {
                 onClick={() => {
                   setSearchInput('');
                   updateFilters({ search: '' });
+                  searchInputRef.current?.focus();
                 }}
-                aria-label="Clear search query"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#B8B3C7] hover:text-[#F3EFE8]"
+                aria-label="Clear search"
+                className="absolute inset-y-0 right-0 w-11 h-full flex items-center justify-center text-[#B8B3C7] hover:text-[#F3EFE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
