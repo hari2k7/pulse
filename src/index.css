@@ -164,7 +164,7 @@ body {
 
 /* -------------------------------------------------------------
    Custom Cursor — Hide native cursor when diamond cursor active
-   Preserves native text cursor on inputs/textareas/selects
+   Preserves native text cursor on inputs/textareas/selects/native zones
    ------------------------------------------------------------- */
 html.has-custom-cursor,
 html.has-custom-cursor body,
@@ -177,21 +177,59 @@ html.has-custom-cursor .card-strange {
   cursor: none !important;
 }
 
+/* Native zone explicit rules with higher specificity than global cursor:none */
 html.has-custom-cursor input,
+html.has-custom-cursor input:focus,
+html.has-custom-cursor input:hover,
 html.has-custom-cursor textarea,
+html.has-custom-cursor textarea:focus,
+html.has-custom-cursor textarea:hover,
 html.has-custom-cursor [contenteditable="true"],
 html.has-custom-cursor [contenteditable=""] {
   cursor: text !important;
 }
 
-html.has-custom-cursor select {
+html.has-custom-cursor select,
+html.has-custom-cursor select:focus,
+html.has-custom-cursor select:hover,
+html.has-custom-cursor select option {
   cursor: pointer !important;
 }
 
-/* Instantaneous CSS suppression of diamond cursor over text inputs & selects */
-html.has-custom-cursor:has(input:hover, textarea:hover, select:hover, input:focus, textarea:focus, select:focus, [contenteditable="true"]:hover, [contenteditable="true"]:focus) .custom-diamond-cursor {
-  opacity: 0 !important;
-  visibility: hidden !important;
+html.has-custom-cursor [data-native-cursor],
+html.has-custom-cursor [data-native-cursor] * {
+  cursor: auto !important;
+}
+
+/* Native zone wrappers and labels enclosing text inputs or selects */
+html.has-custom-cursor label:has(input:not([type="checkbox"]):not([type="radio"])),
+html.has-custom-cursor label:has(textarea) {
+  cursor: text !important;
+}
+
+html.has-custom-cursor label:has(select) {
+  cursor: pointer !important;
+}
+
+/* -------------------------------------------------------------
+   Hide native browser clear/cancel/search decoration buttons
+   Ensures single custom clear button on type="search" inputs
+   ------------------------------------------------------------- */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none !important;
+}
+
+input[type="search"]::-ms-clear,
+input[type="search"]::-ms-reveal {
+  appearance: none;
+  display: none !important;
+  width: 0;
+  height: 0;
 }
 
 /* Custom utilities */

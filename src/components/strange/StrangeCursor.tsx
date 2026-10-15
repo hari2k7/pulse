@@ -121,6 +121,26 @@ export const StrangeCursor: FC = () => {
       poolIndexRef.current = (idx + 1) % MAX_NOTES;
     };
 
+    const recomputeZone = (clientX?: number, clientY?: number, explicitTarget?: Element | null) => {
+      let target = explicitTarget;
+      const x = clientX ?? posRef.current.targetX;
+      const y = clientY ?? posRef.current.targetY;
+      if (!target && typeof document !== 'undefined' && document.elementFromPoint && x > 0 && y > 0) {
+        target = document.elementFromPoint(x, y);
+      }
+      const isNative = !!target?.closest(
+        'input, textarea, select, [contenteditable="true"], [data-native-cursor]'
+      );
+      setIsOnInput(isNative);
+
+      const interactive =
+        !isNative &&
+        !!target?.closest(
+          'a, button, [role="button"], label, summary, .card-strange, [data-interactive="true"]'
+        );
+      setIsInteractive(interactive);
+    };
+
     const handlePointerMove = (e: PointerEvent) => {
       posRef.current.targetX = e.clientX;
       posRef.current.targetY = e.clientY;
@@ -137,26 +157,9 @@ export const StrangeCursor: FC = () => {
         spawnNote(e.clientX, e.clientY);
       }
 
-      // Check if target is inside an input/textarea/select/contenteditable
-      const hit =
-        typeof document !== 'undefined' && document.elementFromPoint
-          ? (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)
-          : null;
-      const target = hit || (e.target as HTMLElement | null);
-      if (target) {
-        const inputElement = !!target.closest(
-          'input, textarea, select, [contenteditable="true"], [contenteditable=""]'
-        );
-        setIsOnInput(inputElement);
-
-        // Check if over interactive elements (buttons, links, cards)
-        const interactive =
-          !inputElement &&
-          !!target.closest(
-            'a, button, [role="button"], label, summary, .card-strange, [data-interactive="true"]'
-          );
-        setIsInteractive(interactive);
-      }
+      // Compute native zone on every pointermove
+      const target = e.target as Element | null;
+      recomputeZone(e.clientX, e.clientY, target);
     };
 
     const handlePointerDown = (e: PointerEvent) => {
@@ -198,21 +201,11 @@ export const StrangeCursor: FC = () => {
     const handleWindowFocus = () => {
       document.documentElement.classList.add('has-custom-cursor');
       setIsVisible(true);
+      recomputeZone();
     };
 
-    const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        target?.closest(
-          'input, textarea, select, [contenteditable="true"], [contenteditable=""]'
-        )
-      ) {
-        setIsOnInput(true);
-      }
-    };
-
-    const handleFocusOut = () => {
-      setIsOnInput(false);
+    const handleRecompute = () => {
+      recomputeZone();
     };
 
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
@@ -223,8 +216,8 @@ export const StrangeCursor: FC = () => {
     document.addEventListener('mouseenter', handleMouseEnter);
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
+    document.addEventListener('change', handleRecompute, { capture: true, passive: true });
+    document.addEventListener('focusout', handleRecompute, { capture: true, passive: true });
 
     // Single rAF loop: diamond updates within 1 frame (zero lerp lag)
     const render = () => {
@@ -287,8 +280,8 @@ export const StrangeCursor: FC = () => {
       document.removeEventListener('mouseenter', handleMouseEnter);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
+      document.removeEventListener('change', handleRecompute, { capture: true });
+      document.removeEventListener('focusout', handleRecompute, { capture: true });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled]);
