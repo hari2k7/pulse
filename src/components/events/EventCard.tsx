@@ -14,14 +14,12 @@ export interface EventCardProps {
   event: Partial<EventSummary> & { id: string };
   priority?: boolean;
   className?: string;
-  isFlagshipSpan?: boolean;
 }
 
 export const EventCard: FC<EventCardProps> = ({
   event,
   priority = false,
   className = '',
-  isFlagshipSpan = false,
 }) => {
   const navigate = useNavigate();
   const { handlers } = usePrefetchEvent(event.id);
@@ -30,7 +28,7 @@ export const EventCard: FC<EventCardProps> = ({
   const rawImageUrl = event.cover_image_url;
   const hasValidImage = Boolean(rawImageUrl && !imageFailed);
   const optimizedUrl = hasValidImage
-    ? getOptimizedImageUrl(rawImageUrl, isFlagshipSpan ? 900 : 600, isFlagshipSpan ? 600 : 400)
+    ? getOptimizedImageUrl(rawImageUrl, 600, 400)
     : FALLBACK_IMAGE_DATA_URI;
   const srcSet = hasValidImage
     ? getImageSrcSet(rawImageUrl, [380, 500, 680, 900], 2 / 3)
@@ -138,8 +136,8 @@ export const EventCard: FC<EventCardProps> = ({
           srcSet={srcSet}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           alt={event.cover_image_alt || title}
-          width={isFlagshipSpan ? 900 : 600}
-          height={isFlagshipSpan ? 600 : 400}
+          width={600}
+          height={400}
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}
           decoding={priority ? 'sync' : 'async'}
@@ -214,7 +212,7 @@ export const EventCard: FC<EventCardProps> = ({
         </div>
 
         {/* 3. Footer Bar: Thin top border, left "ENTRY FEE" (mono, muted), right price in bold amber */}
-        <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 min-w-0">
+        <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 min-w-0 mt-auto">
           <span className="font-mono text-[10px] uppercase tracking-wider text-[#8E8A9F]">
             ENTRY FEE
           </span>

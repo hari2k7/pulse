@@ -496,24 +496,16 @@ export const EventsPage: FC = () => {
             /* Timeline View */
             <EventTimeline events={filteredEvents} />
           ) : (
-            /* Mixed-Size Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-              {filteredEvents.map((event, index) => {
-                // Asymmetric mixed-size accent: first featured item spans 2 cols on larger screens
-                const isFlagshipSpan = index === 0 && Boolean(event.is_featured);
-                return (
-                  <div
-                    key={event.id}
-                    className={isFlagshipSpan ? 'sm:col-span-2 xl:col-span-2' : ''}
-                  >
-                    <EventCard
-                      event={event}
-                      priority={index < 4}
-                      isFlagshipSpan={isFlagshipSpan}
-                    />
-                  </div>
-                );
-              })}
+            /* Uniform Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch">
+              {filteredEvents.map((event, index) => (
+                <div key={event.id} className="h-full">
+                  <EventCard
+                    event={event}
+                    priority={index < 4}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </main>

@@ -10,7 +10,6 @@ import { checkDevSimulation, SimulatedApiError } from './sim';
 
 export const API_BASE_URL = 'https://render72.pages.dev';
 export const LOCAL_STORAGE_KEY = 'strange_events_cache';
-export const LEGACY_STORAGE_KEY = 'pulse_events_cache';
 const TIMEOUT_MS = 8000;
 const MAX_RETRIES = 2; // Initial attempt + up to 2 retries = 3 attempts total
 
@@ -46,7 +45,6 @@ export function clearSessionCache(): void {
 export function clearLocalStorageCache(): void {
   try {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
   } catch {
     // Ignore storage access errors
   }
@@ -209,7 +207,7 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
     } catch (err: unknown) {
       // If live call fails and cache exists in localStorage, return cached data as stale
       try {
-        const cachedRaw = localStorage.getItem(LOCAL_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+        const cachedRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (cachedRaw) {
           const parsed = JSON.parse(cachedRaw) as {
             events?: unknown;
@@ -303,6 +301,5 @@ if (import.meta.env?.DEV && typeof window !== 'undefined') {
     clearLocalStorageCache,
     getMemoryCache: () => memoryCache,
   };
-  (window as unknown as { __strangeApi?: unknown; __pulseApi?: unknown }).__strangeApi = apiObj;
-  (window as unknown as { __strangeApi?: unknown; __pulseApi?: unknown }).__pulseApi = apiObj;
+  (window as unknown as { __strangeApi?: unknown }).__strangeApi = apiObj;
 }

@@ -98,21 +98,18 @@ export const EventsGridSkeleton: FC<EventsGridSkeletonProps> = ({ count = 9 }) =
           </div>
         </aside>
 
-        {/* Mixed-Size Grid: exact match to real grid classes */}
+        {/* Uniform Grid: exact match to real grid classes */}
         <main className="lg:col-span-3 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-            {Array.from({ length: count }).map((_, index) => {
-              // Asymmetric mixed-size accent: first item spans 2 cols on tablet & desktop
-              const isFlagshipSpan = index === 0;
-              return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch">
+            {Array.from({ length: count }).map((_, index) => (
+              <div
+                key={index}
+                className="h-full"
+              >
                 <div
-                  key={index}
-                  className={isFlagshipSpan ? 'sm:col-span-2 xl:col-span-2' : ''}
+                  className="flex flex-col h-full bg-[#0D1020] rounded-xl border border-white/10 p-3 sm:p-3.5 select-none animate-pulse motion-reduce:animate-none"
+                  aria-hidden="true"
                 >
-                  <div
-                    className="flex flex-col bg-[#0D1020] rounded-xl border border-white/10 p-3 sm:p-3.5 select-none animate-pulse motion-reduce:animate-none"
-                    aria-hidden="true"
-                  >
                     {/* 3:2 Image block with small pills top-left and top-right */}
                     <div className="relative aspect-[3/2] w-full rounded-lg bg-white/5 mb-3 overflow-hidden border border-white/10">
                       <div className="absolute top-2.5 left-2.5 w-16 h-4 rounded bg-white/15" />
@@ -144,10 +141,9 @@ export const EventsGridSkeleton: FC<EventsGridSkeletonProps> = ({ count = 9 }) =
                         <div className="h-3.5 w-14 rounded bg-white/15" />
                       </div>
                     </div>
-                  </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </main>
       </div>
