@@ -1,4 +1,5 @@
 import { useEffect, useRef, type FC } from 'react';
+import { runAfterLoadAndIdle } from '../../lib/idle';
 
 export interface SlingRingPortalProps {
   className?: string;
@@ -8,7 +9,8 @@ export interface SlingRingPortalProps {
 /**
  * Sling Ring Portal Artwork
  * Pure inline SVG concentric fiery rings + subtle CSS rotation.
- * Canvas particles initialized via requestIdleCallback (Constraint 5),
+ * Canvas particles initialized via runAfterLoadAndIdle,
+ * disabled on mobile (< 768px) and when saveData is active (Constraint 3),
  * paused when tab hidden or offscreen, disabled for prefers-reduced-motion.
  */
 export const SlingRingPortal: FC<SlingRingPortalProps> = ({
@@ -23,6 +25,11 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
     if (typeof window === 'undefined') return;
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (mediaQuery.matches) return;
+
+    // Disable particle canvas on mobile (< 768px) and when saveData is active
+    const isMobile = window.innerWidth < 768 || window.matchMedia('(max-width: 767px)').matches;
+    const isSaveData = (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData === true;
+    if (isMobile || isSaveData) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -42,9 +49,8 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
     };
     window.addEventListener('resize', handleResize, { passive: true });
 
-    // Capped particle count: reduced on mobile (< 768px: 18 particles, desktop: 36 particles)
-    const isMobile = window.innerWidth < 768;
-    const particleCount = isMobile ? 18 : 36;
+    // Desktop particle count
+    const particleCount = 28;
     const radius = Math.min(width, height) * 0.38;
     const centerX = width / 2;
     const centerY = height / 2;
@@ -109,31 +115,21 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
         ctx.arc(x, y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.alpha;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = p.color;
         ctx.fill();
       }
 
       ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
       animationFrameId = requestAnimationFrame(render);
     };
 
-    // Initialize via requestIdleCallback after first paint per Constraint 5
-    let idleHandle: number;
-    if ('requestIdleCallback' in window) {
-      idleHandle = window.requestIdleCallback(() => {
-        animationFrameId = requestAnimationFrame(render);
-      });
-    } else {
+    // Initialize strictly after window load + idle
+    const cancelIdle = runAfterLoadAndIdle(() => {
       animationFrameId = requestAnimationFrame(render);
-    }
+    }, 2000);
 
     return () => {
+      cancelIdle();
       cancelAnimationFrame(animationFrameId);
-      if ('cancelIdleCallback' in window && idleHandle) {
-        window.cancelIdleCallback(idleHandle);
-      }
       window.removeEventListener('resize', handleResize);
       if (observer) observer.disconnect();
     };
@@ -146,8 +142,8 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      {/* Layer 1: Ambient Radial & Conic Backdrop Glow */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FF7A1A]/20 via-[#F5B642]/15 to-[#C8102E]/10 blur-3xl pointer-events-none" />
+      {/* Layer 1: Ambient Radial & Conic Backdrop Glow (Clean gradient without expensive multi-pass blur-3xl) */}
+      <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(255,122,26,0.18)_0%,rgba(245,182,66,0.12)_45%,transparent_70%)] pointer-events-none" />
 
       {/* Layer 2: Vector Sling Ring Rotating Geometry */}
       <svg

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, type FC } from 'react';
 import { FESTIVAL_CONFIG } from '../../config/festival';
+import { runAfterLoadAndIdle } from '../../lib/idle';
 
 export interface CountdownTime {
   days: number;
@@ -59,7 +60,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
   const [isVisible, setIsVisible] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // IntersectionObserver to pause timer when offscreen
+  // IntersectionObserver to pause timer & animation when offscreen
   useEffect(() => {
     if (!targetDate) return;
     const el = containerRef.current;
@@ -69,23 +70,29 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
       ([entry]) => {
         setIsVisible(entry.isIntersecting);
       },
-      { threshold: 0.1 }
+      { threshold: 0.05 }
     );
 
     observer.observe(el);
     return () => observer.disconnect();
   }, [targetDate]);
 
-  // Timer loop with document visibility check
+  // Timer loop scheduled strictly after window load + idle
   useEffect(() => {
     if (!targetDate) return;
 
-    const interval = setInterval(() => {
-      if (document.hidden || !isVisible) return;
-      setTime(calculateTimeRemaining(targetDate));
-    }, 1000);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const cancelIdle = runAfterLoadAndIdle(() => {
+      interval = setInterval(() => {
+        if (document.hidden || !isVisible) return;
+        setTime(calculateTimeRemaining(targetDate));
+      }, 1000);
+    }, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelIdle();
+      if (interval) clearInterval(interval);
+    };
   }, [targetDate, isVisible]);
 
   // If no date at all, hide component per non-negotiable constraint 4
@@ -99,10 +106,12 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
         isFallback ? 'next event' : 'festival starts'
       }.`;
 
+  const animState = isVisible ? 'running' : 'paused';
+
   return (
     <div
       ref={containerRef}
-      className={`relative flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-xl bg-[#0D1020] border border-[#FF7A1A]/30 shadow-2xl overflow-hidden ${className}`}
+      className={`relative flex flex-col items-center justify-center text-center p-6 sm:p-8 rounded-xl bg-[#0D1020] border border-[#FF7A1A]/30 shadow-xl overflow-hidden ${className}`}
     >
       {/* Screen reader announcement (polite, updated periodically, not every second) */}
       <div className="sr-only" aria-live="polite">
@@ -118,8 +127,8 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
 
       {/* The Eye of Agamotto Medallion Artwork */}
       <div className="relative w-44 h-44 sm:w-56 sm:h-56 mb-6 flex items-center justify-center select-none" aria-hidden="true">
-        {/* Ambient mystic glow */}
-        <div className="absolute inset-2 rounded-full bg-gradient-to-r from-[#FF7A1A]/20 via-[#3DDC97]/25 to-[#F5B642]/20 blur-xl pointer-events-none" />
+        {/* Ambient mystic glow without heavy multi-pass blur filter */}
+        <div className="absolute inset-2 rounded-full bg-[radial-gradient(circle,rgba(255,122,26,0.15)_0%,rgba(61,220,151,0.15)_50%,transparent_70%)] pointer-events-none" />
 
         <svg
           viewBox="0 0 240 240"
@@ -128,7 +137,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
           className="w-full h-full relative z-10"
         >
           {/* Ring 1 (Outer Ornate Shell): Slow Clockwise 45s */}
-          <g className="animate-spell-spin" style={{ animationDuration: '45s', transformOrigin: 'center' }}>
+          <g className="animate-spell-spin" style={{ animationDuration: '45s', animationPlayState: animState, transformOrigin: 'center' }}>
             <circle cx="120" cy="120" r="112" stroke="#F5B642" strokeWidth="2" strokeOpacity="0.85" />
             <circle cx="120" cy="120" r="104" stroke="#FF7A1A" strokeWidth="1.2" strokeDasharray="3 5 8 5" strokeOpacity="0.7" />
             {/* Cardinal Relic Notches */}
@@ -139,7 +148,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
           </g>
 
           {/* Ring 2 (Runic Glyph Band): Counter-Clockwise 30s */}
-          <g className="animate-spell-spin-reverse" style={{ animationDuration: '30s', transformOrigin: 'center' }}>
+          <g className="animate-spell-spin-reverse" style={{ animationDuration: '30s', animationPlayState: animState, transformOrigin: 'center' }}>
             <circle cx="120" cy="120" r="88" stroke="#3DDC97" strokeWidth="1.5" strokeOpacity="0.65" />
             <polygon
               points="120,38 190,162 50,162"
@@ -156,7 +165,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
           </g>
 
           {/* Ring 3 (Interlocking Aperture): Clockwise 18s */}
-          <g className="animate-spell-spin" style={{ animationDuration: '18s', transformOrigin: 'center' }}>
+          <g className="animate-spell-spin" style={{ animationDuration: '18s', animationPlayState: animState, transformOrigin: 'center' }}>
             <circle cx="120" cy="120" r="62" stroke="#FF7A1A" strokeWidth="2" strokeOpacity="0.9" />
             <path
               d="M120 58 Q145 95 182 120 Q145 145 120 182 Q95 145 58 120 Q95 95 120 58 Z"

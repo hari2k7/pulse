@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import { EventCard } from '../events/EventCard';
 import type { EventSummary } from '../../lib/types';
+import { runAfterLoadAndIdle } from '../../lib/idle';
 
 export interface FeaturedMultiverseProps {
   events: EventSummary[];
@@ -164,8 +165,8 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
       }
     };
 
-    // Initialize after first paint
-    const timer = setTimeout(initScrollTrigger, 80);
+    // Initialize strictly after window load + idle
+    const cancelIdle = runAfterLoadAndIdle(initScrollTrigger);
 
     const handleResize = () => {
       clearTimeout(resizeTimer);
@@ -182,7 +183,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
     window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
-      clearTimeout(timer);
+      cancelIdle();
       clearTimeout(resizeTimer);
       window.removeEventListener('resize', handleResize);
       mmRef?.revert();
@@ -335,7 +336,7 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
             }}
             className="flex gap-6 items-stretch w-max will-change-transform justify-start"
           >
-            {featuredEvents.map((event, index) => (
+            {featuredEvents.map((event) => (
               <div
                 key={event.id}
                 onFocus={handleCardFocus}

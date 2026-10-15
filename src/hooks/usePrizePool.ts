@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { getEvent } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
+import { runAfterLoadAndIdle } from '../lib/idle';
 import type { EventSummary, EventDetail } from '../lib/types';
 
 export interface UsePrizePoolResult {
@@ -293,35 +294,14 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
       }
     };
 
-    // Schedule background queue when browser is idle
-    let idleHandle: number | null = null;
-    let timerHandle: ReturnType<typeof setTimeout> | null = null;
-
-    if ('requestIdleCallback' in window) {
-      idleHandle = (
-        window as unknown as {
-          requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number;
-        }
-      ).requestIdleCallback(
-        () => {
-          executeBackgroundFetch();
-        },
-        { timeout: 2000 }
-      );
-    } else {
-      timerHandle = setTimeout(executeBackgroundFetch, 200);
-    }
+    // Schedule background queue strictly after window load + browser idle
+    const cancelIdle = runAfterLoadAndIdle(() => {
+      executeBackgroundFetch();
+    }, 2500);
 
     return () => {
       cancelled = true;
-      if (idleHandle !== null && 'cancelIdleCallback' in window) {
-        (
-          window as unknown as { cancelIdleCallback: (id: number) => void }
-        ).cancelIdleCallback(idleHandle);
-      }
-      if (timerHandle !== null) {
-        clearTimeout(timerHandle);
-      }
+      cancelIdle();
     };
   }, [events]);
 

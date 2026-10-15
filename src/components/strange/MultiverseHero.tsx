@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { SlingRingPortal } from './SlingRingPortal';
 import { CloakSilhouette } from './CloakSilhouette';
 import { FESTIVAL_CONFIG } from '../../config/festival';
+import { runAfterLoadAndIdle } from '../../lib/idle';
 export const MultiverseHero: FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const portalWrapperRef = useRef<HTMLDivElement>(null);
@@ -61,11 +62,11 @@ export const MultiverseHero: FC = () => {
       }
     };
 
-    // Defer GSAP initialization after first paint
-    const timer = setTimeout(initGsap, 50);
+    // Defer GSAP initialization strictly after window load + idle
+    const cancelIdle = runAfterLoadAndIdle(initGsap);
 
     return () => {
-      clearTimeout(timer);
+      cancelIdle();
       ctx?.revert();
     };
   }, []);

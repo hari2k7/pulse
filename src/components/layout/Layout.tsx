@@ -13,6 +13,8 @@ const BackToTop = lazy(() =>
   import('../strange/BackToTop').then((m) => ({ default: m.BackToTop }))
 );
 
+import { runAfterLoadAndIdle } from '../../lib/idle';
+
 export interface LayoutProps {
   children?: ReactNode;
 }
@@ -23,20 +25,10 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
   const showBackToTop = location.pathname === '/' || location.pathname === '/events';
 
   useEffect(() => {
-    // Mount cursor after first paint
-    if ('requestIdleCallback' in window) {
-      const handle = (window as unknown as { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(() => {
-        setMountCursor(true);
-      });
-      return () => {
-        if ('cancelIdleCallback' in window) {
-          (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(handle);
-        }
-      };
-    } else {
-      const timer = setTimeout(() => setMountCursor(true), 250);
-      return () => clearTimeout(timer);
-    }
+    // Mount cursor and back-to-top strictly after window load + idle
+    return runAfterLoadAndIdle(() => {
+      setMountCursor(true);
+    });
   }, []);
 
   return (
