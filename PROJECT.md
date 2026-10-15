@@ -1,6 +1,16 @@
 # STRANGE: A Tech Fest Beyond Reality
 
 > Read this file first in every session and follow the **Hard rules**. This spec is the FINAL source of truth.
+> **Polish Pass Rules (Takes precedence over earlier entries)**:
+> 1. EventCard: Heart button moved to the top of the card body (same row as the type line: type text left, heart right, above the title; at least 16px above CTA row; never shares a row with CTA; 48px hit area).
+> 2. Events Page: Arrival animation completely removed (instant rendering).
+> 3. AI-Looking Badges: Removed everywhere ("Dimensional Gateways", "The Sanctum Philosophy", "30 Available Coordinates" and similar pills). Event counts shown as plain sentence text in sublines.
+> 4. Stats Row Restored: Events and Prize Pool animated counters restored immediately AFTER Eye of Agamotto and before About, with the red cloak strip divider below.
+> 5. Hero Scroll: Hero text (h1, tagline, description) and "Explore Events" button travel INTO the portal as user scrolls, scaling down and collapsing to a point.
+> 6. Back-to-Top: Realistic original inline SVG Cloak of Levitation with flowing folds, shading, standing collar, gold embroidered trim, and 4 states.
+> 7. Realism: Multi-layer depth, dust motes, irregular ring thickness, heat shimmer, subtle noise, offscreen pause, reduced motion / lite support.
+> 8. Scroll Animations: GSAP ScrollTrigger site-wide reveals, batching on /events, panel reveals on detail, thin gold navbar scroll progress line.
+
 
 ## 1. Goal
 

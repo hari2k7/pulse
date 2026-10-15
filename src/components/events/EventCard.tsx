@@ -139,7 +139,9 @@ export const EventCard: FC<EventCardProps> = ({
   const isFav = isFavorite(event.id);
 
   return (
-    <div className={`relative flex flex-col h-full group ${className}`}>
+    <div
+      className={`relative flex flex-col h-full group [container-type:inline-size] [--card-pad:12px] sm:[--card-pad:14px] ${className}`}
+    >
       {/* Clickable Card Link Container */}
       <Link
         to={`/events/${event.id}`}
@@ -205,16 +207,13 @@ export const EventCard: FC<EventCardProps> = ({
         {/* 2. Body Order in Dark Lower Area */}
         <div className="pt-3 pb-1 flex-1 flex flex-col justify-between gap-3 min-w-0">
           <div className="space-y-1.5 min-w-0">
-            {/* Type line ABOVE title + Plain Registration Status Tag */}
-            <div className="flex items-center justify-between gap-2 min-w-0 flex-wrap">
-              <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#B8B3C7] truncate max-w-[55%]">
+            {/* Type line ABOVE title (left) + Reserved 48px slot for Heart (right) */}
+            <div className="flex items-center justify-between gap-2 min-w-0 h-7">
+              <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#B8B3C7] truncate max-w-[calc(100%-48px)]">
                 {category || realm.name}
               </span>
-              <span
-                className={`text-[10px] sm:text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${statusTagColor}`}
-              >
-                {statusTagText}
-              </span>
+              {/* 48px reserved spacing so type line never overlaps the heart button */}
+              <div className="w-12 h-12 shrink-0 pointer-events-none" aria-hidden="true" />
             </div>
 
             {/* Title with line-clamp-3 and reserved 3-line height */}
@@ -224,9 +223,9 @@ export const EventCard: FC<EventCardProps> = ({
               </h3>
             </div>
 
-            {/* Date & Team Size Row */}
+            {/* Date, Team Size, and Plain Registration Status Tag */}
             <div className="flex items-center justify-between gap-2 min-w-0 pt-0.5">
-              <div className="flex items-center gap-2 text-xs text-[#B8B3C7] min-w-0 truncate">
+              <div className="flex items-center gap-1.5 min-w-0 truncate text-xs text-[#B8B3C7]">
                 {hasDate && (
                   <div className="flex items-center gap-1.5 truncate">
                     <svg
@@ -252,9 +251,11 @@ export const EventCard: FC<EventCardProps> = ({
                   </span>
                 )}
               </div>
-
-              {/* Reserved 44px slot for sibling heart button */}
-              <div className="w-11 h-11 shrink-0 pointer-events-none" aria-hidden="true" />
+              <span
+                className={`shrink-0 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${statusTagColor}`}
+              >
+                {statusTagText}
+              </span>
             </div>
           </div>
 
@@ -336,7 +337,7 @@ export const EventCard: FC<EventCardProps> = ({
         </div>
       </Link>
 
-      {/* 4. Sibling Heart Button (Positioned over the reserved slot, no overlap, accessible) */}
+      {/* 4. Sibling Heart Button (Positioned over the reserved slot, no overlap, accessible, 48px hit area) */}
       <button
         type="button"
         aria-label={isFav ? `Remove ${title} from saved` : `Save ${title} to favorites`}
@@ -346,10 +347,14 @@ export const EventCard: FC<EventCardProps> = ({
           e.preventDefault();
           toggleFavorite(event.id);
         }}
-        className="absolute bottom-[4.2rem] right-4 z-20 w-11 h-11 rounded-full flex items-center justify-center bg-[#07060D]/80 border border-white/20 hover:border-[#E11D48] hover:bg-[#E11D48]/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E11D48]"
+        style={{
+          top: 'calc(var(--card-pad) + (100cqw - var(--card-pad) * 2) * 2 / 3 + 1px)',
+          right: 'var(--card-pad)',
+        }}
+        className="absolute z-20 w-12 h-12 min-h-[48px] min-w-[48px] rounded-full flex items-center justify-center bg-[#07060D]/85 border border-white/20 hover:border-[#E11D48] hover:bg-[#E11D48]/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E11D48] cursor-pointer"
       >
         <svg
-          className={`w-4 h-4 transition-transform active:scale-125 ${
+          className={`w-5 h-5 transition-transform active:scale-125 ${
             isFav ? 'fill-[#E11D48] text-[#E11D48]' : 'text-[#B8B3C7] hover:text-[#E11D48]'
           }`}
           viewBox="0 0 24 24"
@@ -381,21 +386,24 @@ export const EventCardSkeleton: FC<{ className?: string }> = ({ className = '' }
 
       <div className="space-y-3 px-0.5 flex-1 flex flex-col justify-between">
         <div className="space-y-2">
-          {/* Type line placeholder */}
-          <div className="h-3.5 w-24 rounded bg-white/10" />
+          {/* Type line placeholder with heart placeholder */}
+          <div className="flex items-center justify-between gap-2 h-7">
+            <div className="h-3.5 w-24 rounded bg-white/10" />
+            <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5 shrink-0" />
+          </div>
           {/* Three-line title placeholder */}
           <div className="space-y-1.5 min-h-[4.2rem]">
             <div className="h-4.5 w-4/5 rounded bg-white/10" />
             <div className="h-4.5 w-3/5 rounded bg-white/10" />
             <div className="h-4.5 w-2/5 rounded bg-white/5" />
           </div>
-          {/* Date line with heart button placeholder */}
+          {/* Date line with status placeholder */}
           <div className="flex items-center justify-between gap-2 pt-0.5">
             <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-sm bg-white/10" />
               <div className="h-3 w-28 rounded bg-white/10" />
             </div>
-            <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5" />
+            <div className="h-4 w-16 rounded border border-white/10 bg-white/5" />
           </div>
         </div>
 
