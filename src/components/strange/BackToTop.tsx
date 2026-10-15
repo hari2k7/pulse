@@ -112,7 +112,7 @@ export const BackToTop: FC = () => {
 
   return (
     <div
-      className={`fixed z-30 transition-all duration-300 ease-out select-none ${
+      className={`back-to-top fixed z-30 transition-all duration-300 ease-out select-none ${
         visible
           ? 'opacity-100 translate-y-0 pointer-events-auto'
           : 'opacity-0 translate-y-6 pointer-events-none'

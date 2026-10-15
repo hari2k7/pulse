@@ -2,6 +2,8 @@ import {
   useState,
   useEffect,
   useRef,
+  lazy,
+  Suspense,
   type FC,
 } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -28,6 +30,10 @@ import {
 import { useFavorites } from '../lib/favorites';
 import { EventDetailSkeleton } from '../components/events/EventDetailSkeleton';
 
+const GalleryLightbox = lazy(() =>
+  import('../components/events/GalleryLightbox').then((m) => ({ default: m.GalleryLightbox }))
+);
+
 export const EventDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
   const { status, event, error, isPlaceholder, retry } = useEvent(id);
@@ -37,6 +43,9 @@ export const EventDetailPage: FC = () => {
   const [shareFeedback, setShareFeedback] = useState<string>('');
   const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({ 0: true });
   const [imageFailed, setImageFailed] = useState<boolean>(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeTriggerId, setActiveTriggerId] = useState<string>('');
   const bannerContainerRef = useRef<HTMLDivElement>(null);
   const bannerImgRef = useRef<HTMLImageElement>(null);
   const [isDrifting, setIsDrifting] = useState(true);
@@ -841,21 +850,43 @@ export const EventDetailPage: FC = () => {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {event.gallery_images?.map((imgUrl, i) => (
-                <div
+                <button
                   key={i}
-                  className="aspect-[4/3] rounded-lg overflow-hidden bg-[#07060D] border border-white/10"
+                  id={`gallery-thumb-${i}`}
+                  type="button"
+                  onClick={() => {
+                    setActiveImageIndex(i);
+                    setActiveTriggerId(`gallery-thumb-${i}`);
+                    setLightboxOpen(true);
+                  }}
+                  aria-label={`Open image ${i + 1} of ${event.gallery_images?.length ?? 0}`}
+                  className="aspect-[4/3] rounded-lg overflow-hidden bg-[#07060D] border border-white/10 hover:border-[#FF7A1A]/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] block w-full text-left cursor-pointer group"
                 >
                   <img
                     src={getOptimizedImageUrl(imgUrl, 400, 300)}
-                    alt={`Event photography ${i + 1}`}
+                    alt={`${event.name} photo ${i + 1}`}
                     width={400}
                     height={300}
                     loading="lazy"
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                </div>
+                </button>
               ))}
             </div>
+
+            {/* Lightbox Dialog (Lazy Loaded) */}
+            {lightboxOpen && event.gallery_images && (
+              <Suspense fallback={null}>
+                <GalleryLightbox
+                  images={event.gallery_images}
+                  initialIndex={activeImageIndex}
+                  eventName={event.name}
+                  isOpen={lightboxOpen}
+                  onClose={() => setLightboxOpen(false)}
+                  triggerButtonId={activeTriggerId}
+                />
+              </Suspense>
+            )}
           </section>
         )}
 

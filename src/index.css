@@ -527,3 +527,9 @@ html.has-custom-cursor:has(input:hover, textarea:hover, select:hover, input:focu
     animation: none !important;
   }
 }
+
+/* Hide BackToTop when gallery lightbox is open */
+body.lightbox-open .back-to-top {
+  display: none !important;
+}
+
