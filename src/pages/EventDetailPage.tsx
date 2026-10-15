@@ -202,8 +202,8 @@ export const EventDetailPage: FC = () => {
         const aUpcoming = a.event_status === 'ACTIVE' || isUpcomingEvent(a);
         const bUpcoming = b.event_status === 'ACTIVE' || isUpcomingEvent(b);
         if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
-        const dateA = a.start_date ? new Date(a.start_date).getTime() : Infinity;
-        const dateB = b.start_date ? new Date(b.start_date).getTime() : Infinity;
+        const dateA = a.schedule_summary?.start_date ? new Date(a.schedule_summary.start_date).getTime() : Infinity;
+        const dateB = b.schedule_summary?.start_date ? new Date(b.schedule_summary.start_date).getTime() : Infinity;
         return dateA - dateB;
       });
   }, [event, theme, allEvents]);
