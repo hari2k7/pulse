@@ -9,6 +9,7 @@ import { StyleguidePage } from './pages/StyleguidePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 import { EventsGridSkeleton } from './components/events/EventsGridSkeleton';
+import { EventDetailSkeleton } from './components/events/EventDetailSkeleton';
 
 // Lazy load discovery and detail routes per PROJECT.md Section 3
 const EventsPage = lazy(() =>
@@ -63,16 +64,7 @@ function App() {
             <Route
               path="/events/:id"
               element={
-                <Suspense
-                  fallback={
-                    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 min-h-[60vh]">
-                      <div className="w-full aspect-[16/9] md:aspect-[21/9] rounded-[4px] bg-[#222222] animate-pulse motion-reduce:animate-none" />
-                      <div className="h-10 w-2/3 bg-[#222222] rounded-[4px] animate-pulse motion-reduce:animate-none" />
-                      <div className="h-5 w-full bg-[#222222] rounded-[4px] animate-pulse motion-reduce:animate-none" />
-                      <div className="h-5 w-4/5 bg-[#222222] rounded-[4px] animate-pulse motion-reduce:animate-none" />
-                    </div>
-                  }
-                >
+                <Suspense fallback={<EventDetailSkeleton />}>
                   <EventDetailPage />
                 </Suspense>
               }
