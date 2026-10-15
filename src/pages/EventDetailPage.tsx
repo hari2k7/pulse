@@ -23,10 +23,13 @@ import {
   getImageSrcSet,
   FALLBACK_IMAGE_DATA_URI,
 } from '../lib/images';
+import { useFavorites } from '../lib/favorites';
 
 export const EventDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
   const { status, event, error, isPlaceholder, retry } = useEvent(id);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isFav = event ? isFavorite(event.id) : false;
 
   const [shareFeedback, setShareFeedback] = useState<string>('');
   const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({ 0: true });
@@ -136,7 +139,7 @@ export const EventDetailPage: FC = () => {
   const hasContacts = !isPlaceholder && (coordinators.length > 0 || organizers.length > 0);
 
   return (
-    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-[var(--navbar-height)]">
+    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)]">
       {/* -------------------------------------------------------------
           HERO BANNER with Title, Category, Blurb & Horizontal Facts Strip
           ------------------------------------------------------------- */}
@@ -225,26 +228,49 @@ export const EventDetailPage: FC = () => {
               </div>
             </div>
 
-            {/* Primary Action Button beside facts strip */}
-            <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
+            {/* Primary Action Button beside facts strip + Heart Toggle */}
+            <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10 flex items-center gap-2">
               {isOpen ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="w-full md:w-auto uppercase tracking-wider font-bold text-xs px-5 py-2"
-                  onClick={() => {
-                    alert(
-                      `Registration for ${event.name}.\nVenue: ${scheduleVenue || 'Campus Event Desk'}.\nPlease arrive with your confirmation and college identification.`
-                    );
-                  }}
+                <a
+                  href="#summary-card"
+                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95"
                 >
                   Register
-                </Button>
+                </a>
               ) : (
-                <span className="inline-block px-3 py-1.5 rounded bg-white/10 text-xs font-semibold text-[#B8B3C7]">
-                  Registration Closed
+                <span className="inline-block px-3 py-2 rounded bg-white/10 text-xs font-semibold text-[#B8B3C7]">
+                  {event.registration_status === 'SOLD_OUT'
+                    ? 'SOLD OUT'
+                    : event.event_status === 'COMPLETED'
+                    ? 'COMPLETED'
+                    : 'REGISTRATION CLOSED'}
                 </span>
               )}
+
+              {/* Heart Toggle Button */}
+              <button
+                type="button"
+                onClick={() => event && toggleFavorite(event.id)}
+                aria-pressed={isFav}
+                aria-label={isFav ? `Remove ${event.name} from favorites` : `Add ${event.name} to favorites`}
+                className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-[#0D1020] border border-white/10 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100"
+              >
+                <svg
+                  className={`w-5 h-5 transition-transform ${
+                    isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-110' : 'fill-none text-[#B8B3C7]'
+                  }`}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -257,7 +283,7 @@ export const EventDetailPage: FC = () => {
         {/* ROW 1: Overview (Wide) + Sticky Summary Card (Narrow) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Summary Card: On mobile appears right under the hero; on desktop is sticky in the narrow column */}
-          <aside className="order-1 lg:order-2 lg:col-span-4 lg:sticky lg:top-28 space-y-4">
+          <aside id="summary-card" className="order-1 lg:order-2 lg:col-span-4 lg:sticky lg:top-28 space-y-4">
             <div className="p-5 sm:p-6 rounded-xl bg-[#0D1020] border border-white/10 shadow-xl space-y-5">
               {/* Price */}
               <div>
@@ -314,25 +340,31 @@ export const EventDetailPage: FC = () => {
                 )}
               </div>
 
-              {/* Primary action */}
-              <div className="pt-2">
-                {isOpen ? (
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="w-full uppercase tracking-wider text-xs font-bold py-2.5"
-                    onClick={() => {
-                      alert(
-                        `Registration confirmed for ${event.name}.\nVenue: ${scheduleVenue || 'Campus Event Desk'}.`
-                      );
-                    }}
-                  >
-                    Register
-                  </Button>
-                ) : (
-                  <div className="w-full py-2.5 rounded-md bg-[#1A1030] text-center text-xs uppercase tracking-wider font-semibold text-[#B8B3C7] border border-white/10">
-                    Registration Closed
-                  </div>
+              {/* Primary action & honest registration notice */}
+              <div className="pt-2 space-y-2">
+                <div
+                  className={`w-full py-2.5 px-3 rounded-lg text-center text-xs font-bold uppercase tracking-wider ${
+                    isOpen
+                      ? 'bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A]'
+                      : 'bg-white/5 border border-white/10 text-[#8E8A9F]'
+                  }`}
+                >
+                  {isOpen
+                    ? 'REGISTER'
+                    : event.registration_status === 'SOLD_OUT'
+                    ? 'SOLD OUT'
+                    : event.event_status === 'COMPLETED'
+                    ? 'COMPLETED'
+                    : 'REGISTRATION CLOSED'}
+                </div>
+                {isOpen && (
+                  <p className="text-[11px] text-[#B8B3C7] text-center leading-normal">
+                    Registration is open on-campus at event desks until{' '}
+                    <span className="font-mono text-[#F5B642]">
+                      {event.registration_deadline ? formatDateIST(event.registration_deadline) : 'start time'}
+                    </span>
+                    .
+                  </p>
                 )}
               </div>
 
@@ -711,7 +743,7 @@ export const EventDetailPage: FC = () => {
 
 const EventDetailSkeleton: FC = () => {
   return (
-    <div className="w-full min-h-screen bg-[#07060D] animate-pulse space-y-8 pt-[var(--navbar-height)]">
+    <div className="w-full min-h-screen bg-[#07060D] animate-pulse space-y-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)]">
       <div className="w-full h-72 bg-[#0D1020]" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-4">

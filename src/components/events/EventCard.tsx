@@ -7,6 +7,7 @@ import {
   FALLBACK_IMAGE_DATA_URI,
 } from '../../lib/images';
 import { formatDateIST } from '../../lib/format';
+import { useFavorites } from '../../lib/favorites';
 import type { EventSummary } from '../../lib/types';
 
 export interface EventCardProps {
@@ -119,13 +120,17 @@ export const EventCard: FC<EventCardProps> = ({
     }
   };
 
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isFav = isFavorite(event.id);
+
   return (
-    <Link
-      to={`/events/${event.id}`}
-      onClick={handleCardClick}
-      {...handlers}
-      className={`group relative flex flex-col bg-[#0D1020] rounded-xl border border-white/10 card-strange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] p-3 sm:p-3.5 overflow-hidden transition-all hover:border-[#FF7A1A]/40 ${className}`}
-    >
+    <div className={`relative flex flex-col h-full ${className}`}>
+      <Link
+        to={`/events/${event.id}`}
+        onClick={handleCardClick}
+        {...handlers}
+        className="group relative flex flex-col flex-1 h-full bg-[#0D1020] rounded-xl border border-white/10 card-strange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] p-3 sm:p-3.5 overflow-hidden transition-all hover:border-[#FF7A1A]/40"
+      >
       {/* 1. 3:2 Image with Category (top-left) and Slots Badge (top-right) */}
       <div className="relative w-full aspect-[3/2] rounded-lg overflow-hidden bg-[#07060D] shrink-0 border border-white/10">
         <img
@@ -167,7 +172,7 @@ export const EventCard: FC<EventCardProps> = ({
 
       {/* 2. Body: Date Row, Title, Full-Width Action Button */}
       <div className="pt-3 pb-1 flex-1 flex flex-col justify-between gap-3 min-w-0">
-        <div className="space-y-2 min-w-0">
+        <div className="space-y-2 min-w-0 pr-10">
           {/* Date Row with Calendar SVG Icon (hidden if missing) */}
           {hasDate && (
             <div className="flex items-center gap-1.5 text-xs text-[#8E8A9F]">
@@ -371,6 +376,41 @@ export const EventCard: FC<EventCardProps> = ({
         <div className="cloak-fabric" />
       </div>
     </Link>
+
+    {/* Heart (Favorites) toggle: a sibling of the Link (never nested inside it), placed in the card body next to the date row so it never overlaps image badges, z-index above the cloak lining, aria-pressed, aria-label "Add {name} to favorites" / "Remove {name} from favorites", 44px hit area, stopPropagation, filled orange when active, short scale-pop (none under reduced motion), no layout shift */}
+    <div className="absolute inset-0 pointer-events-none z-30 flex flex-col p-3 sm:p-3.5">
+      <div className="w-full aspect-[3/2] shrink-0" aria-hidden="true" />
+      <div className="pt-2 flex justify-end" aria-hidden="true">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite(event.id);
+          }}
+          aria-pressed={isFav}
+          aria-label={isFav ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
+          className="pointer-events-auto -mt-1 -mr-1 w-11 h-11 flex items-center justify-center rounded-full text-[#B8B3C7] hover:text-[#FF7A1A] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-90 motion-reduce:active:scale-100"
+        >
+          <svg
+            className={`w-4 h-4 transition-transform ${
+              isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-110' : 'fill-none text-[#B8B3C7] hover:text-[#FF7A1A]'
+            }`}
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
   );
 };
 

@@ -5,6 +5,7 @@ export interface DocumentMetaOptions {
   description?: string;
   ogTitle?: string;
   ogDescription?: string;
+  noindex?: boolean;
 }
 
 export function useDocumentMeta({
@@ -12,6 +13,7 @@ export function useDocumentMeta({
   description,
   ogTitle,
   ogDescription,
+  noindex,
 }: DocumentMetaOptions): void {
   useEffect(() => {
     const prevTitle = document.title;
@@ -49,11 +51,25 @@ export function useDocumentMeta({
       ogDescMeta.setAttribute('content', ogDescription || description || '');
     }
 
+    let robotsMeta: HTMLMetaElement | null = null;
+    if (noindex) {
+      robotsMeta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+      if (!robotsMeta) {
+        robotsMeta = document.createElement('meta');
+        robotsMeta.setAttribute('name', 'robots');
+        document.head.appendChild(robotsMeta);
+      }
+      robotsMeta.setAttribute('content', 'noindex, nofollow');
+    }
+
     return () => {
       document.title = prevTitle;
       if (prevDesc && metaDesc) {
         metaDesc.setAttribute('content', prevDesc);
       }
+      if (noindex && robotsMeta && robotsMeta.parentNode) {
+        robotsMeta.parentNode.removeChild(robotsMeta);
+      }
     };
-  }, [title, description, ogTitle, ogDescription]);
+  }, [title, description, ogTitle, ogDescription, noindex]);
 }

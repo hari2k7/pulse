@@ -17,6 +17,9 @@ const EventsPage = lazy(() =>
 const EventDetailPage = lazy(() =>
   import('./pages/EventDetailPage').then((m) => ({ default: m.EventDetailPage }))
 );
+const FavoritesPage = lazy(() =>
+  import('./pages/FavoritesPage').then((m) => ({ default: m.FavoritesPage }))
+);
 
 // Dynamic import of ReactQueryDevtools strictly in development on-demand via ?devtools=true
 // Tree-shaken in production. In dev, avoids downloading 3MB devtools payload during audits unless requested.
@@ -46,6 +49,14 @@ function App() {
               element={
                 <Suspense fallback={<EventsGridSkeleton />}>
                   <EventsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/favorites"
+              element={
+                <Suspense fallback={<EventsGridSkeleton />}>
+                  <FavoritesPage />
                 </Suspense>
               }
             />
