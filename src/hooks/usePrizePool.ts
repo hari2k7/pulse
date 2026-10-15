@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { getEvent } from '../lib/api';
+import { getEvent, isCircuitOpen } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
 import { runAfterLoadAndIdle } from '../lib/idle';
 import type { EventSummary, EventDetail } from '../lib/types';
@@ -15,7 +15,8 @@ export interface UsePrizePoolResult {
 }
 
 const STORAGE_KEY = 'strange:prize-pool';
-const STALE_TIME = 30 * 60 * 1000; // 30 minutes
+const MAX_POOL_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours max age per Task 4
+const STALE_TIME = 30 * 60 * 1000; // 30 minutes in memory
 const CONCURRENCY_LIMIT = 3;
 
 interface PersistedData {
@@ -31,6 +32,15 @@ function getStoredPool(): PersistedData | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as PersistedData;
     if (typeof data?.total === 'number' && Number.isFinite(data.total) && data.total >= 0) {
+      // Enforce 12h max age per Task 4
+      if (typeof data.at === 'number' && Date.now() - data.at > MAX_POOL_AGE_MS) {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // Ignore
+        }
+        return null;
+      }
       return data;
     }
   } catch {
@@ -41,12 +51,11 @@ function getStoredPool(): PersistedData | null {
 
 /**
  * usePrizePool hook:
- * Background idle fetches all ACTIVE events with a small concurrency queue of 3.
- * Total = sum of finite prize.amount values across active events.
- *
- * Included events:
- * Strictly events where event_status === 'ACTIVE' from the live event list,
- * summing valid numeric prize amounts (rank rewards) from event detail responses.
+ * - Starts ONLY when the stats section is in view (IntersectionObserver) AND after window load + idle.
+ * - Max 3 concurrent requests.
+ * - Persists result for 12 hours in "strange:prize-pool".
+ * - Skips network requests on saveData / 2g.
+ * - Respects the circuit breaker (fails fast if active).
  */
 export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
   const [state, setState] = useState<{
@@ -69,7 +78,7 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
     return {
       total: null,
       isPartial: false,
-      status: 'computing',
+      status: 'idle',
       extraRequests: 0,
       totalTimeMs: 0,
     };
@@ -82,21 +91,45 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
       return;
     }
 
-    isFetchingRef.current = true;
+    // If fresh persisted value within 12h exists, no background fetch needed
+    if (getStoredPool()) {
+      return;
+    }
+
     let cancelled = false;
+    let cancelIdle: () => void = () => {};
+    let observer: IntersectionObserver | null = null;
 
     const executeBackgroundFetch = async () => {
-      // Filter strictly ACTIVE events
+      if (cancelled || isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
+      // 1. Respect Circuit Breaker per Task 4
+      if (isCircuitOpen()) {
+        const stored = getStoredPool();
+        setState({
+          total: stored ? stored.total : null,
+          isPartial: false,
+          status: stored ? 'persisted' : 'failed',
+          extraRequests: 0,
+          totalTimeMs: 0,
+        });
+        isFetchingRef.current = false;
+        return;
+      }
+
+      // 2. Filter strictly ACTIVE events
       const activeEvents = events.filter((e) => e.event_status === 'ACTIVE');
       if (activeEvents.length === 0) {
         setState((prev) => ({
           ...prev,
           status: prev.total !== null ? 'persisted' : 'failed',
         }));
+        isFetchingRef.current = false;
         return;
       }
 
-      // Check data-saver or slow network
+      // 3. Check saveData or 2G network per Task 4
       const nav = navigator as unknown as {
         connection?: { saveData?: boolean; effectiveType?: string };
       };
@@ -105,7 +138,6 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
         nav.connection?.effectiveType === '2g' ||
         nav.connection?.effectiveType === 'slow-2g'
       ) {
-        // Respect user bandwidth: skip background prefetch, rely on persisted value
         const stored = getStoredPool();
         if (stored) {
           setState({
@@ -116,8 +148,11 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
             totalTimeMs: 0,
           });
         }
+        isFetchingRef.current = false;
         return;
       }
+
+      setState((prev) => ({ ...prev, status: 'computing' }));
 
       const startTime = performance.now();
       let extraRequestsCount = 0;
@@ -125,15 +160,19 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
       const resultsMap = new Map<string, EventDetail | null>();
       const failedIds = new Set<string>();
 
-      // Concurrency queue runner (limit to 3 concurrent requests)
+      // Concurrency queue runner: max 3 concurrent requests per Task 4
       const queue = [...activeEvents];
       const runWorker = async () => {
         while (queue.length > 0 && !cancelled) {
+          // Check circuit breaker before each request
+          if (isCircuitOpen()) {
+            break;
+          }
+
           const item = queue.shift();
           if (!item) break;
 
           try {
-            // Check if already in TanStack Query cache
             const cached = queryClient.getQueryData<EventDetail>(['event', item.id]);
             if (!cached) {
               extraRequestsCount++;
@@ -162,7 +201,6 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
 
       if (cancelled) return;
 
-      // Compute total prize sum across all loaded active events
       const calculateSum = () => {
         let sum = 0;
         let successCount = 0;
@@ -185,8 +223,8 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
       const endTime = performance.now();
       const elapsed = Math.round(endTime - startTime);
 
-      if (failedIds.size === 0) {
-        // All active events resolved successfully
+      if (failedIds.size === 0 && initialSuccessCount > 0) {
+        // All active events resolved successfully -> persist for 12 hours
         try {
           localStorage.setItem(
             STORAGE_KEY,
@@ -197,7 +235,7 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
             })
           );
         } catch {
-          // Ignore localStorage errors
+          // Ignore storage quota errors
         }
 
         setState({
@@ -208,7 +246,7 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
           totalTimeMs: elapsed,
         });
       } else if (initialSuccessCount > 0) {
-        // Some succeeded, some failed -> show partial sum with + and schedule single retry
+        // Partial success -> show partial sum with + and schedule single retry
         setState({
           total: initialSum,
           isPartial: true,
@@ -217,13 +255,16 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
           totalTimeMs: elapsed,
         });
 
-        // Retry failed ones once later (after 3.5s)
         setTimeout(async () => {
-          if (cancelled) return;
+          if (cancelled || isCircuitOpen()) return;
           const retryIds = Array.from(failedIds);
           let retrySuccess = true;
 
           for (const fid of retryIds) {
+            if (isCircuitOpen()) {
+              retrySuccess = false;
+              break;
+            }
             try {
               extraRequestsCount++;
               const redetail = await queryClient.fetchQuery({
@@ -272,35 +313,56 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
           }
         }, 3500);
       } else {
-        // All active event queries failed
+        // All failed
         const stored = getStoredPool();
-        if (stored) {
-          setState({
-            total: stored.total,
-            isPartial: false,
-            status: 'persisted',
-            extraRequests: extraRequestsCount,
-            totalTimeMs: elapsed,
-          });
-        } else {
-          setState({
-            total: null,
-            isPartial: false,
-            status: 'failed',
-            extraRequests: extraRequestsCount,
-            totalTimeMs: elapsed,
-          });
-        }
+        setState({
+          total: stored ? stored.total : null,
+          isPartial: false,
+          status: stored ? 'persisted' : 'failed',
+          extraRequests: extraRequestsCount,
+          totalTimeMs: elapsed,
+        });
       }
+
+      isFetchingRef.current = false;
     };
 
-    // Schedule background queue strictly after window load + browser idle
-    const cancelIdle = runAfterLoadAndIdle(() => {
-      executeBackgroundFetch();
-    }, 2500);
+    // Task 4: Start ONLY when stats section is in view (IntersectionObserver) AND after window load + idle
+    const startWhenReady = () => {
+      cancelIdle = runAfterLoadAndIdle(() => {
+        executeBackgroundFetch();
+      }, 1500);
+    };
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      const statsTarget =
+        document.getElementById('festival-stats') ||
+        document.querySelector('[aria-label="Festival Statistics"]');
+
+      if (statsTarget) {
+        observer = new IntersectionObserver(
+          (entries) => {
+            const [entry] = entries;
+            if (entry && entry.isIntersecting) {
+              observer?.disconnect();
+              observer = null;
+              startWhenReady();
+            }
+          },
+          { rootMargin: '200px 0px' }
+        );
+        observer.observe(statsTarget);
+      } else {
+        // Fallback if target element isn't present immediately
+        startWhenReady();
+      }
+    } else {
+      startWhenReady();
+    }
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
       cancelIdle();
     };
   }, [events]);

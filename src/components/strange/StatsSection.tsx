@@ -190,6 +190,7 @@ export const StatsSection: FC<StatsSectionProps> = ({ events, totalPrizePool, pr
 
   return (
     <section
+      id="festival-stats"
       ref={containerRef}
       className="relative w-full py-12 sm:py-16 bg-[#07060D] border-y border-[#FF7A1A]/20"
       aria-label="Festival Statistics"

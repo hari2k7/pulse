@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ApiError, getEvent, getEvents } from '../lib/api';
+import { ApiError, getEvent, getEvents, getStoredEventsCache } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
 import type { EventDetail, EventSummary, GetEventsResult } from '../lib/types';
 
@@ -31,9 +31,32 @@ interface EventsState {
   error: ApiError | null;
 }
 
+// Module-level guard: strictly max 1 hover prefetch in flight at a time
+let globalPrefetchInFlight = false;
+
+function canPrefetch(): boolean {
+  if (typeof window === 'undefined') return false;
+  // None on saveData
+  const nav = navigator as unknown as {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  };
+  if (nav.connection?.saveData === true) return false;
+  if (window.matchMedia('(save-data: on)').matches) return false;
+  // None on coarse pointer (touch devices)
+  if (window.matchMedia('(pointer: coarse)').matches) return false;
+  if (!window.matchMedia('(pointer: fine)').matches) return false;
+  return true;
+}
+
+/**
+ * useEvents hook with Stale-While-Revalidate caching:
+ * - Uses persisted localStorage cache as initialData so repeat visits render immediately with 0 latency.
+ * - Silent background revalidation: the "Showing saved data" banner appears ONLY if the live call fails.
+ */
 export function useEvents(options?: { enabled?: boolean }): UseEventsResult {
   const enabled = options?.enabled !== false;
   const [state, setState] = useState<EventsState>(() => {
+    // 1. Check in-memory query cache
     const cached = queryClient.getQueryData<GetEventsResult>(['events']);
     if (cached) {
       return {
@@ -44,6 +67,19 @@ export function useEvents(options?: { enabled?: boolean }): UseEventsResult {
         error: null,
       };
     }
+
+    // 2. Check 24h localStorage cache for instant render on repeat visits
+    const stored = getStoredEventsCache();
+    if (stored) {
+      return {
+        status: 'success',
+        events: stored.events,
+        stale: false, // Do NOT show banner during silent revalidation!
+        fetchedAt: stored.timestamp,
+        error: null,
+      };
+    }
+
     return {
       status: 'loading',
       events: [],
@@ -82,6 +118,20 @@ export function useEvents(options?: { enabled?: boolean }): UseEventsResult {
       })
       .catch((err: unknown) => {
         if (ignore) return;
+
+        // If live call fails and stored data exists, serve stored data as stale
+        const stored = getStoredEventsCache();
+        if (stored) {
+          setState({
+            status: 'success',
+            events: stored.events,
+            stale: true,
+            fetchedAt: stored.timestamp,
+            error: null,
+          });
+          return;
+        }
+
         const apiError =
           err instanceof ApiError
             ? err
@@ -113,6 +163,11 @@ export function useEvents(options?: { enabled?: boolean }): UseEventsResult {
   };
 }
 
+/**
+ * useEvent hook:
+ * Detail queries stay in memory with a 30 min staleTime.
+ * Fast placeholderData populated from existing events summary cache.
+ */
 export function useEvent(id?: string): UseEventResult {
   const query = useQuery<EventDetail, ApiError>({
     queryKey: ['event', id],
@@ -121,8 +176,11 @@ export function useEvent(id?: string): UseEventResult {
       return getEvent(id);
     },
     enabled: Boolean(id),
+    staleTime: 30 * 60 * 1000, // 30 minutes in memory per Task 4
+    gcTime: 60 * 60 * 1000, // 60 minutes
+    refetchOnWindowFocus: false, // No refetch on focus per Task 4
+    refetchInterval: false, // No polling per Task 4
     retry: (_failureCount, error) => {
-      // Never retry 404/notfound
       if (error?.kind === 'notfound' || error?.status === 404) {
         return false;
       }
@@ -132,10 +190,15 @@ export function useEvent(id?: string): UseEventResult {
       if (!id) return undefined;
       const cachedList = queryClient.getQueryData<GetEventsResult>(['events']);
       const summary = cachedList?.events.find((e) => e.id === id);
-      if (!summary) return undefined;
-      return {
-        ...summary,
-      } as EventDetail;
+      if (summary) {
+        return { ...summary } as EventDetail;
+      }
+      const stored = getStoredEventsCache();
+      const storedSummary = stored?.events.find((e) => e.id === id);
+      if (storedSummary) {
+        return { ...storedSummary } as EventDetail;
+      }
+      return undefined;
     },
   });
 
@@ -156,25 +219,40 @@ export function useEvent(id?: string): UseEventResult {
   };
 }
 
+/**
+ * usePrefetchEvent hook:
+ * Hover prefetch with max 1 request in flight, completely disabled on saveData or coarse pointer.
+ */
 export function usePrefetchEvent(id?: string) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const prefetch = useCallback(
     (targetId?: string) => {
       const eventId = targetId ?? id;
-      if (!eventId) return;
+      if (!eventId || !canPrefetch() || globalPrefetchInFlight) return;
+
+      // Skip if already in memory
+      const cached = queryClient.getQueryData(['event', eventId]);
+      if (cached) return;
 
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
 
-      // 150ms delay so quick mouse sweeps do not trigger unnecessary requests
+      // 150ms debounce so fast sweeps do not trigger unnecessary network requests
       timerRef.current = setTimeout(() => {
-        queryClient.prefetchQuery({
-          queryKey: ['event', eventId],
-          queryFn: () => getEvent(eventId),
-          staleTime: 5 * 60 * 1000,
-        });
+        if (globalPrefetchInFlight || !canPrefetch()) return;
+        globalPrefetchInFlight = true;
+
+        queryClient
+          .prefetchQuery({
+            queryKey: ['event', eventId],
+            queryFn: () => getEvent(eventId),
+            staleTime: 30 * 60 * 1000,
+          })
+          .finally(() => {
+            globalPrefetchInFlight = false;
+          });
       }, 150);
     },
     [id]

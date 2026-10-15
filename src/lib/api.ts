@@ -342,19 +342,38 @@ function sanitizeEventDetail(raw: Record<string, unknown>): EventDetail {
   };
 }
 
-function getStoredEventsCache(): { events: EventSummary[]; timestamp: number } | null {
+export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours max age per Task 4
+
+export function getStoredEventsCache(): { events: EventSummary[]; timestamp: number } | null {
   try {
     const cachedRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!cachedRaw) return null;
     const parsed = JSON.parse(cachedRaw) as {
       events?: unknown;
+      at?: unknown;
       timestamp?: unknown;
     };
     if (parsed && Array.isArray(parsed.events)) {
+      const at =
+        typeof parsed.at === 'number'
+          ? parsed.at
+          : typeof parsed.timestamp === 'number'
+          ? parsed.timestamp
+          : 0;
+
+      // Enforce 24h max age
+      if (at > 0 && Date.now() - at > MAX_CACHE_AGE_MS) {
+        try {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+        } catch {
+          // Ignore
+        }
+        return null;
+      }
+
       const validEvents = parsed.events.filter(isValidEventItem).map(sanitizeEventSummary);
       if (validEvents.length > 0) {
-        const timestamp = typeof parsed.timestamp === 'number' ? parsed.timestamp : Date.now();
-        return { events: validEvents, timestamp };
+        return { events: validEvents, timestamp: at || Date.now() };
       }
     }
   } catch {
@@ -482,6 +501,7 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
           LOCAL_STORAGE_KEY,
           JSON.stringify({
             events,
+            at: now,
             timestamp: now,
           })
         );
