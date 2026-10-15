@@ -98,10 +98,13 @@ export const EventCard: FC<EventCardProps> = ({
         ].filter((t): t is string => Boolean(t))
   ).slice(0, 4);
 
+  const [isExpanding, setIsExpanding] = useState<boolean>(false);
+
   // Smooth View Transitions API navigation if supported and motion not reduced
   const handleCardClick = (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const targetUrl = `/events/${event.id}`;
+    setIsExpanding(true);
 
     if (
       typeof document !== 'undefined' &&
@@ -232,12 +235,13 @@ export const EventCard: FC<EventCardProps> = ({
       {/* 4. Cloak of Levitation Backside (revealed on hover and :focus-visible on fine pointer devices) */}
       <div className="cloak-backside" aria-hidden="true">
         {/* Inner Lining (Dark gold/ochre with fine embroidered pattern) */}
-        <div className="cloak-lining flex flex-col justify-between p-4 overflow-hidden">
-          <div className="space-y-2 min-w-0">
+        <div className="cloak-lining flex flex-col justify-between p-4 overflow-hidden relative">
+          {/* Top block: category, 3D title, blurb */}
+          <div className="space-y-2 min-w-0 relative z-10">
             <div className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37] truncate">
               {category || 'STRANGE'}
             </div>
-            <h4 className="font-display font-bold text-base text-[#FFF8E7] line-clamp-2 leading-snug break-words">
+            <h4 className="card-portal-title font-display font-bold text-base text-[#FFF8E7] line-clamp-2 leading-snug break-words">
               {title}
             </h4>
             <p className="text-xs text-[#E8DCC0] line-clamp-3 leading-relaxed">
@@ -245,7 +249,91 @@ export const EventCard: FC<EventCardProps> = ({
             </p>
           </div>
 
-          <div className="pt-2 space-y-3">
+          {/* Central Portal Opening between blurb and tags */}
+          <div
+            className={`card-portal-container ${isExpanding ? 'portal-expanding' : ''}`}
+            aria-hidden="true"
+          >
+            <svg
+              viewBox="0 0 120 120"
+              className="w-full h-full overflow-visible drop-shadow-[0_0_12px_rgba(255,122,26,0.5)]"
+            >
+              <defs>
+                <linearGradient id={`cp-grad-${event.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FF7A1A" />
+                  <stop offset="50%" stopColor="#F5B642" />
+                  <stop offset="100%" stopColor="#FF5500" />
+                </linearGradient>
+                <radialGradient id={`cp-core-${event.id}`} cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#050308" stopOpacity="0.95" />
+                  <stop offset="70%" stopColor="#07060D" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#FF7A1A" stopOpacity="0.35" />
+                </radialGradient>
+                <filter id={`cp-glow-${event.id}`} x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* Dark cosmic core with subtle radial glow */}
+              <circle cx="60" cy="60" r="42" fill={`url(#cp-core-${event.id})`} />
+
+              {/* Faint inner ring scaling independently for depth */}
+              <circle
+                cx="60"
+                cy="60"
+                r="34"
+                fill="none"
+                stroke="#F5B642"
+                strokeWidth="1"
+                strokeDasharray="4 6"
+                strokeOpacity="0.5"
+                className="card-portal-inner-ring"
+              />
+
+              {/* Main fiery portal ring with glow */}
+              <circle
+                cx="60"
+                cy="60"
+                r="44"
+                fill="none"
+                stroke={`url(#cp-grad-${event.id})`}
+                strokeWidth="2.5"
+                filter={`url(#cp-glow-${event.id})`}
+                className="card-portal-outer-ring"
+              />
+
+              {/* 7 spark dots traveling around circumference */}
+              {Array.from({ length: 7 }).map((_, i) => (
+                <g
+                  key={i}
+                  className="card-portal-spark-orbit"
+                  style={{ animationDelay: `${-i * 0.37}s` }}
+                >
+                  <circle
+                    cx="60"
+                    cy="16"
+                    r={i % 2 === 0 ? 2 : 1.5}
+                    fill="#FFF4D0"
+                  />
+                  <path
+                    d="M 60 16 A 44 44 0 0 0 54 16.5"
+                    fill="none"
+                    stroke="#FF7A1A"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    opacity="0.75"
+                  />
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          {/* Bottom block: tags and explore action */}
+          <div className="pt-2 space-y-3 relative z-10">
             {displayTags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 max-h-14 overflow-hidden">
                 {displayTags.map((tag) => (
@@ -260,14 +348,20 @@ export const EventCard: FC<EventCardProps> = ({
             )}
 
             <div className="pt-1">
-              <span
-                className={`w-full block py-2 px-3 text-center text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${
-                  isOpen
-                    ? 'bg-[#D4AF37] text-[#0A0702] font-bold shadow-sm'
-                    : 'bg-black/40 text-[#D4AF37] border border-[#D4AF37]/30'
-                }`}
-              >
-                {isOpen ? 'REGISTER' : buttonLabel}
+              <span className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 text-center text-xs font-bold uppercase tracking-widest rounded-xl bg-[#D4AF37] text-[#0A0702] shadow-sm transition-all">
+                <span>View Event</span>
+                <svg
+                  className="card-portal-arrow w-3.5 h-3.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               </span>
             </div>
           </div>

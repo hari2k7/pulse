@@ -297,6 +297,10 @@ html.has-custom-cursor select {
     transition: opacity 200ms ease;
   }
 
+  .card-strange {
+    perspective: 1000px;
+  }
+
   .card-strange:hover .cloak-backside,
   .card-strange:focus-visible .cloak-backside {
     opacity: 1;
@@ -318,8 +322,123 @@ html.has-custom-cursor select {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 1.25rem;
+    padding: 1.15rem;
     color: #FFF8E7;
+    transform-style: preserve-3d;
+  }
+
+  /* Portal Ring Container on the Lining Side */
+  .card-portal-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120px;
+    height: 120px;
+    margin-top: -60px;
+    margin-left: -60px;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transform: scale(0.2) rotate(-15deg);
+    transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+  }
+
+  .card-strange:hover .card-portal-container,
+  .card-strange:focus-visible .card-portal-container {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    transition: opacity 450ms cubic-bezier(0.16, 1, 0.3, 1) 50ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 50ms;
+    animation: portalDepthBreathe 3.2s ease-in-out infinite alternate 550ms;
+  }
+
+  .card-portal-container.portal-expanding {
+    opacity: 0 !important;
+    transform: scale(2.6) !important;
+    transition: opacity 220ms ease-in, transform 240ms ease-in !important;
+  }
+
+  @keyframes portalDepthBreathe {
+    0% {
+      transform: scale(1) rotate(0deg);
+    }
+    100% {
+      transform: scale(1.08) rotate(4deg);
+    }
+  }
+
+  /* Outer fiery ring slow rotation */
+  .card-portal-outer-ring {
+    transform-origin: 60px 60px;
+    animation: cardPortalRingRotate 14s linear infinite;
+  }
+
+  @keyframes cardPortalRingRotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Inner faint ring breathing & depth */
+  .card-portal-inner-ring {
+    transform-origin: 60px 60px;
+    animation: cardPortalInnerBreathe 4s ease-in-out infinite alternate;
+  }
+
+  @keyframes cardPortalInnerBreathe {
+    0% {
+      transform: scale(0.92) rotate(0deg);
+      opacity: 0.35;
+    }
+    100% {
+      transform: scale(1.08) rotate(-180deg);
+      opacity: 0.75;
+    }
+  }
+
+  /* Spark orbits around ring circumference */
+  .card-portal-spark-orbit {
+    transform-origin: 60px 60px;
+    animation: cardPortalSparkSpin 2.6s linear infinite;
+    will-change: transform;
+  }
+
+  @keyframes cardPortalSparkSpin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* 3D forward translation of title on hover */
+  .card-portal-title {
+    transform: translateZ(0) scale(1);
+    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+
+  .card-strange:hover .card-portal-title,
+  .card-strange:focus-visible .card-portal-title {
+    transform: translateZ(24px) scale(1.04);
+  }
+
+  /* Explore arrow visible strictly in hover state, translating forward */
+  .card-portal-arrow {
+    opacity: 0;
+    transform: translateX(-4px) translateZ(0) scale(0.8);
+    transition: opacity 300ms ease, transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+  }
+
+  .card-strange:hover .card-portal-arrow,
+  .card-strange:focus-visible .card-portal-arrow {
+    opacity: 1;
+    transform: translateX(0px) translateZ(24px) scale(1.04);
   }
 
   /* Red cloak-fabric layer: sweeps/peels away from top-right corner to bottom-left */
