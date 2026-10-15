@@ -157,29 +157,53 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
 
   const fetchPromise = (async (): Promise<GetEventsResult> => {
     try {
-      const response = await fetchWithRetry(`${API_BASE_URL}/api/test/events`);
-
-      let data: unknown;
-      try {
-        data = await response.json();
-      } catch (jsonErr) {
-        throw new ApiError('Failed to parse events JSON response', 'invalid', response.status, jsonErr);
+      let events: EventSummary[] | null = null;
+      if (!force && typeof window !== 'undefined') {
+        const earlyEvents = (window as unknown as { __EARLY_EVENTS__?: EventSummary[] }).__EARLY_EVENTS__;
+        if (earlyEvents && Array.isArray(earlyEvents) && earlyEvents.length > 0) {
+          events = earlyEvents;
+        } else {
+          const earlyPromise = (
+            window as unknown as { __EARLY_EVENTS_PROMISE__?: Promise<{ events?: EventSummary[] }> }
+          ).__EARLY_EVENTS_PROMISE__;
+          if (earlyPromise) {
+            try {
+              const res = await earlyPromise;
+              if (res?.events && Array.isArray(res.events) && res.events.length > 0) {
+                events = res.events;
+              }
+            } catch {
+              // Fall through to regular fetch
+            }
+          }
+        }
       }
 
-      if (
-        !data ||
-        typeof data !== 'object' ||
-        !('events' in data) ||
-        !Array.isArray((data as { events: unknown }).events)
-      ) {
-        throw new ApiError(
-          'Malformed events response: expected an object with an "events" array',
-          'invalid',
-          response.status
-        );
-      }
+      if (!events) {
+        const response = await fetchWithRetry(`${API_BASE_URL}/api/test/events`);
 
-      const events = (data as { events: EventSummary[] }).events;
+        let data: unknown;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          throw new ApiError('Failed to parse events JSON response', 'invalid', response.status, jsonErr);
+        }
+
+        if (
+          !data ||
+          typeof data !== 'object' ||
+          !('events' in data) ||
+          !Array.isArray((data as { events: unknown }).events)
+        ) {
+          throw new ApiError(
+            'Malformed events response: expected an object with an "events" array',
+            'invalid',
+            response.status
+          );
+        }
+
+        events = (data as { events: EventSummary[] }).events;
+      }
       const now = Date.now();
 
       memoryCache = {
@@ -265,6 +289,26 @@ export function getEvents(options: GetEventsOptions = {}): Promise<GetEventsResu
 
 export async function getEvent(id: string, options?: GetEventOptions): Promise<EventDetail> {
   void options;
+  if (typeof window !== 'undefined') {
+    const earlyEvent = (window as unknown as { __EARLY_EVENT__?: EventDetail }).__EARLY_EVENT__;
+    if (earlyEvent && earlyEvent.id === id) {
+      return earlyEvent;
+    }
+    const earlyPromise = (
+      window as unknown as { __EARLY_EVENT_PROMISE__?: Promise<{ event?: EventDetail }> }
+    ).__EARLY_EVENT_PROMISE__;
+    if (earlyPromise) {
+      try {
+        const res = await earlyPromise;
+        if (res?.event && res.event.id === id) {
+          return res.event;
+        }
+      } catch {
+        // Fall back to regular fetch
+      }
+    }
+  }
+
   const url = `${API_BASE_URL}/api/test/events/${encodeURIComponent(id)}`;
   const response = await fetchWithRetry(url);
 

@@ -10,6 +10,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 
 import { EventsGridSkeleton } from './components/events/EventsGridSkeleton';
 import { EventDetailSkeleton } from './components/events/EventDetailSkeleton';
+import { FavoritesSkeleton } from './components/events/FavoritesSkeleton';
 
 // Lazy load discovery and detail routes per PROJECT.md Section 3
 const EventsPage = lazy(() =>
@@ -56,7 +57,7 @@ function App() {
             <Route
               path="/favorites"
               element={
-                <Suspense fallback={<EventsGridSkeleton />}>
+                <Suspense fallback={<FavoritesSkeleton />}>
                   <FavoritesPage />
                 </Suspense>
               }

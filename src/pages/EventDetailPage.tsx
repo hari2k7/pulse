@@ -56,7 +56,11 @@ export const EventDetailPage: FC = () => {
   const [isDrifting, setIsDrifting] = useState(true);
   const [cloakRemoved, setCloakRemoved] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      return (
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        !window.matchMedia('(pointer: fine)').matches ||
+        window.innerWidth < 768
+      );
     }
     return false;
   });
@@ -304,7 +308,7 @@ export const EventDetailPage: FC = () => {
     ? getOptimizedImageUrl(bannerUrl, 1200, 675)
     : FALLBACK_IMAGE_DATA_URI;
   const bannerSrcSet = hasValidImage
-    ? getImageSrcSet(bannerUrl, [360, 540, 720, 1080, 1600], 9 / 16)
+    ? getImageSrcSet(bannerUrl, [360, 540, 768, 1080, 1600], 9 / 16)
     : undefined;
 
   const remaining = seatsLeft(event.total_seats, event.seats_filled);

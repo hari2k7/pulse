@@ -29,6 +29,72 @@
     <link rel="preconnect" href="https://images.pexels.com" crossorigin />
     <link rel="dns-prefetch" href="https://images.pexels.com" />
 
+    <!-- Early API dispatch and LCP image preload for instant route hydration -->
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname;
+          function buildSrcSet(baseUrl, widths, ratio) {
+            var base = baseUrl.split('?')[0];
+            return widths.map(function(w) {
+              var h = Math.round(w * ratio);
+              return base + '?auto=compress&cs=tinysrgb&w=' + w + '&h=' + h + '&fit=crop ' + w + 'w';
+            }).join(', ');
+          }
+
+          if (p === '/events' || p === '/favorites') {
+            window.__EARLY_EVENTS_PROMISE__ = fetch('https://render72.pages.dev/api/test/events')
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (d && Array.isArray(d.events) && d.events.length > 0) {
+                  window.__EARLY_EVENTS__ = d.events;
+                  if (p === '/events' && d.events[0] && d.events[0].cover_image_url) {
+                    var u = d.events[0].cover_image_url;
+                    if (u.indexOf('images.pexels.com') !== -1) {
+                      var l = document.createElement('link');
+                      l.rel = 'preload';
+                      l.as = 'image';
+                      l.setAttribute('imagesrcset', buildSrcSet(u, [320, 440, 600], 2 / 3));
+                      l.setAttribute('imagesizes', '(max-width: 640px) calc(100vw - 56px), (max-width: 1024px) 50vw, 380px');
+                      l.fetchPriority = 'high';
+                      l.crossOrigin = 'anonymous';
+                      document.head.appendChild(l);
+                    }
+                  }
+                }
+                return d;
+              })
+              .catch(function() {});
+          } else if (p.indexOf('/events/') === 0 && p.length > 8) {
+            var parts = p.split('/');
+            var id = parts[2];
+            if (id) {
+              window.__EARLY_EVENT_PROMISE__ = fetch('https://render72.pages.dev/api/test/events/' + encodeURIComponent(id))
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                  if (d && d.event) {
+                    window.__EARLY_EVENT__ = d.event;
+                    var u = d.event.banner_image_url || d.event.cover_image_url;
+                    if (u && u.indexOf('images.pexels.com') !== -1) {
+                      var l = document.createElement('link');
+                      l.rel = 'preload';
+                      l.as = 'image';
+                      l.setAttribute('imagesrcset', buildSrcSet(u, [360, 540, 768, 1080, 1600], 9 / 16));
+                      l.setAttribute('imagesizes', '(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1600px');
+                      l.fetchPriority = 'high';
+                      l.crossOrigin = 'anonymous';
+                      document.head.appendChild(l);
+                    }
+                  }
+                  return d;
+                })
+                .catch(function() {});
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
+
     <!-- Preload only display font per Stage 1 & Hard rules -->
     <link
       rel="preload"
@@ -151,18 +217,40 @@
   <body>
     <div id="root">
       <!-- Static styled shell placeholder visible instantly without JS for maximum LCP & 0 CLS -->
-      <div class="shell-container">
+      <div id="initial-shell" class="shell-container">
         <header class="shell-header">
           <div class="shell-brand">
             STR<span class="shell-brand-accent">A</span>NGE
           </div>
         </header>
-        <main class="shell-content">
+        <main id="shell-body" class="shell-content">
           <div class="shell-tagline">Annual Technical Convergence</div>
           <h1 class="shell-title">A TECH FEST <span>BEYOND REALITY.</span></h1>
           <p class="shell-desc">Step through the Sling Ring into alternate dimensions of code, engineering, and innovation.</p>
         </main>
       </div>
+      <script>
+        (function() {
+          try {
+            var p = window.location.pathname;
+            var body = document.getElementById('shell-body');
+            if (!body) return;
+            if (p === '/favorites') {
+              body.className = '';
+              body.style.cssText = 'max-width: 80rem; margin: 0 auto; padding: 6rem 1rem 3rem; width: 100%; text-align: left; box-sizing: border-box;';
+              body.innerHTML = '<div style="border-bottom: 1px solid rgba(255,122,26,0.2); padding-bottom: 1.5rem;"><div style="display: flex; align-items: center; gap: 0.75rem;"><h1 style="font-family: \'Cinzel\', \'Cinzel Fallback\', Georgia, serif; font-weight: 700; font-size: 2.25rem; margin: 0; color: #F3EFE8; letter-spacing: 0.05em;">FAVORITES</h1></div><p style="font-size: 0.875rem; color: #B8B3C7; margin: 0.25rem 0 0;">Your curated collection of bookmarked dimensions and competitions.</p></div>';
+            } else if (p === '/events') {
+              body.className = '';
+              body.style.cssText = 'max-width: 80rem; margin: 0 auto; padding: 6rem 1rem 3rem; width: 100%; text-align: left; box-sizing: border-box;';
+              body.innerHTML = '<div style="border-bottom: 1px solid rgba(255,122,26,0.2); padding-bottom: 1.5rem;"><div style="display: flex; align-items: center; gap: 0.75rem;"><h1 style="font-family: \'Cinzel\', \'Cinzel Fallback\', Georgia, serif; font-weight: 700; font-size: 2.25rem; margin: 0; color: #F3EFE8; letter-spacing: 0.05em;">EVENTS</h1></div><p style="font-size: 0.875rem; color: #B8B3C7; margin: 0.25rem 0 0;">Explore 30+ competitions, hackathons, and masterclasses across alternate reality tracks.</p></div>';
+            } else if (p.indexOf('/events/') === 0 && p.length > 8) {
+              body.className = '';
+              body.style.cssText = 'width: 100%; padding-top: 4rem; text-align: left; box-sizing: border-box;';
+              body.innerHTML = '<div style="width: 100%; height: 240px; background: #0D1020; position: relative; border-bottom: 1px solid rgba(255,255,255,0.05);"></div><div style="max-width: 80rem; margin: -1.5rem auto 0; padding: 0 1rem; width: 100%; position: relative; z-index: 10; box-sizing: border-box;"><div style="height: 28px; width: 110px; border-radius: 8px; background: #1A1030; margin-bottom: 0.75rem;"></div><div style="height: 40px; width: 65%; max-width: 500px; border-radius: 6px; background: #1A1030; margin-bottom: 0.75rem;"></div><div style="height: 18px; width: 85%; max-width: 600px; border-radius: 4px; background: rgba(26,16,48,0.6);"></div></div>';
+            }
+          } catch(e) {}
+        })();
+      </script>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

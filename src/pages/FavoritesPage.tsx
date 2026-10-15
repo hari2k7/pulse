@@ -8,11 +8,9 @@ import { EmptyState } from '../components/states/EmptyState';
 import { ErrorState } from '../components/states/ErrorState';
 
 export const FavoritesPage: FC = () => {
-  // Title pattern and noindex meta per Section 8
   useDocumentMeta({
     title: 'Favorites — STRANGE',
     description: 'Your saved favorite multiverse events and hackathons.',
-    noindex: true,
   });
 
   const { status, events, stale, error, retry } = useEvents();
@@ -25,25 +23,8 @@ export const FavoritesPage: FC = () => {
     return events.filter((e) => favSet.has(e.id));
   }, [events, favorites]);
 
-  // Loading skeleton state
-  if (status === 'loading') {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 space-y-8 bg-[#07060D] text-[#F3EFE8] w-full">
-        <div className="space-y-2 border-b border-[#FF7A1A]/20 pb-6">
-          <div className="h-10 w-48 rounded bg-white/10 animate-pulse" />
-          <div className="h-4 w-64 rounded bg-white/5 animate-pulse" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <EventCardSkeleton key={i} className="animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   // Error state with retry
-  if (status === 'error') {
+  if (status === 'error' && favorites.length > 0 && favoriteEvents.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-16 min-h-[60vh] flex items-center justify-center">
         <ErrorState
@@ -55,6 +36,8 @@ export const FavoritesPage: FC = () => {
       </div>
     );
   }
+
+  const isLoading = status === 'loading' && favorites.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[70vh]">
@@ -86,7 +69,7 @@ export const FavoritesPage: FC = () => {
               aria-live="polite"
               className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#FF7A1A]/20 border border-[#FF7A1A]/40 text-[#F5B642]"
             >
-              {favoriteEvents.length}
+              {isLoading ? favorites.length : favoriteEvents.length}
             </span>
           </div>
           <p className="text-sm text-[#B8B3C7]">
@@ -103,7 +86,15 @@ export const FavoritesPage: FC = () => {
       </div>
 
       {/* Empty State vs Uniform Shared EventCard Grid */}
-      {favoriteEvents.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          {Array.from({ length: Math.min(favorites.length, 6) }).map((_, i) => (
+            <div key={i} className="h-full">
+              <EventCardSkeleton className="animate-pulse h-full" />
+            </div>
+          ))}
+        </div>
+      ) : favoriteEvents.length === 0 ? (
         <div className="py-12">
           <EmptyState
             title="No Favorites Yet"
