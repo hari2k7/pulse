@@ -38,6 +38,7 @@ import { runAfterLoadAndIdle } from '../lib/idle';
 const GalleryLightbox = lazy(() =>
   import('../components/events/GalleryLightbox').then((m) => ({ default: m.GalleryLightbox }))
 );
+import { SectionErrorBoundary } from '../components/common/SectionErrorBoundary';
 
 export const EventDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -968,18 +969,20 @@ export const EventDetailPage: FC = () => {
             </div>
 
             {/* Lightbox Dialog (Lazy Loaded) */}
-            {lightboxOpen && event.gallery_images && (
-              <Suspense fallback={null}>
-                <GalleryLightbox
-                  images={event.gallery_images}
-                  initialIndex={activeImageIndex}
-                  eventName={event.name}
-                  isOpen={lightboxOpen}
-                  onClose={() => setLightboxOpen(false)}
-                  triggerButtonId={activeTriggerId}
-                />
-              </Suspense>
-            )}
+            <SectionErrorBoundary sectionName="lightbox">
+              {lightboxOpen && event.gallery_images && (
+                <Suspense fallback={null}>
+                  <GalleryLightbox
+                    images={event.gallery_images}
+                    initialIndex={activeImageIndex}
+                    eventName={event.name}
+                    isOpen={lightboxOpen}
+                    onClose={() => setLightboxOpen(false)}
+                    triggerButtonId={activeTriggerId}
+                  />
+                </Suspense>
+              )}
+            </SectionErrorBoundary>
           </section>
         )}
 
@@ -1042,78 +1045,80 @@ export const EventDetailPage: FC = () => {
 
         {/* ROW 6: "More in {theme}" Row */}
         {theme !== 'More' && moreEvents.length > 0 && (
-          <section aria-labelledby="more-theme-heading" className="space-y-4 pt-4 border-t border-white/5">
-            <div className="flex items-center justify-between gap-4">
-              <h2
-                id="more-theme-heading"
-                className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide"
-              >
-                More in {theme}
-              </h2>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleMoreScroll('left')}
-                  disabled={!canScrollLeft}
-                  tabIndex={canScrollLeft ? 0 : -1}
-                  aria-label="Scroll more events left"
-                  className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
-                    canScrollLeft ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                  }`}
+          <SectionErrorBoundary sectionName="related-row">
+            <section aria-labelledby="more-theme-heading" className="space-y-4 pt-4 border-t border-white/5">
+              <div className="flex items-center justify-between gap-4">
+                <h2
+                  id="more-theme-heading"
+                  className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    aria-hidden="true"
+                  More in {theme}
+                </h2>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleMoreScroll('left')}
+                    disabled={!canScrollLeft}
+                    tabIndex={canScrollLeft ? 0 : -1}
+                    aria-label="Scroll more events left"
+                    className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
+                      canScrollLeft ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                    }`}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMoreScroll('right')}
-                  disabled={!canScrollRight}
-                  tabIndex={canScrollRight ? 0 : -1}
-                  aria-label="Scroll more events right"
-                  className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
-                    canScrollRight ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                  }`}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    aria-hidden="true"
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMoreScroll('right')}
+                    disabled={!canScrollRight}
+                    tabIndex={canScrollRight ? 0 : -1}
+                    aria-label="Scroll more events right"
+                    className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
+                      canScrollRight ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                    }`}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={moreTrackRef}
-              tabIndex={0}
-              role="region"
-              aria-label={`More in ${theme} track. Use arrow keys or scroll buttons to navigate.`}
-              onKeyDown={handleMoreKeyDown}
-              className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full max-w-full"
-            >
-              {moreEvents.map((item) => (
-                <div
-                  key={item.id}
-                  className="shrink-0 w-[260px] sm:w-[280px] md:w-[320px] snap-start"
-                >
-                  <EventCard event={item} />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </div>
-              ))}
-            </div>
-          </section>
+              </div>
+
+              <div
+                ref={moreTrackRef}
+                tabIndex={0}
+                role="region"
+                aria-label={`More in ${theme} track. Use arrow keys or scroll buttons to navigate.`}
+                onKeyDown={handleMoreKeyDown}
+                className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full max-w-full"
+              >
+                {moreEvents.map((item) => (
+                  <div
+                    key={item.id}
+                    className="shrink-0 w-[260px] sm:w-[280px] md:w-[320px] snap-start"
+                  >
+                    <EventCard event={item} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          </SectionErrorBoundary>
         )}
       </div>
     </div>

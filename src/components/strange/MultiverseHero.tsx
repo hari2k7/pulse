@@ -2,6 +2,7 @@ import { useEffect, useRef, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import { SlingRingPortal } from './SlingRingPortal';
 import { CloakSilhouette } from './CloakSilhouette';
+import { SectionErrorBoundary } from '../common/SectionErrorBoundary';
 import { FESTIVAL_CONFIG } from '../../config/festival';
 import { runAfterLoadAndIdle } from '../../lib/idle';
 export const MultiverseHero: FC = () => {
@@ -88,13 +89,15 @@ export const MultiverseHero: FC = () => {
       </div>
 
       {/* Background Layer 2: Sling Ring Portal (Centered behind headline) */}
-      <div
-        ref={portalWrapperRef}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none opacity-85"
-        aria-hidden="true"
-      >
-        <SlingRingPortal size={560} />
-      </div>
+      <SectionErrorBoundary sectionName="hero-effects">
+        <div
+          ref={portalWrapperRef}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none opacity-85"
+          aria-hidden="true"
+        >
+          <SlingRingPortal size={560} />
+        </div>
+      </SectionErrorBoundary>
 
       {/* Foreground Content: Real text visible without JS for maximum LCP */}
       <div

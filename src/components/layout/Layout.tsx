@@ -15,6 +15,7 @@ const BackToTop = lazy(() =>
 );
 
 import { runAfterLoadAndIdle } from '../../lib/idle';
+import { SectionErrorBoundary } from '../common/SectionErrorBoundary';
 
 export interface LayoutProps {
   children?: ReactNode;
@@ -58,16 +59,20 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
 
       {/* Lazy-loaded atmospheric interactive cursor */}
       {mountCursor && (
-        <Suspense fallback={null}>
-          <StrangeCursor />
-        </Suspense>
+        <SectionErrorBoundary sectionName="cursor">
+          <Suspense fallback={null}>
+            <StrangeCursor />
+          </Suspense>
+        </SectionErrorBoundary>
       )}
 
       {/* Lazy-loaded Back to Top Cloak Button (Home and /events only) */}
       {mountCursor && showBackToTop && (
-        <Suspense fallback={null}>
-          <BackToTop />
-        </Suspense>
+        <SectionErrorBoundary sectionName="back-to-top">
+          <Suspense fallback={null}>
+            <BackToTop />
+          </Suspense>
+        </SectionErrorBoundary>
       )}
     </div>
   );

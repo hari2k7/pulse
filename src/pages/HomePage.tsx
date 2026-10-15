@@ -12,6 +12,7 @@ import { CloakSilhouette } from '../components/strange/CloakSilhouette';
 import { ErrorState } from '../components/states/ErrorState';
 import { EmptyState } from '../components/states/EmptyState';
 import { Button } from '../components/ui/Button';
+import { SectionErrorBoundary } from '../components/common/SectionErrorBoundary';
 
 export const HomePage: FC = () => {
   useDocumentMeta({
@@ -83,11 +84,13 @@ export const HomePage: FC = () => {
       <MultiverseHero />
 
       {/* 2. Temporal Convergence: Eye of Agamotto Countdown */}
-      <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center -mt-8 z-20 content-visibility-auto">
-        <div className="w-full max-w-xl">
-          <EyeOfAgamotto fallbackDate={earliestActiveDate} />
-        </div>
-      </section>
+      <SectionErrorBoundary sectionName="countdown">
+        <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center -mt-8 z-20 content-visibility-auto">
+          <div className="w-full max-w-xl">
+            <EyeOfAgamotto fallbackDate={earliestActiveDate} />
+          </div>
+        </section>
+      </SectionErrorBoundary>
 
       {/* 3. Festival Animated Counters */}
       <div className="content-visibility-auto-sm">
@@ -98,9 +101,11 @@ export const HomePage: FC = () => {
       <CloakSilhouette variant="divider" />
 
       {/* 5. Featured Multiverse Events (Asymmetric Layout) */}
-      <div className="content-visibility-auto-lg">
-        <FeaturedMultiverse events={events} />
-      </div>
+      <SectionErrorBoundary sectionName="featured-row">
+        <div className="content-visibility-auto-lg">
+          <FeaturedMultiverse events={events} />
+        </div>
+      </SectionErrorBoundary>
 
       {/* 6. Multiverse Partner Marquee (Rendered only if festival.ts sponsors exist) */}
       <SponsorMarquee />

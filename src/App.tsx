@@ -38,50 +38,54 @@ const ReactQueryDevtools = isDevtoolsRequested
     )
   : null;
 
+import { RouteErrorBoundary } from './components/common/RouteErrorBoundary';
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ScrollToTop />
         <Layout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route
-              path="/events"
-              element={
-                <Suspense fallback={<EventsGridSkeleton />}>
-                  <EventsPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/favorites"
-              element={
-                <Suspense fallback={<FavoritesSkeleton />}>
-                  <FavoritesPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/events/:id"
-              element={
-                <Suspense fallback={<EventDetailSkeleton />}>
-                  <EventDetailPage />
-                </Suspense>
-              }
-            />
-            {import.meta.env.DEV && (
+          <RouteErrorBoundary>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
               <Route
-                path="/styleguide"
+                path="/events"
                 element={
-                  <Suspense fallback={<div className="w-full min-h-[60vh]" />}>
-                    <StyleguidePage />
+                  <Suspense fallback={<EventsGridSkeleton />}>
+                    <EventsPage />
                   </Suspense>
                 }
               />
-            )}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+              <Route
+                path="/favorites"
+                element={
+                  <Suspense fallback={<FavoritesSkeleton />}>
+                    <FavoritesPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/events/:id"
+                element={
+                  <Suspense fallback={<EventDetailSkeleton />}>
+                    <EventDetailPage />
+                  </Suspense>
+                }
+              />
+              {import.meta.env.DEV && (
+                <Route
+                  path="/styleguide"
+                  element={
+                    <Suspense fallback={<div className="w-full min-h-[60vh]" />}>
+                      <StyleguidePage />
+                    </Suspense>
+                  }
+                />
+              )}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </RouteErrorBoundary>
         </Layout>
       </BrowserRouter>
       {ReactQueryDevtools && (

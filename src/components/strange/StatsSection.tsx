@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo, type FC } from 'react';
 import { FESTIVAL_CONFIG } from '../../config/festival';
 import type { EventSummary } from '../../lib/types';
 import type { UsePrizePoolResult } from '../../hooks/usePrizePool';
+import { SectionErrorBoundary } from '../common/SectionErrorBoundary';
 
 export interface StatsSectionProps {
   events: EventSummary[];
@@ -201,30 +202,32 @@ export const StatsSection: FC<StatsSectionProps> = ({ events, totalPrizePool, pr
           )} gap-6 sm:gap-8 divide-x divide-white/5`}
         >
           {items.map((item) => (
-            <div key={item.id} className="flex flex-col items-center text-center px-4 space-y-1">
-              {item.isSkeleton ? (
-                /* Reserved skeleton slot while computing with no persisted value */
-                <div className="flex flex-col items-center space-y-2 py-1">
-                  <div className="h-9 sm:h-12 md:h-14 w-32 sm:w-44 rounded-lg bg-white/10 animate-pulse" />
-                  <span className="text-xs sm:text-sm uppercase tracking-widest text-[#B8B3C7] font-medium pt-1">
-                    {item.label}
-                  </span>
-                </div>
-              ) : (
-                <>
-                  <span
-                    id={`stat-counter-${item.id}`}
-                    className="font-display font-bold text-3xl sm:text-5xl md:text-6xl text-[#F3EFE8] tracking-tight leading-none"
-                  >
-                    {/* Fallback before JS or during reduced motion */}
-                    {`${item.prefix || ''}${item.value.toLocaleString('en-IN')}${item.suffix || ''}`}
-                  </span>
-                  <span className="text-xs sm:text-sm uppercase tracking-widest text-[#B8B3C7] font-medium pt-1">
-                    {item.label}
-                  </span>
-                </>
-              )}
-            </div>
+            <SectionErrorBoundary key={item.id} sectionName={item.id === 'prize-pool' ? 'prize-pool' : `stat-${item.id}`}>
+              <div className="flex flex-col items-center text-center px-4 space-y-1">
+                {item.isSkeleton ? (
+                  /* Reserved skeleton slot while computing with no persisted value */
+                  <div className="flex flex-col items-center space-y-2 py-1">
+                    <div className="h-9 sm:h-12 md:h-14 w-32 sm:w-44 rounded-lg bg-white/10 animate-pulse" />
+                    <span className="text-xs sm:text-sm uppercase tracking-widest text-[#B8B3C7] font-medium pt-1">
+                      {item.label}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <span
+                      id={`stat-counter-${item.id}`}
+                      className="font-display font-bold text-3xl sm:text-5xl md:text-6xl text-[#F3EFE8] tracking-tight leading-none"
+                    >
+                      {/* Fallback before JS or during reduced motion */}
+                      {`${item.prefix || ''}${item.value.toLocaleString('en-IN')}${item.suffix || ''}`}
+                    </span>
+                    <span className="text-xs sm:text-sm uppercase tracking-widest text-[#B8B3C7] font-medium pt-1">
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </div>
+            </SectionErrorBoundary>
           ))}
         </div>
       </div>
