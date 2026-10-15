@@ -49,7 +49,7 @@ export const FavoritesPage: FC = () => {
   const isLoading = status === 'loading' && favorites.length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[70vh]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[calc(100vh-var(--navbar-height,72px))]">
       {/* Stale Cache Notice Banner */}
       {stale && (
         <div
@@ -122,8 +122,8 @@ export const FavoritesPage: FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {visibleEvents.map((event, index) => (
-              <div key={event.id} className={`h-full ${index >= 3 ? 'content-visibility-card' : ''}`}>
-                <EventCard event={event} className="h-full" />
+              <div key={event.id} className={`h-full ${index >= 2 ? 'content-visibility-card' : ''}`}>
+                <EventCard event={event} priority={index === 0} className="h-full" />
               </div>
             ))}
           </div>

@@ -4,7 +4,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { Layout } from './components/layout/Layout';
 import { ScrollToTop } from './components/layout/ScrollToTop';
-import { HomePage } from './pages/HomePage';
 import { StyleguidePage } from './pages/StyleguidePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -12,7 +11,10 @@ import { EventsGridSkeleton } from './components/events/EventsGridSkeleton';
 import { EventDetailSkeleton } from './components/events/EventDetailSkeleton';
 import { FavoritesSkeleton } from './components/events/FavoritesSkeleton';
 
-// Lazy load discovery and detail routes per PROJECT.md Section 3
+// Lazy load all main routes so /favorites never downloads heavy home canvas/components
+const HomePage = lazy(() =>
+  import('./pages/HomePage').then((m) => ({ default: m.HomePage }))
+);
 const EventsPage = lazy(() =>
   import('./pages/EventsPage').then((m) => ({ default: m.EventsPage }))
 );
@@ -48,7 +50,14 @@ function App() {
         <Layout>
           <RouteErrorBoundary>
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route
+                path="/"
+                element={
+                  <Suspense fallback={<div className="min-h-screen bg-[#07060D]" />}>
+                    <HomePage />
+                  </Suspense>
+                }
+              />
               <Route
                 path="/events"
                 element={

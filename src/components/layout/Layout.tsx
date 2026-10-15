@@ -50,7 +50,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       <OfflineBanner />
 
       {/* Main Landmark */}
-      <main id="main" className="w-full flex-1 flex flex-col outline-none">
+      <main id="main" className="w-full flex-1 flex flex-col outline-none min-h-[calc(100vh-var(--navbar-height,72px))]">
         {children ?? <Outlet />}
       </main>
 

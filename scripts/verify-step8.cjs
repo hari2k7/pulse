@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer-core');
 
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const BASE_URL = 'http://localhost:4174';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:4173';
 
 async function run() {
   console.log('--- Step 8: Comprehensive Verification Starting ---');
