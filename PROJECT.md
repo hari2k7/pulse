@@ -164,16 +164,49 @@ No gradient text, no glow on everything, no glassmorphism, no identical-rounded-
   - Copyright line and "SEE YOU IN ANOTHER REALITY."
   - Zero "Built with" text anywhere in the project.
 
-## 7. Resilience & Caching
+## 7. Resilience, Scalability & Caching
 
-- Timeout 8 s via internal `AbortController`. Up to 2 retries with backoff. No retry on 404.
-- `getEvents` does NOT forward caller signal to fetch to avoid premature cancellation by unmounting components.
-- Validate responses (`events` is an array, `event` exists). Handle invalid JSON.
-- Typed error kinds: `network | timeout | http | notfound | invalid`.
-- **TanStack Query Layer**: retry false, staleTime 5 min, gcTime 30 min, refetchOnWindowFocus false.
-- `localStorage` fallback persistence (`strange_events_cache`). If live call fails and cache exists, show "Showing astral cached data" banner with Retry button.
-- States for every data view: skeleton, success, empty (not an error), error + Retry, not-found, stale banner.
-- Dev-only failure simulation via `?sim=timeout|500|empty|badjson|404` (disabled in production).
+### Request Budget Audit (Step 0)
+
+| Route | Cold Cache (Initial + Background) | Warm Cache (Repeat View) | Background Requests Description |
+|---|---|---|---|
+| `/` | 1 initial + 27 background = **28 requests** | **0 requests** (or 1 if stale > 5m) | 1 `GET /api/test/events` for list; `usePrizePool` background idle fetches 27 `ACTIVE` event details (concurrency 3). Warm cache uses 12h persisted pool in `localStorage`. |
+| `/events` | 1 initial + 0 background = **1 request** | **0 requests** | 1 `GET /api/test/events` for list. Hover prefetch: 1 per hovered card (max 1 in-flight, skipped on saveData/coarse pointer). |
+| `/events/:id` | 1 detail + 1 related = **2 requests** | **0 requests** | 1 `GET /api/test/events/:id`; 1 `GET /api/test/events` for "More in {theme}" (idle deferred). Warm cache served from memory/TanStack cache. |
+| `/favorites` | 1 initial + 0 background = **1 request** | **0 requests** | 1 `GET /api/test/events` to resolve bookmarked IDs. Hover prefetch: 1 per hovered card. |
+
+### API Layer & Error Handling
+- **Retry policy**: Retry only `network`, `timeout`, `5xx`, `408`, `429`. Max 2 retries, exponential backoff with jitter (`backoff = Math.min(cap, base * 2^attempt + jitter)`). Honor `Retry-After` header (capped at 5s). Never retry other 4xx (`400`, `401`, `403`, `404`, etc.). Keep the 8s internal-timeout controller; `getEvents` never forwards caller abort signal.
+- **Circuit breaker**: After 3 consecutive failures stop calling the API for 15s; during that window serve the `localStorage` stale list (`stale: true`) or throw typed error immediately (`circuit_open`). Reset to closed state on first successful response.
+- **Tolerant validation**: Drop malformed event items (missing valid string `id`, missing `name`, wrong field types) and keep all valid ones. Throw `invalid` only if 0 valid events remain or root JSON shape is wrong. Check response `Content-Type` header (HTML/non-JSON throws `invalid`). Never render undefined/null.
+- **UUID Validation**: `getEvent(id)` validates that `id` matches standard UUID format (`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`i). If non-UUID, immediately return `notfound` without dispatching a network call.
+- **Online / Offline resilience**: Hook `useNetworkStatus` listens to `online`/`offline` window events. When offline, renders plain banner and serves cached data. On `online` event, revalidates/refetches once.
+- **Error Boundaries & Isolation**:
+  - Route-level `ErrorBoundary` with themed fallback (clear plain message, Retry button, link to `/events`; navbar stays usable).
+  - Isolated section boundaries around optional sections (`hero effects`, `featured row`, `countdown`, `prize pool`, `lightbox`, `related row`, `cursor`, `back-to-top`). Fallback renders `null` (logs nothing in production) so section crashes never take down the page.
+  - Plain error copy per kind (`timeout`, `network/offline`, `http 5xx`, `429`, `invalid`, `notfound`), `role="alert"`, focus not stolen, Retry debounced and disabled while fetching.
+- **Extended `?sim=` dev simulation flags**:
+  - `?sim=timeout`: simulated 8s abort.
+  - `?sim=500`: 500 internal server error.
+  - `?sim=404`: 404 not found.
+  - `?sim=empty`: valid payload with empty events array.
+  - `?sim=badjson`: invalid non-JSON payload.
+  - `?sim=429`: HTTP 429 Too Many Requests.
+  - `?sim=503-with-retry-after`: HTTP 503 Service Unavailable with `Retry-After: 2`.
+  - `?sim=slow`: 5s delayed response.
+  - `?sim=partial`: payload containing valid and malformed items (valid preserved).
+  - `?sim=html`: Content-Type `text/html` response.
+  - `?sim=offline`: simulated navigator offline mode.
+- **Caching**:
+  - Events list persisted in `localStorage["strange_events_cache"]` (`{events, timestamp}`, try/catch) with 24h max age; used as `initialData`/placeholder for instant repeat rendering, revalidating in background (stale-while-revalidate). "Showing saved data" banner shown ONLY when live call failed.
+  - TanStack Query: no polling, `refetchOnWindowFocus: false`, `refetchOnReconnect: true`. Detail queries `staleTime: 30m`, `gcTime: 60m`.
+  - `usePrizePool`: triggers only when stats section is in view (`IntersectionObserver`) and after `load + idle`; max 3 concurrent requests; persists result for 12h in `localStorage["strange:prize-pool"]`; skipped on `saveData`/`2g`; respects circuit breaker.
+  - Hover prefetch: max 1 in flight, skipped on `saveData` or coarse pointer.
+- **Pagination & Batches**:
+  - `/events` and `/favorites` render initial 12 cards; "Show 12 more" accessible button (`aria-live="polite"`, maintains focus) reveals 12 more. Resets to 12 when filters/sort/search change. Full total still shown in result counter. Timeline view also batches by 12.
+- **Low-End Mode (`useEffectsBudget`)**:
+  - `"lite"` mode triggered when: `saveData` is active, `2g` connection, `navigator.deviceMemory <= 2`, `hardwareConcurrency <= 4`, or `prefers-reduced-motion`.
+  - In lite mode: disable particle canvas, music-note trail, parallax, Ken Burns, and sparks (diamond cursor stays).
 
 ## 8. Hard rules
 
