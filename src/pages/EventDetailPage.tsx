@@ -11,7 +11,6 @@ import {
 import { useParams, Link } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvent, useEvents } from '../hooks/useEvents';
-import { StatusBadge } from '../components/ui/StatusBadge';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EventCard } from '../components/events/EventCard';
@@ -32,6 +31,7 @@ import {
 } from '../lib/images';
 import { useFavorites } from '../lib/favorites';
 import { getThemeForCategory, isUpcomingEvent } from '../lib/themes';
+import { realmOf } from '../lib/realms';
 import { EventDetailSkeleton } from '../components/events/EventDetailSkeleton';
 import { runAfterLoadAndIdle } from '../lib/idle';
 
@@ -58,6 +58,7 @@ export const EventDetailPage: FC = () => {
   const bannerContainerRef = useRef<HTMLDivElement>(null);
   const bannerImgRef = useRef<HTMLImageElement>(null);
   const [isDrifting, setIsDrifting] = useState(true);
+  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [cloakRemoved, setCloakRemoved] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return (
@@ -69,6 +70,18 @@ export const EventDetailPage: FC = () => {
     return false;
   });
   const [cloakSwept, setCloakSwept] = useState(false);
+
+  // Detect body overflow changes to hide mobile bottom bar when modals/drawers open
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkOverflow = () => {
+      setIsOverlayOpen(document.body.style.overflow === 'hidden');
+    };
+    checkOverflow();
+    const observer = new MutationObserver(checkOverflow);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // One-time cloak reveal on load (sweeps off in 700ms then removed from DOM)
   useEffect(() => {
@@ -306,11 +319,14 @@ export const EventDetailPage: FC = () => {
     );
   }
 
+  // Derived realm from live event data
+  const realm = realmOf(event);
+
   // Derived event properties
   const bannerUrl = event.banner_image_url || event.cover_image_url;
   const hasValidImage = Boolean(bannerUrl && !imageFailed);
   const optimizedBanner = hasValidImage
-    ? getOptimizedImageUrl(bannerUrl, 1200, 675)
+    ? getOptimizedImageUrl(bannerUrl, 1600, 900)
     : FALLBACK_IMAGE_DATA_URI;
   const bannerSrcSet = hasValidImage
     ? getImageSrcSet(bannerUrl, [360, 540, 768, 1080, 1600], 9 / 16)
@@ -341,18 +357,39 @@ export const EventDetailPage: FC = () => {
   const organizers = event.organizers || [];
   const hasContacts = !isPlaceholder && (coordinators.length > 0 || organizers.length > 0);
 
+  // Plain registration status label
+  const registrationStatusText =
+    event.registration_status === 'OPEN'
+      ? 'Registration open'
+      : event.registration_status === 'SOLD_OUT'
+      ? 'Sold out'
+      : event.event_status === 'COMPLETED'
+      ? 'Completed'
+      : 'Registration closed';
+
   return (
-    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-16 sm:pt-20">
+    <div
+      className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-16 sm:pt-20 pb-24 sm:pb-28 lg:pb-16 relative overflow-x-clip"
+      style={{ '--realm': realm.accentColor } as React.CSSProperties}
+    >
+      {/* Subtle atmospheric realm glow in the background */}
+      <div
+        className="pointer-events-none absolute top-0 right-1/4 w-[600px] h-[600px] rounded-full blur-[160px] opacity-10 select-none"
+        style={{ background: realm.accentColor }}
+        aria-hidden="true"
+      />
+
       {/* -------------------------------------------------------------
-          1. TOP BANNER IMAGE: Clear area showing image at full brightness
-          Desktop: ~55vh (min 280px, max 560px), Mobile: ~240px
+          1. TOP BANNER IMAGE: Artwork at full brightness
+          Desktop: ~60vh (min 280px), Mobile: 260px
+          Gradient only over bottom ~35%
           ------------------------------------------------------------- */}
       <section
         ref={bannerContainerRef}
         aria-label="Event Banner"
-        className="relative w-full h-[240px] md:h-[55vh] md:min-h-[280px] md:max-h-[560px] bg-[#07060D] overflow-hidden select-none"
+        className="relative w-full h-[260px] md:h-[60vh] md:min-h-[280px] bg-[#07060D] overflow-hidden select-none"
       >
-        {/* Banner Image with Ken Burns drift & Parallax (full brightness, no dark overlay across middle) */}
+        {/* Banner Image with Ken Burns drift & Parallax */}
         <img
           ref={bannerImgRef}
           src={optimizedBanner}
@@ -374,15 +411,15 @@ export const EventDetailPage: FC = () => {
           className={`w-full h-full object-cover object-center ${isLite ? '' : 'md:animate-ken-burns'} motion-reduce:transform-none`}
         />
 
-        {/* The ONLY scrim: light gradient at the very bottom edge (last ~25%) blending into page bg */}
+        {/* The ONLY scrim: light gradient at the very bottom ~35% blending into page background */}
         <div
-          className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#07060D] via-[#07060D]/50 to-transparent pointer-events-none z-10"
+          className="absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-[#07060D] via-[#07060D]/60 to-transparent pointer-events-none z-10"
           aria-hidden="true"
         />
 
-        {/* One large, faint orange portal ring partly cropped at right edge (rotating 60s+, low opacity) */}
+        {/* Faint rotating portal ring partly cropped at right edge, tinted with realm accent */}
         <div
-          className="absolute -right-20 -top-20 w-[340px] h-[340px] md:w-[460px] md:h-[460px] z-10 pointer-events-none opacity-20 select-none overflow-visible"
+          className="absolute -right-20 -top-20 w-[340px] h-[340px] md:w-[460px] md:h-[460px] z-10 pointer-events-none opacity-25 select-none overflow-visible"
           aria-hidden="true"
         >
           <svg
@@ -390,9 +427,9 @@ export const EventDetailPage: FC = () => {
             className={`w-full h-full ${isLite ? '' : 'md:motion-safe:animate-[spin_75s_linear_infinite]'} motion-reduce:animate-none`}
             fill="none"
           >
-            <circle cx="100" cy="100" r="92" stroke="#FF7A1A" strokeWidth="1.5" strokeDasharray="6 4" />
+            <circle cx="100" cy="100" r="92" stroke={realm.accentColor} strokeWidth="1.5" strokeDasharray="6 4" />
             <circle cx="100" cy="100" r="80" stroke="#F5B642" strokeWidth="1" strokeDasharray="12 6" />
-            <circle cx="100" cy="100" r="68" stroke="#FF7A1A" strokeWidth="1.5" strokeDasharray="4 8" opacity="0.6" />
+            <circle cx="100" cy="100" r="68" stroke={realm.accentColor} strokeWidth="1.5" strokeDasharray="4 8" opacity="0.6" />
             {Array.from({ length: 12 }).map((_, i) => (
               <line
                 key={i}
@@ -408,7 +445,7 @@ export const EventDetailPage: FC = () => {
           </svg>
         </div>
 
-        {/* One-time cloak reveal on load (deep red fabric texture sweeps off in 700ms then removed from DOM) */}
+        {/* One-time cloak reveal on load (sweeps off in 700ms then removed from DOM) */}
         {!cloakRemoved && (
           <div
             className={`absolute inset-0 z-30 pointer-events-none transition-transform duration-700 ease-out motion-reduce:hidden ${
@@ -422,12 +459,19 @@ export const EventDetailPage: FC = () => {
           />
         )}
 
-        {/* Thin double gold line with center diamond ornament at bottom edge of banner */}
+        {/* Thin double gold line with center diamond ornament at bottom edge of banner, tinted with realm accent */}
         <div className="absolute bottom-0 inset-x-0 z-20 pointer-events-none">
           <div className="w-full h-[1px] bg-[#F5B642]/60 shadow-[0_0_6px_rgba(245,182,66,0.5)]" />
-          <div className="w-full h-[1px] mt-[1px] bg-[#FF7A1A]/80 shadow-[0_0_8px_rgba(255,122,26,0.6)]" />
           <div
-            className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-[#F5B642] border border-[#FF7A1A] shadow-[0_0_8px_#FF7A1A]"
+            className="w-full h-[1px] mt-[1px]"
+            style={{
+              backgroundColor: `${realm.accentColor}cc`,
+              boxShadow: `0 0 8px ${realm.accentColor}66`,
+            }}
+          />
+          <div
+            className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-[#F5B642] border shadow-sm"
+            style={{ borderColor: realm.accentColor }}
             aria-hidden="true"
           />
         </div>
@@ -435,28 +479,58 @@ export const EventDetailPage: FC = () => {
 
       {/* -------------------------------------------------------------
           2. HERO CONTENT: Sits BELOW the image area on page background
-          On desktop the title block overlaps the image bottom edge by max 48px
+          Desktop: overlaps image bottom edge slightly (-mt-6 md:-mt-12)
           ------------------------------------------------------------- */}
       <section className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 md:-mt-12 space-y-5 w-full">
-        {/* Navigation Breadcrumb & Category/Mode Badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to="/events"
-            className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#07060D]/95 border border-white/10 shadow-md backdrop-blur-xs"
+        {/* Navigation Breadcrumb: EVENTS / {REALM NAME} / {EVENT NAME} */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#B8B3C7] flex-wrap"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>Back to Events</span>
-          </Link>
-          <span className="text-white/20">•</span>
-          {event.category && (
-            <span className="text-xs font-semibold uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-[#07060D]/95 border border-white/15 text-[#F3EFE8] shadow-md backdrop-blur-xs">
-              {event.category}
+            <Link
+              to="/events"
+              className="hover:text-[#FF7A1A] transition-colors inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[#07060D]/90 border border-white/10"
+            >
+              <span>EVENTS</span>
+            </Link>
+            <span className="text-white/20 select-none">/</span>
+            <Link
+              to={`/events?realm=${realm.id}`}
+              className="hover:underline transition-colors px-2 py-1 rounded-[4px] bg-[#07060D]/90 border border-white/10"
+              style={{ color: realm.accentColor }}
+            >
+              {realm.name.toUpperCase()}
+            </Link>
+            <span className="text-white/20 select-none">/</span>
+            <span
+              aria-current="page"
+              className="text-[#F3EFE8] truncate max-w-[200px] sm:max-w-xs md:max-w-md font-medium"
+            >
+              {event.name.toUpperCase()}
             </span>
-          )}
-          {event.is_featured && <Badge variant="accent">Featured</Badge>}
-          {event.event_mode && <Badge variant="outline">{event.event_mode}</Badge>}
+          </nav>
+
+          {/* Category label and realm identifier badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-[4px] border shadow-sm"
+              style={{
+                borderColor: `${realm.accentColor}55`,
+                color: realm.accentColor,
+                backgroundColor: `${realm.accentColor}15`,
+              }}
+            >
+              {realm.name} Realm
+            </span>
+            {event.category && (
+              <span className="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-[4px] bg-[#07060D]/90 border border-white/15 text-[#F3EFE8] shadow-sm">
+                {event.category}
+              </span>
+            )}
+            {event.is_featured && <Badge variant="accent">Featured</Badge>}
+            {event.event_mode && <Badge variant="outline">{event.event_mode}</Badge>}
+          </div>
         </div>
 
         {/* Title & Blurb on solid page background with AA contrast */}
@@ -473,7 +547,7 @@ export const EventDetailPage: FC = () => {
         </div>
 
         {/* Compact Horizontal Facts Strip with Primary Action Beside It & 48px Heart */}
-        <div className="p-4 rounded-xl bg-[#0D1020] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div className="p-4 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
             <div>
               <span className="text-[#B8B3C7] block text-[10px] uppercase font-semibold">Date & Time</span>
@@ -503,28 +577,38 @@ export const EventDetailPage: FC = () => {
             )}
             <div>
               <span className="text-[#B8B3C7] block text-[10px] uppercase font-semibold">Status</span>
-              {event.registration_status && (
-                <StatusBadge type="registration" status={event.registration_status} size="sm" />
-              )}
+              <span className="inline-block mt-0.5 px-2 py-0.5 rounded-[4px] border border-white/10 bg-[#141416] text-[11px] font-semibold font-sans normal-case text-[#9CA3AF]">
+                {registrationStatusText}
+              </span>
             </div>
           </div>
 
           {/* Primary Action Button beside facts strip + Heart Toggle */}
           <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10 flex items-center gap-2">
             {isOpen ? (
-              <a
-                href="#summary-card"
-                className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-md"
-              >
-                Register
-              </a>
+              event.registration_url ? (
+                <a
+                  href={event.registration_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-md"
+                >
+                  <span>Register</span>
+                  <svg className="w-3.5 h-3.5 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
+                  </svg>
+                </a>
+              ) : (
+                <a
+                  href="#summary-card"
+                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-md"
+                >
+                  Register
+                </a>
+              )
             ) : (
-              <span className="inline-block px-2.5 py-1 rounded-[4px] border border-white/10 bg-[#141416] text-[12px] font-semibold font-sans normal-case text-[#9CA3AF]">
-                {event.registration_status === 'SOLD_OUT'
-                  ? 'Sold out'
-                  : event.event_status === 'COMPLETED'
-                  ? 'Completed'
-                  : 'Registration closed'}
+              <span className="inline-block px-3 py-1.5 rounded-[4px] border border-white/10 bg-[#141416] text-[12px] font-semibold font-sans normal-case text-[#9CA3AF] select-none">
+                {registrationStatusText}
               </span>
             )}
 
@@ -561,14 +645,23 @@ export const EventDetailPage: FC = () => {
       </section>
 
       {/* -------------------------------------------------------------
-          COMPOSED 12-COLUMN MAIN LAYOUT
+          3. COMPOSED 12-COLUMN MAIN LAYOUT: INSIDE THIS REALITY
+          (NO tabs, NO dimensional index)
           ------------------------------------------------------------- */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 w-full relative z-20">
+        {/* Section Heading: INSIDE THIS REALITY */}
+        <div className="flex items-center gap-3 pt-2">
+          <div className="w-1.5 h-7 rounded-full" style={{ backgroundColor: realm.accentColor }} />
+          <h2 className="text-2xl sm:text-3xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+            INSIDE THIS REALITY
+          </h2>
+        </div>
+
         {/* ROW 1: Overview (Wide) + Sticky Summary Card (Narrow) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Summary Card: On mobile appears right under the hero; on desktop is sticky in the narrow column */}
           <aside id="summary-card" className="order-1 lg:order-2 lg:col-span-4 lg:sticky lg:top-28 space-y-4">
-            <div className="p-5 sm:p-6 rounded-xl bg-[#0D1020] border border-white/10 shadow-xl space-y-5">
+            <div className="p-5 sm:p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 shadow-xl space-y-5">
               {/* Price */}
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-wider text-[#B8B3C7] block">
@@ -612,9 +705,9 @@ export const EventDetailPage: FC = () => {
               <div className="space-y-2 pt-3 border-t border-white/10 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-[#B8B3C7]">Registration</span>
-                  {event.registration_status && (
-                    <StatusBadge type="registration" status={event.registration_status} size="sm" />
-                  )}
+                  <span className="inline-block px-2 py-0.5 rounded-[4px] border border-white/10 bg-[#141416] text-[11px] font-semibold font-sans normal-case text-[#9CA3AF]">
+                    {registrationStatusText}
+                  </span>
                 </div>
                 {event.registration_deadline && (
                   <div className="flex items-center justify-between">
@@ -626,21 +719,32 @@ export const EventDetailPage: FC = () => {
 
               {/* Primary action & honest registration notice */}
               <div className="pt-2 space-y-2">
-                <div
-                  className={`w-full py-2.5 px-3 rounded-lg text-center text-xs font-bold uppercase tracking-wider ${
-                    isOpen
-                      ? 'bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A]'
-                      : 'bg-white/5 border border-white/10 text-[#B8B3C7]'
-                  }`}
-                >
-                  {isOpen
-                    ? 'REGISTER'
-                    : event.registration_status === 'SOLD_OUT'
-                    ? 'SOLD OUT'
-                    : event.event_status === 'COMPLETED'
-                    ? 'COMPLETED'
-                    : 'REGISTRATION CLOSED'}
-                </div>
+                {isOpen ? (
+                  event.registration_url ? (
+                    <a
+                      href={event.registration_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A] shadow-md inline-flex items-center justify-center gap-1.5 hover:brightness-110 transition-all"
+                    >
+                      <span>REGISTER</span>
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <div
+                      className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A] shadow-md select-none"
+                    >
+                      REGISTRATION OPEN
+                    </div>
+                  )
+                ) : (
+                  <div className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-semibold normal-case bg-white/5 border border-white/10 text-[#9CA3AF] select-none">
+                    {registrationStatusText}
+                  </div>
+                )}
+
                 {isOpen && (
                   <p className="text-[11px] text-[#B8B3C7] text-center leading-normal">
                     Registration is open on-campus at event desks until{' '}
@@ -681,10 +785,10 @@ export const EventDetailPage: FC = () => {
 
           {/* Overview Content in Wide Column */}
           <section className="order-2 lg:order-1 lg:col-span-8 space-y-6">
-            <div className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-5">
-              <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+            <div className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-5">
+              <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                 Overview
-              </h2>
+              </h3>
 
               {event.description ? (
                 <div className="space-y-4 text-sm sm:text-base text-[#B8B3C7] leading-relaxed">
@@ -697,14 +801,14 @@ export const EventDetailPage: FC = () => {
               )}
 
               {event.highlights && event.highlights.length > 0 && (
-                <div className="p-4 rounded-lg bg-[#07060D] border border-[#FF7A1A]/30 space-y-2.5 mt-4">
-                  <h3 className="font-display font-bold text-xs uppercase tracking-wider text-[#F5B642]">
+                <div className="p-4 rounded-lg bg-[#07060D] border border-[var(--realm,#F5B642)]/30 space-y-2.5 mt-4">
+                  <h4 className="font-display font-bold text-xs uppercase tracking-wider text-[#F5B642]">
                     Key Highlights
-                  </h3>
+                  </h4>
                   <ul className="space-y-2 text-xs sm:text-sm text-[#B8B3C7]">
                     {event.highlights.map((h, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-[#FF7A1A] font-bold shrink-0">•</span>
+                        <span className="font-bold shrink-0" style={{ color: realm.accentColor }}>•</span>
                         <span>{h}</span>
                       </li>
                     ))}
@@ -719,10 +823,10 @@ export const EventDetailPage: FC = () => {
         {(hasSchedule || hasPrizes) && (
           <div className={`grid grid-cols-1 ${hasSchedule && hasPrizes ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
             {hasSchedule && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
-                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+                <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Schedule
-                </h2>
+                </h3>
                 <div className="space-y-3">
                   {event.schedules && event.schedules.length > 0 ? (
                     event.schedules.map((item, idx) => (
@@ -731,7 +835,7 @@ export const EventDetailPage: FC = () => {
                         className="p-3.5 rounded-lg bg-[#07060D] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                       >
                         <div>
-                          <span className="font-mono text-xs text-[#FF7A1A] font-bold block">
+                          <span className="font-mono text-xs font-bold block" style={{ color: realm.accentColor }}>
                             Day {idx + 1} • {item.event_date ? formatDateIST(item.event_date) : 'TBA'}
                           </span>
                           <p className="text-xs sm:text-sm font-semibold text-[#F3EFE8] mt-0.5">
@@ -761,9 +865,9 @@ export const EventDetailPage: FC = () => {
 
             {hasPrizes && (
               <section className="p-6 rounded-xl bg-[#0D1020] border border-[#F5B642]/30 space-y-4">
-                <h2 className="text-xl font-display font-bold text-[#F5B642] uppercase tracking-wide">
+                <h3 className="text-xl font-display font-bold text-[#F5B642] uppercase tracking-wide">
                   Prizes & Rewards
-                </h2>
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {event.prizes?.map((prize, idx) => {
                     const isGold = prize.rank === 1 || idx === 0;
@@ -780,9 +884,9 @@ export const EventDetailPage: FC = () => {
                           <span className={`text-[10px] font-bold uppercase tracking-wider ${isGold ? 'text-[#F5B642]' : 'text-[#B8B3C7]'}`}>
                             {prize.rank ? `Rank #${prize.rank}` : 'Prize'}
                           </span>
-                          <h3 className="font-display font-bold text-sm text-[#F3EFE8] mt-0.5">
+                          <h4 className="font-display font-bold text-sm text-[#F3EFE8] mt-0.5">
                             {prize.title || (isGold ? 'Winner' : 'Runner Up')}
-                          </h3>
+                          </h4>
                           {prize.description && (
                             <p className="text-xs text-[#B8B3C7] mt-1">{prize.description}</p>
                           )}
@@ -805,10 +909,10 @@ export const EventDetailPage: FC = () => {
         {(hasExpect || hasEligibility) && (
           <div className={`grid grid-cols-1 ${hasExpect && hasEligibility ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
             {hasExpect && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
-                <h2 className="text-xl font-display font-bold text-[#3BA3FF] uppercase tracking-wide">
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+                <h3 className="text-xl font-display font-bold text-[#3BA3FF] uppercase tracking-wide">
                   What to Expect
-                </h2>
+                </h3>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-[#B8B3C7]">
                   {event.what_to_expect?.map((item, i) => (
                     <li key={i} className="flex items-start gap-2.5">
@@ -821,16 +925,16 @@ export const EventDetailPage: FC = () => {
             )}
 
             {hasEligibility && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
-                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+                <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Eligibility & Prerequisites
-                </h2>
+                </h3>
                 <div className="space-y-4 text-xs sm:text-sm text-[#B8B3C7]">
                   {event.eligibility && event.eligibility.length > 0 && (
                     <div className="space-y-2">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F5B642]">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[#F5B642]">
                         Eligibility
-                      </h3>
+                      </h4>
                       <ul className="space-y-1.5">
                         {event.eligibility.map((el, i) => (
                           <li key={i} className="flex items-start gap-2">
@@ -846,9 +950,9 @@ export const EventDetailPage: FC = () => {
 
                   {event.prerequisites && event.prerequisites.length > 0 && (
                     <div className="space-y-2 pt-2 border-t border-white/10">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-[#3BA3FF]">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[#3BA3FF]">
                         Prerequisites
-                      </h3>
+                      </h4>
                       <ul className="space-y-1.5">
                         {event.prerequisites.map((req, i) => (
                           <li key={i} className="flex items-start gap-2">
@@ -865,21 +969,21 @@ export const EventDetailPage: FC = () => {
           </div>
         )}
 
-        {/* ROW 4: Rules & FAQs side by side (FAQs as accordion, rules as numbered list) */}
+        {/* ROW 4: Rules & FAQs side by side */}
         {(hasRules || hasFaqs) && (
           <div className={`grid grid-cols-1 ${hasRules && hasFaqs ? 'lg:grid-cols-2' : 'grid-cols-1'} gap-6`}>
             {hasRules && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
-                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+                <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Rules & Guidelines
-                </h2>
+                </h3>
                 <ol className="space-y-2.5">
                   {event.rules?.map((rule, idx) => (
                     <li
                       key={idx}
                       className="p-3.5 rounded-lg bg-[#07060D] border border-white/10 text-xs sm:text-sm text-[#B8B3C7] flex items-start gap-3"
                     >
-                      <span className="font-mono font-bold text-[#FF7A1A] shrink-0">
+                      <span className="font-mono font-bold shrink-0" style={{ color: realm.accentColor }}>
                         {String(idx + 1).padStart(2, '0')}.
                       </span>
                       <span>{rule}</span>
@@ -890,10 +994,10 @@ export const EventDetailPage: FC = () => {
             )}
 
             {hasFaqs && (
-              <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
-                <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+              <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+                <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
                   Frequently Asked Questions
-                </h2>
+                </h3>
                 <div className="space-y-2.5">
                   {event.faqs?.map((faq, idx) => {
                     const isOpenState = Boolean(openFaqs[idx]);
@@ -918,7 +1022,7 @@ export const EventDetailPage: FC = () => {
                             strokeWidth={2}
                             aria-hidden="true"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7-7 7-7" />
                           </svg>
                         </button>
                         {isOpenState && (
@@ -940,10 +1044,10 @@ export const EventDetailPage: FC = () => {
 
         {/* ROW 5: Gallery Mosaic & Contacts */}
         {hasGallery && (
-          <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
-            <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+          <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+            <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
               Gallery
-            </h2>
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {event.gallery_images?.map((imgUrl, i) => (
                 <button
@@ -991,10 +1095,10 @@ export const EventDetailPage: FC = () => {
         )}
 
         {hasContacts && (
-          <section className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
-            <h2 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
+          <section className="p-6 rounded-xl bg-[#0D1020] border border-[var(--realm,#F5B642)]/25 space-y-4">
+            <h3 className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide">
               Contacts
-            </h2>
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {coordinators.map((coord, idx) => {
                 const contact = coord.contact || '';
@@ -1047,60 +1151,172 @@ export const EventDetailPage: FC = () => {
           </section>
         )}
 
-        {/* ROW 6: "More in {theme}" Row */}
+        {/* -------------------------------------------------------------
+            4. END PANEL: READY TO ENTER THIS REALITY?
+            Compact gold-framed panel repeating status, deadline, capacity and primary action
+            ------------------------------------------------------------- */}
+        <section
+          aria-label="Registration confirmation panel"
+          className="p-6 sm:p-7 rounded-xl bg-gradient-to-r from-[#07060D] via-[#0D1020] to-[#07060D] border-2 border-[var(--realm,#F5B642)]/40 relative overflow-hidden shadow-2xl"
+        >
+          {/* Sanctum corner brackets */}
+          <div
+            className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 pointer-events-none"
+            style={{ borderColor: realm.accentColor }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 pointer-events-none"
+            style={{ borderColor: realm.accentColor }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 pointer-events-none"
+            style={{ borderColor: realm.accentColor }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 pointer-events-none"
+            style={{ borderColor: realm.accentColor }}
+            aria-hidden="true"
+          />
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-1.5">
+              <span
+                className="text-[11px] font-mono uppercase tracking-widest font-semibold block"
+                style={{ color: realm.accentColor }}
+              >
+                Access Confirmation
+              </span>
+              <h3 className="font-display font-bold text-2xl sm:text-3xl text-[#F3EFE8] uppercase tracking-wide">
+                READY TO ENTER THIS REALITY?
+              </h3>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#B8B3C7] pt-1">
+                <span>Entry: <strong className="text-[#F3EFE8]">{formatPrice(event.price, event.is_per_head)}</strong></span>
+                {event.event_status === 'ACTIVE' && remaining !== null && (
+                  <>
+                    <span className="text-white/20">•</span>
+                    <span>Capacity: <strong className={remaining <= 5 ? 'text-[#FF7A1A]' : 'text-[#F3EFE8]'}>{seatsText}</strong></span>
+                  </>
+                )}
+                {event.registration_deadline && (
+                  <>
+                    <span className="text-white/20">•</span>
+                    <span>Deadline: <strong className="text-[#F3EFE8] font-mono">{formatDateIST(event.registration_deadline)}</strong></span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-3">
+              {/*
+                REGISTRATION FLOW HOOK:
+                In a production deployment with live registration or ticket sales, this is where the external
+                gateway, payment SDK, or student auth modal would mount. Currently no fake checkout or success
+                screen is shown, adhering strictly to the honest data rule.
+              */}
+              {isOpen ? (
+                event.registration_url ? (
+                  <a
+                    href={event.registration_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs sm:text-sm px-6 py-3 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-lg active:scale-95"
+                  >
+                    <span>Register for Reality</span>
+                    <svg className="w-4 h-4 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
+                    </svg>
+                  </a>
+                ) : (
+                  <a
+                    href="#summary-card"
+                    className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs sm:text-sm px-6 py-3 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-lg active:scale-95"
+                  >
+                    Register Now
+                  </a>
+                )
+              ) : (
+                <span className="inline-block px-4 py-2.5 rounded-[4px] border border-white/10 bg-[#141416] text-xs font-semibold font-sans normal-case text-[#9CA3AF] select-none">
+                  {registrationStatusText}
+                </span>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* -------------------------------------------------------------
+            5. RELATED: OTHER REALITIES WORTH EXPLORING
+            Horizontal scroll row using shared card with ring transition
+            ------------------------------------------------------------- */}
         {theme !== 'More' && moreEvents.length > 0 && (
           <SectionErrorBoundary sectionName="related-row">
-            <section aria-labelledby="more-theme-heading" className="space-y-4 pt-4 border-t border-white/5">
-              <div className="flex items-center justify-between gap-4">
-                <h2
-                  id="more-theme-heading"
-                  className="text-xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide"
-                >
-                  More in {theme}
-                </h2>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleMoreScroll('left')}
-                    disabled={!canScrollLeft}
-                    tabIndex={canScrollLeft ? 0 : -1}
-                    aria-label="Scroll more events left"
-                    className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
-                      canScrollLeft ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                    }`}
+            <section aria-labelledby="related-realities-heading" className="space-y-4 pt-4 border-t border-[var(--realm,#F5B642)]/20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2
+                    id="related-realities-heading"
+                    className="text-xl sm:text-2xl font-display font-bold text-[#F3EFE8] uppercase tracking-wide"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      aria-hidden="true"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleMoreScroll('right')}
-                    disabled={!canScrollRight}
-                    tabIndex={canScrollRight ? 0 : -1}
-                    aria-label="Scroll more events right"
-                    className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
-                      canScrollRight ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                    }`}
+                    OTHER REALITIES WORTH EXPLORING
+                  </h2>
+                  <p className="text-xs text-[#B8B3C7] mt-1">
+                    Discover more experiences in the {theme} domain
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                  <Link
+                    to="/events"
+                    className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors inline-flex items-center gap-1.5"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      aria-hidden="true"
+                    <span>Back to all events</span>
+                    <span aria-hidden="true">&rarr;</span>
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleMoreScroll('left')}
+                      disabled={!canScrollLeft}
+                      tabIndex={canScrollLeft ? 0 : -1}
+                      aria-label="Scroll related events left"
+                      className={`w-10 h-10 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
+                        canScrollLeft ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                      }`}
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMoreScroll('right')}
+                      disabled={!canScrollRight}
+                      tabIndex={canScrollRight ? 0 : -1}
+                      aria-label="Scroll related events right"
+                      className={`w-10 h-10 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
+                        canScrollRight ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1108,7 +1324,7 @@ export const EventDetailPage: FC = () => {
                 ref={moreTrackRef}
                 tabIndex={0}
                 role="region"
-                aria-label={`More in ${theme} track. Use arrow keys or scroll buttons to navigate.`}
+                aria-label="Related events track. Use arrow keys or scroll buttons to navigate."
                 onKeyDown={handleMoreKeyDown}
                 className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full max-w-full"
               >
@@ -1125,7 +1341,60 @@ export const EventDetailPage: FC = () => {
           </SectionErrorBoundary>
         )}
       </div>
+
+      {/* -------------------------------------------------------------
+          6. MOBILE COMPACT BOTTOM ACTION BAR
+          Fixed at bottom of screen on mobile (hidden when lightbox/menu open)
+          ------------------------------------------------------------- */}
+      <div
+        aria-label="Mobile registration bar"
+        className={`fixed bottom-0 inset-x-0 z-30 lg:hidden p-3 bg-[#07060D]/95 border-t border-[var(--realm,#F5B642)]/25 backdrop-blur-md shadow-[0_-4px_24px_rgba(0,0,0,0.85)] transition-all duration-300 ${
+          lightboxOpen || isOverlayOpen
+            ? 'opacity-0 pointer-events-none translate-y-full'
+            : 'opacity-100 translate-y-0'
+        }`}
+      >
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="font-display font-bold text-lg text-[#F3EFE8] leading-tight truncate">
+              {formatPrice(event.price, event.is_per_head)}
+            </div>
+            <div className="text-[11px] text-[#B8B3C7] truncate">
+              {event.event_status === 'ACTIVE' && remaining !== null
+                ? seatsText
+                : registrationStatusText}
+            </div>
+          </div>
+          <div className="shrink-0">
+            {isOpen ? (
+              event.registration_url ? (
+                <a
+                  href={event.registration_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-md active:scale-95"
+                >
+                  <span>Register</span>
+                  <svg className="w-3.5 h-3.5 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
+                  </svg>
+                </a>
+              ) : (
+                <a
+                  href="#summary-card"
+                  className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-md active:scale-95"
+                >
+                  Register
+                </a>
+              )
+            ) : (
+              <span className="inline-block px-3 py-1.5 rounded-[4px] border border-white/10 bg-[#141416] text-[11px] font-semibold font-sans normal-case text-[#9CA3AF] select-none">
+                {registrationStatusText}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
-

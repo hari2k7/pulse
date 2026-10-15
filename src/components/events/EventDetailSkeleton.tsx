@@ -3,19 +3,22 @@ import type { FC } from 'react';
 export const EventDetailSkeleton: FC = () => {
   return (
     <div
-      className="w-full min-h-[1400px] bg-[#07060D] text-[#F3EFE8] pb-24 pt-[var(--navbar-height,64px)] animate-pulse overflow-x-clip"
+      className="w-full min-h-[1400px] bg-[#07060D] text-[#F3EFE8] pb-28 pt-16 sm:pt-20 animate-pulse overflow-x-clip"
       role="status"
       aria-label="Loading event details"
     >
       {/* 1. Banner image skeleton matching exact dimensions */}
-      <div className="w-full h-[240px] md:h-[55vh] md:min-h-[280px] md:max-h-[560px] bg-[#0D1020] relative border-b border-white/5" />
+      <div className="w-full h-[260px] md:h-[60vh] md:min-h-[280px] bg-[#0D1020] relative border-b border-white/5" />
 
       {/* 2. Hero content below banner image */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 md:-mt-12 space-y-5 w-full relative z-10">
-        {/* Breadcrumbs & Badges */}
+        {/* Breadcrumbs: 3 parts */}
         <div className="flex items-center gap-2">
-          <div className="h-7 w-28 rounded-lg bg-[#1A1030]" />
-          <div className="h-7 w-20 rounded-lg bg-[#1A1030]/70" />
+          <div className="h-6 w-16 rounded bg-[#1A1030]" />
+          <div className="text-white/20">/</div>
+          <div className="h-6 w-24 rounded bg-[#1A1030]" />
+          <div className="text-white/20">/</div>
+          <div className="h-6 w-36 rounded bg-[#1A1030]/70" />
         </div>
 
         {/* Title & Blurb */}
@@ -37,8 +40,14 @@ export const EventDetailSkeleton: FC = () => {
           </div>
         </div>
 
-        {/* 3. Main layout: Overview + Summary Card */}
-        <div className="py-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* 3. Section Heading: INSIDE THIS REALITY */}
+        <div className="flex items-center gap-3 pt-4 border-t border-white/10">
+          <div className="w-1.5 h-7 rounded-full bg-[#1A1030]" />
+          <div className="h-7 w-56 rounded bg-[#1A1030]" />
+        </div>
+
+        {/* 4. Main layout: Overview + Summary Card */}
+        <div className="py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="order-2 lg:order-1 lg:col-span-8 space-y-6">
             <div className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
               <div className="h-6 w-32 rounded bg-[#1A1030]" />
@@ -58,9 +67,12 @@ export const EventDetailSkeleton: FC = () => {
           <div className="h-48 rounded-xl bg-[#0D1020] border border-white/10 p-6" />
         </div>
 
-        {/* ROW 3: More in Theme Skeleton Row */}
-        <div className="space-y-4 pt-4">
-          <div className="h-6 w-56 rounded bg-[#1A1030]" />
+        {/* ROW 3: READY TO ENTER THIS REALITY? End panel skeleton */}
+        <div className="h-32 rounded-xl bg-[#0D1020] border border-white/10 p-6" />
+
+        {/* ROW 4: OTHER REALITIES WORTH EXPLORING Row */}
+        <div className="space-y-4 pt-4 border-t border-white/10">
+          <div className="h-6 w-64 rounded bg-[#1A1030]" />
           <div className="flex gap-4 md:gap-6 overflow-hidden">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
@@ -74,6 +86,12 @@ export const EventDetailSkeleton: FC = () => {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Mobile action bar skeleton */}
+      <div className="fixed bottom-0 inset-x-0 z-30 lg:hidden p-3 bg-[#07060D] border-t border-white/10 flex items-center justify-between">
+        <div className="h-6 w-24 rounded bg-[#1A1030]" />
+        <div className="h-9 w-28 rounded bg-[#1A1030]" />
       </div>
     </div>
   );

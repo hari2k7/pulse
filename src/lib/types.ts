@@ -31,6 +31,7 @@ export interface EventSummary {
   seats_filled: number;
   registration_status: RegistrationStatus;
   registration_deadline: string;
+  registration_url?: string;
   schedule_summary: ScheduleSummary;
 }
 
