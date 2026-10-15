@@ -9,6 +9,7 @@ import {
 import { formatDateIST } from '../../lib/format';
 import { useFavorites } from '../../lib/favorites';
 import { StatusBadge } from '../ui/StatusBadge';
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
 import type { EventSummary } from '../../lib/types';
 
 export interface EventCardProps {
@@ -22,6 +23,8 @@ export const EventCard: FC<EventCardProps> = ({
   priority = false,
   className = '',
 }) => {
+  const budget = useEffectsBudget();
+  const isLite = budget === 'lite';
   const navigate = useNavigate();
   const { handlers } = usePrefetchEvent(event.id);
   const [imageFailed, setImageFailed] = useState<boolean>(false);
@@ -320,29 +323,30 @@ export const EventCard: FC<EventCardProps> = ({
                 className="card-portal-outer-ring"
               />
 
-              {/* 7 spark dots traveling around circumference */}
-              {Array.from({ length: 7 }).map((_, i) => (
-                <g
-                  key={i}
-                  className="card-portal-spark-orbit"
-                  style={{ animationDelay: `${-i * 0.37}s` }}
-                >
-                  <circle
-                    cx="60"
-                    cy="16"
-                    r={i % 2 === 0 ? 2 : 1.5}
-                    fill="#FFF4D0"
-                  />
-                  <path
-                    d="M 60 16 A 44 44 0 0 0 54 16.5"
-                    fill="none"
-                    stroke="#FF7A1A"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    opacity="0.75"
-                  />
-                </g>
-              ))}
+              {/* 7 spark dots traveling around circumference (skipped in lite mode) */}
+              {!isLite &&
+                Array.from({ length: 7 }).map((_, i) => (
+                  <g
+                    key={i}
+                    className="card-portal-spark-orbit"
+                    style={{ animationDelay: `${-i * 0.37}s` }}
+                  >
+                    <circle
+                      cx="60"
+                      cy="16"
+                      r={i % 2 === 0 ? 2 : 1.5}
+                      fill="#FFF4D0"
+                    />
+                    <path
+                      d="M 60 16 A 44 44 0 0 0 54 16.5"
+                      fill="none"
+                      stroke="#FF7A1A"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      opacity="0.75"
+                    />
+                  </g>
+                ))}
             </svg>
           </div>
 

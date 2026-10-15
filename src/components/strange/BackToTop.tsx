@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, type FC, type CSSProperties } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
 
 interface Particle {
   id: number;
@@ -10,6 +11,7 @@ interface Particle {
 
 export const BackToTop: FC = () => {
   const location = useLocation();
+  const budget = useEffectsBudget();
   const [visible, setVisible] = useState(false);
   const [isSweeping, setIsSweeping] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
@@ -82,8 +84,8 @@ export const BackToTop: FC = () => {
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (prefersReducedMotion) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
+    if (prefersReducedMotion || budget === 'lite') {
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'instant' : 'smooth' });
       return;
     }
 

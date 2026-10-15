@@ -39,8 +39,11 @@ const GalleryLightbox = lazy(() =>
   import('../components/events/GalleryLightbox').then((m) => ({ default: m.GalleryLightbox }))
 );
 import { SectionErrorBoundary } from '../components/common/SectionErrorBoundary';
+import { useEffectsBudget } from '../hooks/useEffectsBudget';
 
 export const EventDetailPage: FC = () => {
+  const budget = useEffectsBudget();
+  const isLite = budget === 'lite';
   const { id } = useParams<{ id: string }>();
   const { status, event, error, isPlaceholder, retry } = useEvent(id);
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -119,6 +122,7 @@ export const EventDetailPage: FC = () => {
 
     const initParallax = async () => {
       if (
+        isLite ||
         (typeof navigator !== 'undefined' &&
           Boolean((navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData)) ||
         !window.matchMedia('(pointer: fine)').matches
@@ -159,7 +163,7 @@ export const EventDetailPage: FC = () => {
       cancelIdle();
       mmRef?.revert();
     };
-  }, [event?.id]);
+  }, [event?.id, isLite]);
 
   // SEO metadata per route pattern: "{event name} — STRANGE"
   useDocumentMeta({
@@ -367,7 +371,7 @@ export const EventDetailPage: FC = () => {
             viewTransitionName: `event-img-${event.id}`,
             animationPlayState: isDrifting ? 'running' : 'paused',
           }}
-          className="w-full h-full object-cover object-center md:animate-ken-burns motion-reduce:transform-none"
+          className={`w-full h-full object-cover object-center ${isLite ? '' : 'md:animate-ken-burns'} motion-reduce:transform-none`}
         />
 
         {/* The ONLY scrim: light gradient at the very bottom edge (last ~25%) blending into page bg */}
@@ -383,7 +387,7 @@ export const EventDetailPage: FC = () => {
         >
           <svg
             viewBox="0 0 200 200"
-            className="w-full h-full md:motion-safe:animate-[spin_75s_linear_infinite] motion-reduce:animate-none"
+            className={`w-full h-full ${isLite ? '' : 'md:motion-safe:animate-[spin_75s_linear_infinite]'} motion-reduce:animate-none`}
             fill="none"
           >
             <circle cx="100" cy="100" r="92" stroke="#FF7A1A" strokeWidth="1.5" strokeDasharray="6 4" />

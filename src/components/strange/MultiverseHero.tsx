@@ -5,14 +5,18 @@ import { CloakSilhouette } from './CloakSilhouette';
 import { SectionErrorBoundary } from '../common/SectionErrorBoundary';
 import { FESTIVAL_CONFIG } from '../../config/festival';
 import { runAfterLoadAndIdle } from '../../lib/idle';
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
+
 export const MultiverseHero: FC = () => {
+  const budget = useEffectsBudget();
+  const isLite = budget === 'lite';
   const heroRef = useRef<HTMLDivElement>(null);
   const portalWrapperRef = useRef<HTMLDivElement>(null);
   const textGroupRef = useRef<HTMLDivElement>(null);
 
   // GSAP dynamic import for progressive enhancement without layout shift or pinning
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || isLite) return;
 
     let ctx: gsap.Context | null = null;
 
@@ -70,7 +74,7 @@ export const MultiverseHero: FC = () => {
       cancelIdle();
       ctx?.revert();
     };
-  }, []);
+  }, [isLite]);
 
 
   return (

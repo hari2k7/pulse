@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FC } from 'react';
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
 
 interface NoteItem {
   x: number;
@@ -18,6 +19,8 @@ const MAX_NOTES = 10;
 const NOTE_COLORS = ['#FF7A1A', '#F5B642'];
 
 export const StrangeCursor: FC = () => {
+  const budget = useEffectsBudget();
+  const isLite = budget === 'lite';
   const [enabled, setEnabled] = useState<boolean>(false);
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [isOnInput, setIsOnInput] = useState<boolean>(false);
@@ -103,6 +106,7 @@ export const StrangeCursor: FC = () => {
       vx = (Math.random() - 0.5) * 0.9,
       vy = -(Math.random() * 0.6 + 0.8)
     ) => {
+      if (isLite) return;
       const idx = poolIndexRef.current;
       const note = notesPoolRef.current[idx];
       note.x = x;
@@ -164,6 +168,7 @@ export const StrangeCursor: FC = () => {
 
     const handlePointerDown = (e: PointerEvent) => {
       setIsDown(true);
+      if (isLite) return;
 
       // Click: a burst of 3 to 4 notes flying outward and fading
       const burstCount = Math.floor(Math.random() * 2) + 3; // 3 or 4
@@ -231,25 +236,27 @@ export const StrangeCursor: FC = () => {
       }
 
       // 2. Trailing music notes update (drifts up & sideways, fades over ~900ms)
-      const pool = notesPoolRef.current;
-      for (let i = 0; i < MAX_NOTES; i++) {
-        const note = pool[i];
-        const el = noteElementsRef.current[i];
-        if (!el) continue;
+      if (!isLite) {
+        const pool = notesPoolRef.current;
+        for (let i = 0; i < MAX_NOTES; i++) {
+          const note = pool[i];
+          const el = noteElementsRef.current[i];
+          if (!el) continue;
 
-        if (note.active) {
-          note.x += note.vx;
-          note.y += note.vy;
-          note.rot += note.rotSpeed;
-          note.alpha -= 0.018; // ~900ms at 60fps (54 frames)
+          if (note.active) {
+            note.x += note.vx;
+            note.y += note.vy;
+            note.rot += note.rotSpeed;
+            note.alpha -= 0.018; // ~900ms at 60fps (54 frames)
 
-          if (note.alpha <= 0) {
-            note.active = false;
-            el.style.opacity = '0';
-          } else {
-            el.style.transform = `translate3d(${note.x}px, ${note.y}px, 0) rotate(${note.rot}deg) scale(${note.size / 16})`;
-            el.style.opacity = String(note.alpha);
-            el.style.color = note.color;
+            if (note.alpha <= 0) {
+              note.active = false;
+              el.style.opacity = '0';
+            } else {
+              el.style.transform = `translate3d(${note.x}px, ${note.y}px, 0) rotate(${note.rot}deg) scale(${note.size / 16})`;
+              el.style.opacity = String(note.alpha);
+              el.style.color = note.color;
+            }
           }
         }
       }
@@ -284,7 +291,7 @@ export const StrangeCursor: FC = () => {
       document.removeEventListener('focusout', handleRecompute, { capture: true });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled]);
+  }, [enabled, isLite]);
 
   if (!enabled) return null;
 
@@ -314,7 +321,8 @@ export const StrangeCursor: FC = () => {
       </div>
 
       {/* 2. Pooled music notes: 10 reused DOM elements emitting SVG shapes */}
-      {Array.from({ length: MAX_NOTES }).map((_, i) => (
+      {!isLite &&
+        Array.from({ length: MAX_NOTES }).map((_, i) => (
         <div
           key={i}
           ref={(el) => {
@@ -354,7 +362,7 @@ export const StrangeCursor: FC = () => {
             </svg>
           )}
         </div>
-      ))}
+        ))}
     </div>
   );
 };

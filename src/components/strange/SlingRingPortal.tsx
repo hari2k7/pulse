@@ -1,5 +1,6 @@
 import { useEffect, useRef, type FC } from 'react';
 import { runAfterLoadAndIdle } from '../../lib/idle';
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
 
 export interface SlingRingPortalProps {
   className?: string;
@@ -10,8 +11,8 @@ export interface SlingRingPortalProps {
  * Sling Ring Portal Artwork
  * Pure inline SVG concentric fiery rings + subtle CSS rotation.
  * Canvas particles initialized via runAfterLoadAndIdle,
- * disabled on mobile (< 768px) and when saveData is active (Constraint 3),
- * paused when tab hidden or offscreen, disabled for prefers-reduced-motion.
+ * disabled in lite mode (low-end devices, saveData, 2g, reduced motion),
+ * paused when tab hidden or offscreen.
  */
 export const SlingRingPortal: FC<SlingRingPortalProps> = ({
   className = '',
@@ -19,17 +20,11 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const budget = useEffectsBudget();
 
   useEffect(() => {
-    // Respect prefers-reduced-motion
-    if (typeof window === 'undefined') return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mediaQuery.matches) return;
-
-    // Disable particle canvas on mobile (< 768px) and when saveData is active
-    const isMobile = window.innerWidth < 768 || window.matchMedia('(max-width: 767px)').matches;
-    const isSaveData = (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData === true;
-    if (isMobile || isSaveData) return;
+    // Disable particle canvas in lite mode or mobile (< 768px)
+    if (typeof window === 'undefined' || budget === 'lite' || window.innerWidth < 768) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -133,7 +128,7 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
       window.removeEventListener('resize', handleResize);
       if (observer) observer.disconnect();
     };
-  }, []);
+  }, [budget]);
 
   return (
     <div
