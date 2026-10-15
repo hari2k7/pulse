@@ -1,10 +1,12 @@
 import { useMemo, type FC } from 'react';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
+import { usePrizePool } from '../hooks/usePrizePool';
 import { MultiverseHero } from '../components/strange/MultiverseHero';
 import { ChamberPreview } from '../components/strange/ChamberPreview';
 import { FeaturedMultiverse } from '../components/strange/FeaturedMultiverse';
 import { EyeOfAgamotto } from '../components/strange/EyeOfAgamotto';
+import { StatsSection } from '../components/strange/StatsSection';
 import { SanctumAbout } from '../components/strange/SanctumAbout';
 import { SponsorMarquee } from '../components/strange/SponsorMarquee';
 import { FinalGateway } from '../components/strange/FinalGateway';
@@ -21,6 +23,7 @@ export const HomePage: FC = () => {
   });
 
   const { status, events, error, retry } = useEvents();
+  const prizePool = usePrizePool(events);
 
   // Earliest upcoming ACTIVE event date for Agamotto countdown fallback
   const earliestActiveDate = useMemo(() => {
@@ -102,6 +105,13 @@ export const HomePage: FC = () => {
             <EyeOfAgamotto fallbackDate={earliestActiveDate} />
           </div>
         </section>
+      </SectionErrorBoundary>
+
+      {/* Restored Stats Counter Row & Red Cloak Fabric Strip: Placed immediately AFTER countdown and before About */}
+      <SectionErrorBoundary sectionName="stats">
+        <div className="content-visibility-auto-sm">
+          <StatsSection events={events} prizePool={prizePool} />
+        </div>
       </SectionErrorBoundary>
 
       {/* Scene 6: Sanctum About Narrative */}
