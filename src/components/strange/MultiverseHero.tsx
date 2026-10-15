@@ -6,6 +6,21 @@ import { FESTIVAL_CONFIG } from '../../config/festival';
 import { runAfterLoadAndIdle } from '../../lib/idle';
 import { useEffectsBudget } from '../../hooks/useEffectsBudget';
 
+const DUST_MOTES = [
+  { top: '22%', left: '16%', dur: '6.5s', delay: '0s', size: 2 },
+  { top: '38%', left: '82%', dur: '8.2s', delay: '1s', size: 2.4 },
+  { top: '52%', left: '26%', dur: '7.1s', delay: '2s', size: 1.8 },
+  { top: '64%', left: '72%', dur: '9.0s', delay: '0.5s', size: 2.2 },
+  { top: '28%', left: '62%', dur: '6.8s', delay: '1.5s', size: 2 },
+  { top: '76%', left: '32%', dur: '8.5s', delay: '2.5s', size: 2.2 },
+  { top: '42%', left: '12%', dur: '7.6s', delay: '0.8s', size: 1.8 },
+  { top: '56%', left: '86%', dur: '8.8s', delay: '1.2s', size: 2 },
+  { top: '18%', left: '46%', dur: '6.2s', delay: '2.2s', size: 1.6 },
+  { top: '82%', left: '54%', dur: '7.9s', delay: '0.3s', size: 2.2 },
+  { top: '32%', left: '36%', dur: '8.1s', delay: '1.8s', size: 2 },
+  { top: '68%', left: '20%', dur: '9.3s', delay: '1.1s', size: 1.8 },
+];
+
 export const MultiverseHero: FC = () => {
   const budget = useEffectsBudget();
   const isLite = budget === 'lite';
@@ -15,6 +30,61 @@ export const MultiverseHero: FC = () => {
   const portalRingRef = useRef<SVGGElement>(null);
   const chamberRef = useRef<HTMLDivElement>(null);
   const textGroupRef = useRef<HTMLDivElement>(null);
+
+  // Parallax Layer Refs (Desktop non-lite only, tiny amplitude)
+  const farLayerRef = useRef<HTMLDivElement>(null);
+  const midLayerRef = useRef<HTMLDivElement>(null);
+  const nearLayerRef = useRef<HTMLDivElement>(null);
+
+  // Desktop non-lite mousemove subtle depth parallax (tiny amplitude, rAF throttled)
+  useEffect(() => {
+    if (typeof window === 'undefined' || isLite) return;
+    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isDesktop = window.innerWidth >= 1024;
+    if (isReduced || !isDesktop) return;
+
+    let rafId: number;
+    let isVisible = true;
+
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+      },
+      { threshold: 0.05 }
+    );
+    obs.observe(hero);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isVisible) return;
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const rect = hero.getBoundingClientRect();
+        const xNorm = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+        const yNorm = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+
+        if (farLayerRef.current) {
+          farLayerRef.current.style.transform = `translate(${xNorm * -4}px, ${yNorm * -3}px)`;
+        }
+        if (midLayerRef.current) {
+          midLayerRef.current.style.transform = `translate(${xNorm * -8}px, ${yNorm * -6}px)`;
+        }
+        if (nearLayerRef.current) {
+          nearLayerRef.current.style.transform = `translate(${xNorm * 10}px, ${yNorm * 7}px)`;
+        }
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      obs.disconnect();
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isLite]);
 
   // Intro Sequence Phases: 'done' by default (SSR/immediate), or animated on first visit
   const [introPhase, setIntroPhase] = useState<'dark' | 'tracing' | 'igniting' | 'opening' | 'done'>('done');
@@ -273,7 +343,39 @@ export const MultiverseHero: FC = () => {
           introPhase === 'opening' ? 'scale-105' : 'scale-100'
         }`}
       >
-        {/* Layer 1: Dominant Sling Ring Portal (Behind Headline Text) */}
+        {/* Layer 0: Far Windows with Twilight Glow (Occult Sanctum grand window silhouette) */}
+        <div
+          ref={farLayerRef}
+          className="absolute inset-0 pointer-events-none flex items-center justify-center transition-transform duration-300 ease-out z-0"
+          aria-hidden="true"
+        >
+          <div className="w-[850px] max-w-[95vw] h-[850px] max-h-[95vh] rounded-full bg-[radial-gradient(circle_at_center,rgba(30,40,86,0.35)_0%,rgba(15,20,46,0.2)_40%,transparent_70%)] flex items-center justify-center">
+            <svg viewBox="0 0 800 800" className="w-full h-full opacity-40" fill="none">
+              <circle cx="400" cy="400" r="380" stroke="#F5B642" strokeWidth="1" strokeOpacity="0.2" strokeDasharray="8 12" />
+              <circle cx="400" cy="400" r="350" stroke="#3BA3FF" strokeWidth="0.8" strokeOpacity="0.15" />
+              <line x1="400" y1="50" x2="400" y2="750" stroke="#F5B642" strokeWidth="1" strokeOpacity="0.15" />
+              <line x1="50" y1="400" x2="750" y2="400" stroke="#F5B642" strokeWidth="1" strokeOpacity="0.15" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Layer 1: Mid Fluted Stone Columns flanking the chamber */}
+        <div
+          ref={midLayerRef}
+          className="absolute inset-0 pointer-events-none flex justify-between items-center px-4 sm:px-12 md:px-24 transition-transform duration-300 ease-out z-0"
+          aria-hidden="true"
+        >
+          <div className="w-12 sm:w-16 md:w-24 h-full bg-gradient-to-r from-[#040509] via-[#0E101B] to-transparent opacity-85 border-r border-[#F5B642]/10" />
+          <div className="w-12 sm:w-16 md:w-24 h-full bg-gradient-to-l from-[#040509] via-[#0E101B] to-transparent opacity-85 border-l border-[#F5B642]/10" />
+        </div>
+
+        {/* Layer 2: Soft Volumetric Light Shafts */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+          <div className="absolute -top-[20%] left-[8%] w-[380px] sm:w-[520px] h-[140%] bg-gradient-to-b from-[#FFE082]/12 via-[#FF7A1A]/04 to-transparent rotate-[-24deg] origin-top blur-xl animate-light-shaft pointer-events-none" />
+          <div className="absolute -top-[20%] right-[10%] w-[320px] sm:w-[460px] h-[140%] bg-gradient-to-b from-[#FFE082]/10 via-[#F5B642]/03 to-transparent rotate-[22deg] origin-top blur-xl animate-light-shaft pointer-events-none [animation-delay:4.5s]" />
+        </div>
+
+        {/* Layer 3: Dominant Sling Ring Portal (Behind Headline Text) */}
         <SectionErrorBoundary sectionName="hero-portal">
           <div
             ref={portalWrapperRef}
@@ -288,6 +390,40 @@ export const MultiverseHero: FC = () => {
             />
           </div>
         </SectionErrorBoundary>
+
+        {/* Layer 4: Near Stone Foreground & Dark Vignette */}
+        <div
+          ref={nearLayerRef}
+          className="absolute inset-0 pointer-events-none z-10 transition-transform duration-300 ease-out"
+          aria-hidden="true"
+        >
+          <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-[#07060D] via-[#07060D]/80 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(7,6,13,0.85)_100%)] pointer-events-none" />
+        </div>
+
+        {/* Layer 5: Film Grain & Floating Dust Motes */}
+        <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-60 z-20" aria-hidden="true" />
+
+        {!isLite && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 hidden lg:block" aria-hidden="true">
+            {DUST_MOTES.map((mote, i) => (
+              <span
+                key={i}
+                className="absolute rounded-full bg-[#FFE5A3] animate-dust-mote"
+                style={{
+                  top: mote.top,
+                  left: mote.left,
+                  width: `${mote.size}px`,
+                  height: `${mote.size}px`,
+                  boxShadow: '0 0 4px rgba(255,122,26,0.6)',
+                  // @ts-expect-error custom css variable
+                  '--dust-dur': mote.dur,
+                  animationDelay: mote.delay,
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Layer 2: Foreground Content (Always real text visible in first paint for LCP) */}
         <div

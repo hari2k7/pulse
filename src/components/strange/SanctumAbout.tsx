@@ -16,6 +16,9 @@ export const SanctumAbout: FC = () => {
       className="scroll-mt-24 relative w-full py-16 sm:py-20 md:py-24 bg-[#07060D] border-t border-[#FF7A1A]/20 overflow-hidden"
       aria-labelledby="about-heading"
     >
+      {/* Atmospheric Film Grain Overlay */}
+      <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-50 z-10" aria-hidden="true" />
+
       {/* Background Layer: Quieter Sanctum Arched-Window & Sigil Artwork */}
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[550px] opacity-15 pointer-events-none select-none z-0"

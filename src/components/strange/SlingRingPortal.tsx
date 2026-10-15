@@ -58,7 +58,7 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
     };
     window.addEventListener('resize', handleResize, { passive: true });
 
-    // Single capped particle pool (max 22 particles)
+    // Single capped particle pool (max 22 particles) with uneven speed, size, and trails
     const particleCount = 22;
     const radius = Math.min(width, height) * 0.40;
     const centerX = width / 2;
@@ -72,19 +72,26 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
       size: number;
       alpha: number;
       color: string;
+      trailLength: number;
     }
 
-    const colors = ['#FFE5A3', '#F5B642', '#FF7A1A', '#FF4500', '#FFFFFF'];
+    const colors = ['#FFFFFF', '#FFE5A3', '#F5B642', '#FF7A1A', '#E11D48'];
 
-    const sparks: Spark[] = Array.from({ length: particleCount }, () => ({
-      angle: Math.random() * Math.PI * 2,
-      speed: (0.012 + Math.random() * 0.018) * (Math.random() > 0.3 ? 1 : -1),
-      distance: radius + (Math.random() * 24 - 12),
-      tangentSpeed: Math.random() * 0.6 - 0.3,
-      size: Math.random() * 2.2 + 1,
-      alpha: Math.random() * 0.75 + 0.25,
-      color: colors[Math.floor(Math.random() * colors.length)],
-    }));
+    const sparks: Spark[] = Array.from({ length: particleCount }, (_, idx) => {
+      // Uneven speeds: some fast searing sparks, some lingering embers
+      const isFast = idx % 3 === 0;
+      const baseSpeed = isFast ? 0.024 + Math.random() * 0.02 : 0.008 + Math.random() * 0.012;
+      return {
+        angle: Math.random() * Math.PI * 2,
+        speed: baseSpeed * (Math.random() > 0.25 ? 1 : -1),
+        distance: radius + (Math.random() * 26 - 13),
+        tangentSpeed: Math.random() * 0.7 - 0.35,
+        size: isFast ? Math.random() * 1.5 + 1.2 : Math.random() * 2.5 + 1.5,
+        alpha: Math.random() * 0.7 + 0.3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        trailLength: isFast ? Math.random() * 8 + 6 : Math.random() * 4 + 2,
+      };
+    });
 
     // Pause when offscreen
     let observer: IntersectionObserver | null = null;
@@ -111,17 +118,30 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
         s.angle += s.speed;
         s.distance += s.tangentSpeed;
 
-        if (Math.abs(s.distance - radius) > 30) {
-          s.distance = radius + (Math.random() * 12 - 6);
+        if (Math.abs(s.distance - radius) > 32) {
+          s.distance = radius + (Math.random() * 14 - 7);
           s.tangentSpeed = Math.random() * 0.6 - 0.3;
         }
 
         const x = centerX + Math.cos(s.angle) * s.distance;
         const y = centerY + Math.sin(s.angle) * s.distance;
+        const trailX = x - Math.cos(s.angle + Math.PI / 2) * s.trailLength * Math.sign(s.speed);
+        const trailY = y - Math.sin(s.angle + Math.PI / 2) * s.trailLength * Math.sign(s.speed);
 
+        // Draw spark motion trail
         ctx.beginPath();
-        ctx.arc(x, y, s.size, 0, Math.PI * 2);
-        ctx.fillStyle = s.color;
+        ctx.moveTo(trailX, trailY);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = s.size;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = s.alpha * 0.8;
+        ctx.stroke();
+
+        // Hot white spark head
+        ctx.beginPath();
+        ctx.arc(x, y, s.size * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
         ctx.globalAlpha = s.alpha;
         ctx.fill();
       }
@@ -221,69 +241,92 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
           </linearGradient>
         </defs>
 
-        {/* Ring Group with Heat Shimmer Filter (desktop non-lite only) */}
+        {/* Ring Group with Heat Shimmer Filter (desktop non-lite only) and Organic Wobble */}
         <g
           ref={ringRef}
+          className={!isLite ? 'animate-portal-wobble' : ''}
           style={{
             filter: isShimmerAllowed ? 'url(#portal-heat-shimmer)' : undefined,
             transformOrigin: '300px 300px',
           }}
         >
-          {/* Outer Fiery Corona Arc 1: Clockwise fast (14s) */}
+          {/* Layer A: Dark Ember Outer Rim (Dark burgundy & ember foundation) */}
+          <circle
+            cx="300"
+            cy="300"
+            r="248"
+            stroke="#450A0A"
+            strokeWidth="9"
+            strokeDasharray="220 50 140 60 180 40"
+            strokeLinecap="round"
+            strokeOpacity="0.8"
+          />
+
+          {/* Layer B: Outer Fiery Corona Arc 1: Clockwise fast (14s) */}
           <g className="animate-spell-spin" style={{ animationDuration: '14s', transformOrigin: '300px 300px' }}>
             <circle
               cx="300"
               cy="300"
               r="244"
               stroke="url(#sling-ring-gradient)"
-              strokeWidth="6"
+              strokeWidth="6.5"
               strokeDasharray="180 50 90 40 140 60"
               strokeLinecap="round"
-              strokeOpacity="0.85"
+              strokeOpacity="0.88"
             />
             {/* Searing sparks on rim */}
-            <circle cx="544" cy="300" r="4" fill="#FFFFFF" />
+            <circle cx="544" cy="300" r="4.5" fill="#FFFFFF" />
             <circle cx="300" cy="544" r="3.5" fill="#FFE5A3" />
             <circle cx="127" cy="127" r="3" fill="#F5B642" />
           </g>
 
-          {/* Inner Fiery Arc 2: Counter-Clockwise (10s) */}
+          {/* Layer C: Inner Fiery Arc 2: Counter-Clockwise (10s) with varied thickness */}
           <g className="animate-spell-spin-reverse" style={{ animationDuration: '10s', transformOrigin: '300px 300px' }}>
             <circle
               cx="300"
               cy="300"
-              r="238"
+              r="239"
               stroke="url(#sling-ring-core)"
-              strokeWidth="8"
+              strokeWidth="7"
               strokeDasharray="90 30 160 40 70 50"
               strokeLinecap="round"
               strokeOpacity="0.9"
             />
-            <circle cx="300" cy="62" r="4.5" fill="#FFFFFF" />
+            <circle cx="300" cy="61" r="5" fill="#FFFFFF" />
             <circle cx="473" cy="473" r="3.5" fill="#FFE082" />
           </g>
 
-          {/* Searing Bright Core Edge: Irregular molten line (8s spin) */}
+          {/* Layer D: Searing Bright Hot White-Gold Core Edge: Irregular molten line (8s spin) */}
           <g className="animate-spell-spin" style={{ animationDuration: '8s', transformOrigin: '300px 300px' }}>
             <circle
               cx="300"
               cy="300"
-              r="234"
-              stroke="#FFFFFF"
-              strokeWidth="3.5"
-              strokeDasharray="60 20 120 15 40 30"
+              r="236"
+              stroke="#FFE5A3"
+              strokeWidth="4"
+              strokeDasharray="120 30 180 25 70 35"
               strokeLinecap="round"
-              strokeOpacity="0.95"
+              strokeOpacity="0.92"
+            />
+            <circle
+              cx="300"
+              cy="300"
+              r="235"
+              stroke="#FFFFFF"
+              strokeWidth="2.5"
+              strokeDasharray="60 20 130 15 45 25"
+              strokeLinecap="round"
+              strokeOpacity="0.98"
             />
             <circle
               cx="300"
               cy="300"
               r="242"
               stroke="#FF7A1A"
-              strokeWidth="12"
+              strokeWidth="10"
               strokeDasharray="30 140 50 110"
               strokeLinecap="round"
-              strokeOpacity="0.6"
+              strokeOpacity="0.65"
             />
           </g>
 
@@ -293,8 +336,8 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
             cy="300"
             r="236"
             stroke="#F5B642"
-            strokeWidth="2.5"
-            strokeOpacity="0.7"
+            strokeWidth="2"
+            strokeOpacity="0.75"
           />
 
           {/* Spark Tracing Arc during intro (or full in resting state) */}

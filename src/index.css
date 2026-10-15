@@ -614,8 +614,68 @@ input[type="search"]::-ms-reveal {
   animation: ken-burns 14s ease-in-out infinite alternate;
 }
 
+/* Subtle repeating SVG noise tile for realistic film grain (zero filter cost on large layout) */
+.bg-film-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.038'/%3E%3C/svg%3E");
+}
+
+/* Volumetric light shaft drift */
+@keyframes light-shaft-drift {
+  0%, 100% {
+    opacity: 0.45;
+    transform: rotate(-18deg) scaleY(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: rotate(-17deg) scaleY(1.03);
+  }
+}
+
+.animate-light-shaft {
+  animation: light-shaft-drift 9s ease-in-out infinite;
+}
+
+/* Organic portal ring wobble */
+@keyframes portal-ring-wobble {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  33% {
+    transform: scale(1.006, 0.995) rotate(0.5deg);
+  }
+  66% {
+    transform: scale(0.996, 1.005) rotate(-0.4deg);
+  }
+}
+
+.animate-portal-wobble {
+  animation: portal-ring-wobble 8s ease-in-out infinite;
+}
+
+/* Subtle floating dust motes for chamber atmosphere */
+@keyframes dust-float {
+  0% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-25px) translateX(10px);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateY(-50px) translateX(-6px);
+    opacity: 0.15;
+  }
+}
+
+.animate-dust-mote {
+  animation: dust-float var(--dust-dur, 7s) ease-in-out infinite alternate;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-ken-burns {
+  .animate-light-shaft,
+  .animate-portal-wobble,
+  .animate-dust-mote {
     animation: none !important;
   }
 }

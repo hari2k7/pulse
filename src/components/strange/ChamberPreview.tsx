@@ -26,6 +26,10 @@ export const ChamberPreview: FC<ChamberPreviewProps> = ({ events }) => {
       className="relative w-full py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-[#07060D] overflow-hidden"
       aria-labelledby="chamber-heading"
     >
+      {/* Atmospheric Film Grain & Vignette Overlay */}
+      <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-50 z-10" aria-hidden="true" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_55%,rgba(7,6,13,0.85)_100%)] z-10" aria-hidden="true" />
+
       {/* Background Architectural Layer: Engraved Concentric Floor & Column Silhouettes */}
       <div className="absolute inset-0 pointer-events-none select-none z-0 opacity-20" aria-hidden="true">
         <svg

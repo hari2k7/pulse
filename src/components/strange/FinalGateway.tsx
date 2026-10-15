@@ -26,6 +26,10 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
       className="relative w-full py-20 sm:py-24 md:py-32 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex flex-col items-center justify-center overflow-hidden"
       aria-labelledby="gateway-heading"
     >
+      {/* Atmospheric Film Grain & Vignette Overlay */}
+      <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-50 z-10" aria-hidden="true" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_50%,rgba(7,6,13,0.9)_100%)] z-10" aria-hidden="true" />
+
       {/* Background Large Portal Opening onto Bright Unfamiliar World */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] sm:w-[750px] md:w-[900px] h-[600px] sm:h-[750px] md:h-[900px] pointer-events-none select-none z-0"
