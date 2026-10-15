@@ -32,7 +32,7 @@ export const EventCard: FC<EventCardProps> = ({
     ? getOptimizedImageUrl(rawImageUrl, 600, 400)
     : FALLBACK_IMAGE_DATA_URI;
   const srcSet = hasValidImage
-    ? getImageSrcSet(rawImageUrl, [380, 500, 680, 900], 2 / 3)
+    ? getImageSrcSet(rawImageUrl, [320, 440, 600], 2 / 3)
     : undefined;
 
   const title = event.name || 'Event';

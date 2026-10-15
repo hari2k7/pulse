@@ -301,10 +301,10 @@ export const EventDetailPage: FC = () => {
   const bannerUrl = event.banner_image_url || event.cover_image_url;
   const hasValidImage = Boolean(bannerUrl && !imageFailed);
   const optimizedBanner = hasValidImage
-    ? getOptimizedImageUrl(bannerUrl, 1920, 1080)
+    ? getOptimizedImageUrl(bannerUrl, 1200, 675)
     : FALLBACK_IMAGE_DATA_URI;
   const bannerSrcSet = hasValidImage
-    ? getImageSrcSet(bannerUrl, [380, 600, 900, 1400, 1920], 9 / 16)
+    ? getImageSrcSet(bannerUrl, [360, 540, 720, 1080, 1600], 9 / 16)
     : undefined;
 
   const remaining = seatsLeft(event.total_seats, event.seats_filled);
@@ -348,7 +348,7 @@ export const EventDetailPage: FC = () => {
           ref={bannerImgRef}
           src={optimizedBanner}
           srcSet={bannerSrcSet}
-          sizes="100vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1600px"
           alt={event.banner_image_alt || event.cover_image_alt || event.name}
           width="1920"
           height="1080"
