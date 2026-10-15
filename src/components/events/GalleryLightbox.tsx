@@ -249,7 +249,7 @@ export const GalleryLightbox: FC<GalleryLightboxProps> = ({
               />
             </svg>
             <p className="font-display font-bold text-base text-[#F3EFE8]">Image unavailable</p>
-            <p className="text-xs text-[#8E8A9F]">This photograph could not be loaded from the sanctum archive.</p>
+            <p className="text-xs text-[#B8B3C7]">This photograph could not be loaded from the sanctum archive.</p>
           </div>
         ) : (
           <>
@@ -259,6 +259,8 @@ export const GalleryLightbox: FC<GalleryLightboxProps> = ({
                 src={thumbUrl}
                 alt=""
                 aria-hidden="true"
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
                 className="max-w-[90vw] max-h-[85vh] object-contain blur-xs scale-100 transition-opacity duration-200"
               />
             )}
@@ -269,6 +271,8 @@ export const GalleryLightbox: FC<GalleryLightboxProps> = ({
               key={currentUrl}
               src={currentUrl}
               alt={`${eventName} photo ${currentIndex + 1}`}
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
               onLoad={() => setIsHighResLoaded(true)}
               onError={() => setHasError(true)}
               className={`max-w-[90vw] max-h-[85vh] object-contain transition-opacity duration-200 motion-reduce:transition-none ${

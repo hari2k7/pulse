@@ -341,6 +341,8 @@ export const EventDetailPage: FC = () => {
           loading="eager"
           fetchPriority="high"
           decoding="sync"
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
           onError={() => setImageFailed(true)}
           style={{
             viewTransitionName: `event-img-${event.id}`,
@@ -451,18 +453,18 @@ export const EventDetailPage: FC = () => {
         <div className="p-4 rounded-xl bg-[#0D1020] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
             <div>
-              <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Date & Time</span>
+              <span className="text-[#B8B3C7] block text-[10px] uppercase font-semibold">Date & Time</span>
               <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.schedule_summary)}</span>
             </div>
             {scheduleVenue && (
               <div>
-                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Venue</span>
+                <span className="text-[#B8B3C7] block text-[10px] uppercase font-semibold">Venue</span>
                 <span className="text-[#F3EFE8] font-medium">{scheduleVenue}</span>
               </div>
             )}
             {event.min_teamsize && event.max_teamsize && (
               <div>
-                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Team Size</span>
+                <span className="text-[#B8B3C7] block text-[10px] uppercase font-semibold">Team Size</span>
                 <span className="text-[#F3EFE8] font-medium">
                   {event.min_teamsize === event.max_teamsize
                     ? `${event.min_teamsize} Member${event.min_teamsize > 1 ? 's' : ''}`
@@ -472,12 +474,12 @@ export const EventDetailPage: FC = () => {
             )}
             {event.registration_deadline && (
               <div>
-                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Deadline</span>
+                <span className="text-[#B8B3C7] block text-[10px] uppercase font-semibold">Deadline</span>
                 <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.registration_deadline)}</span>
               </div>
             )}
             <div>
-              <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Status</span>
+              <span className="text-[#B8B3C7] block text-[10px] uppercase font-semibold">Status</span>
               {event.registration_status && (
                 <StatusBadge type="registration" status={event.registration_status} size="sm" />
               )}
@@ -546,7 +548,7 @@ export const EventDetailPage: FC = () => {
             <div className="p-5 sm:p-6 rounded-xl bg-[#0D1020] border border-white/10 shadow-xl space-y-5">
               {/* Price */}
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#8E8A9F] block">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#B8B3C7] block">
                   Registration Entry
                 </span>
                 <div className="font-display font-bold text-3xl text-[#F3EFE8]">
@@ -561,7 +563,7 @@ export const EventDetailPage: FC = () => {
               {remaining !== null && event.event_status === 'ACTIVE' && (
                 <div className="space-y-2 pt-3 border-t border-white/10">
                   <div className="flex justify-between text-xs">
-                    <span className="text-[#8E8A9F]">Capacity</span>
+                    <span className="text-[#B8B3C7]">Capacity</span>
                     <span className={`font-semibold ${remaining <= 5 ? 'text-[#FF7A1A]' : 'text-[#F3EFE8]'}`}>
                       {seatsText}
                     </span>
@@ -586,14 +588,14 @@ export const EventDetailPage: FC = () => {
               {/* Registration status & deadline */}
               <div className="space-y-2 pt-3 border-t border-white/10 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#8E8A9F]">Registration</span>
+                  <span className="text-[#B8B3C7]">Registration</span>
                   {event.registration_status && (
                     <StatusBadge type="registration" status={event.registration_status} size="sm" />
                   )}
                 </div>
                 {event.registration_deadline && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[#8E8A9F]">Closes</span>
+                    <span className="text-[#B8B3C7]">Closes</span>
                     <span className="text-[#F3EFE8] font-mono">{formatDateIST(event.registration_deadline)}</span>
                   </div>
                 )}
@@ -605,7 +607,7 @@ export const EventDetailPage: FC = () => {
                   className={`w-full py-2.5 px-3 rounded-lg text-center text-xs font-bold uppercase tracking-wider ${
                     isOpen
                       ? 'bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A]'
-                      : 'bg-white/5 border border-white/10 text-[#8E8A9F]'
+                      : 'bg-white/5 border border-white/10 text-[#B8B3C7]'
                   }`}
                 >
                   {isOpen
@@ -714,7 +716,7 @@ export const EventDetailPage: FC = () => {
                           </p>
                         </div>
                         {(item.venue || scheduleVenue) && (
-                          <div className="text-xs text-[#8E8A9F]">
+                          <div className="text-xs text-[#B8B3C7]">
                             {item.venue || scheduleVenue}
                           </div>
                         )}
@@ -726,7 +728,7 @@ export const EventDetailPage: FC = () => {
                         {formatDateIST(event.schedule_summary)}
                       </p>
                       {scheduleVenue && (
-                        <p className="text-[#8E8A9F] mt-1">{scheduleVenue}</p>
+                        <p className="text-[#B8B3C7] mt-1">{scheduleVenue}</p>
                       )}
                     </div>
                   )}
@@ -752,7 +754,7 @@ export const EventDetailPage: FC = () => {
                         }`}
                       >
                         <div>
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${isGold ? 'text-[#F5B642]' : 'text-[#8E8A9F]'}`}>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${isGold ? 'text-[#F5B642]' : 'text-[#B8B3C7]'}`}>
                             {prize.rank ? `Rank #${prize.rank}` : 'Prize'}
                           </span>
                           <h3 className="font-display font-bold text-sm text-[#F3EFE8] mt-0.5">
@@ -939,6 +941,8 @@ export const EventDetailPage: FC = () => {
                     width={400}
                     height={300}
                     loading="lazy"
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </button>
@@ -981,7 +985,7 @@ export const EventDetailPage: FC = () => {
                       {coord.name}
                     </p>
                     {coord.role && (
-                      <p className="text-xs text-[#8E8A9F]">{coord.role}</p>
+                      <p className="text-xs text-[#B8B3C7]">{coord.role}</p>
                     )}
                     {contact && (
                       <div className="pt-2 text-xs">
@@ -1007,7 +1011,7 @@ export const EventDetailPage: FC = () => {
                             <span>{contact}</span>
                           </a>
                         ) : (
-                          <span className="text-[#8E8A9F]">{contact}</span>
+                          <span className="text-[#B8B3C7]">{contact}</span>
                         )}
                       </div>
                     )}
@@ -1034,7 +1038,6 @@ export const EventDetailPage: FC = () => {
                   onClick={() => handleMoreScroll('left')}
                   disabled={!canScrollLeft}
                   tabIndex={canScrollLeft ? 0 : -1}
-                  aria-hidden={!canScrollLeft}
                   aria-label="Scroll more events left"
                   className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
                     canScrollLeft ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -1056,7 +1059,6 @@ export const EventDetailPage: FC = () => {
                   onClick={() => handleMoreScroll('right')}
                   disabled={!canScrollRight}
                   tabIndex={canScrollRight ? 0 : -1}
-                  aria-hidden={!canScrollRight}
                   aria-label="Scroll more events right"
                   className={`w-11 h-11 rounded-full bg-[#0D1020] hover:bg-white/10 text-[#F3EFE8] flex items-center justify-center border border-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer ${
                     canScrollRight ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'

@@ -571,3 +571,22 @@ body.lightbox-open .back-to-top {
   display: none !important;
 }
 
+/* Pause CSS infinite animations when page is hidden */
+html.document-hidden * {
+  animation-play-state: paused !important;
+}
+
+/* Content-visibility optimizations for below-the-fold sections */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 600px;
+}
+.content-visibility-auto-sm {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 300px;
+}
+.content-visibility-auto-lg {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 900px;
+}
+

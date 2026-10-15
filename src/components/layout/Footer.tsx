@@ -6,7 +6,7 @@ import { FESTIVAL_CONFIG } from '../../config/festival';
 
 export const Footer: FC = () => {
   return (
-    <footer className="relative bg-[#07060D] border-t border-[#FF7A1A]/20 pt-16 pb-12 px-4 sm:px-6 lg:px-8 mt-auto text-sm text-[#B8B3C7] overflow-hidden">
+    <footer className="content-visibility-auto-sm relative bg-[#07060D] border-t border-[#FF7A1A]/20 pt-16 pb-12 px-4 sm:px-6 lg:px-8 mt-auto text-sm text-[#B8B3C7] overflow-hidden">
       {/* Background Sanctum Seal Backdrop with Slow CSS Rotation */}
       <div
         className="absolute right-[-100px] sm:right-[-50px] bottom-[-80px] opacity-15 pointer-events-none select-none animate-spell-spin"
@@ -106,7 +106,7 @@ export const Footer: FC = () => {
                 ))
               ) : (
                 <>
-                  <li className="text-[#8E8A9F]">Official multiverse coordinates</li>
+                  <li className="text-[#B8B3C7]">Official multiverse coordinates</li>
                   {/* replace with real links from festival.ts socials when available */}
                   <li className="pt-2">
                     <div className="flex items-center gap-2 flex-wrap">

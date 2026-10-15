@@ -118,6 +118,8 @@ export const EventTimeline: FC<EventTimelineProps> = ({ events }) => {
                             width="150"
                             height="100"
                             loading="lazy"
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
                             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
                               isClosed ? 'grayscale' : ''
                             }`}

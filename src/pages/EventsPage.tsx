@@ -480,6 +480,7 @@ export const EventsPage: FC = () => {
 
         {/* Events Display Container (Mixed-Size Grid or Timeline) */}
         <main className="lg:col-span-3 space-y-6">
+          <h2 className="sr-only">Events Directory</h2>
           {/* Empty State */}
           {filteredEvents.length === 0 ? (
             <div className="py-16 bg-[#0D1020]/40 border border-white/5 rounded-xl flex items-center justify-center">
@@ -500,7 +501,7 @@ export const EventsPage: FC = () => {
             <EventTimeline events={filteredEvents} />
           ) : (
             /* Uniform Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch content-visibility-auto">
               {filteredEvents.map((event, index) => (
                 <div key={event.id} className="h-full">
                   <EventCard

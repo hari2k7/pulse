@@ -128,7 +128,6 @@ export const EventCard: FC<EventCardProps> = ({
         to={`/events/${event.id}`}
         onClick={handleCardClick}
         title={title}
-        aria-label={title}
         {...handlers}
         className="group relative flex flex-col flex-1 h-full bg-[#0D1020] rounded-xl border border-white/10 card-strange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] p-3 sm:p-3.5 overflow-hidden transition-all hover:border-[#FF7A1A]/40"
       >
@@ -144,6 +143,8 @@ export const EventCard: FC<EventCardProps> = ({
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}
           decoding={priority ? 'sync' : 'async'}
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
           onError={() => setImageFailed(true)}
           style={{ viewTransitionName: `event-img-${event.id}` }}
           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
@@ -173,7 +174,7 @@ export const EventCard: FC<EventCardProps> = ({
         <div className="space-y-2 min-w-0">
           {/* Type line (small plain muted text, truncated 1 line) + Status tag */}
           <div className="flex items-center justify-between gap-2 min-w-0 flex-wrap">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-[#8E8A9F] truncate max-w-[60%]">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#B8B3C7] truncate max-w-[60%]">
               {category || 'STRANGE'}
             </span>
             {event.registration_status && (
@@ -191,7 +192,7 @@ export const EventCard: FC<EventCardProps> = ({
           {/* Date Row with heart button space beside it */}
           <div className="flex items-center justify-between gap-2 min-w-0 pt-0.5">
             {hasDate ? (
-              <div className="flex items-center gap-1.5 text-xs text-[#8E8A9F] min-w-0 truncate">
+              <div className="flex items-center gap-1.5 text-xs text-[#B8B3C7] min-w-0 truncate">
                 <svg
                   className="w-3.5 h-3.5 shrink-0 text-[#FF7A1A]"
                   fill="none"
@@ -222,7 +223,7 @@ export const EventCard: FC<EventCardProps> = ({
             className={`w-full block py-2.5 px-3 text-center text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${
               isOpen
                 ? 'bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A] shadow-[0_2px_10px_rgba(255,122,26,0.25)] group-hover:brightness-110'
-                : 'bg-white/5 border border-white/10 text-[#8E8A9F]'
+                : 'bg-white/5 border border-white/10 text-[#B8B3C7]'
             }`}
           >
             {buttonLabel}
@@ -231,7 +232,7 @@ export const EventCard: FC<EventCardProps> = ({
 
         {/* 3. Footer Bar: Thin top border, left "ENTRY FEE" (mono, muted), right price in bold amber */}
         <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 min-w-0 mt-auto">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-[#8E8A9F]">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-[#B8B3C7]">
             ENTRY FEE
           </span>
 
@@ -244,7 +245,7 @@ export const EventCard: FC<EventCardProps> = ({
                 {new Intl.NumberFormat('en-IN', {
                   maximumFractionDigits: 0,
                 }).format(event.price as number)}
-                <span className="text-[10px] text-[#8E8A9F] font-normal ml-1">
+                <span className="text-[10px] text-[#B8B3C7] font-normal ml-1">
                   {isPerHead ? 'per person' : 'per team'}
                 </span>
               </span>
@@ -290,13 +291,6 @@ export const EventCard: FC<EventCardProps> = ({
                   <stop offset="70%" stopColor="#07060D" stopOpacity="0.85" />
                   <stop offset="100%" stopColor="#FF7A1A" stopOpacity="0.35" />
                 </radialGradient>
-                <filter id={`cp-glow-${event.id}`} x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
               </defs>
 
               {/* Dark cosmic core with subtle radial glow */}
@@ -323,7 +317,6 @@ export const EventCard: FC<EventCardProps> = ({
                 fill="none"
                 stroke={`url(#cp-grad-${event.id})`}
                 strokeWidth="2.5"
-                filter={`url(#cp-glow-${event.id})`}
                 className="card-portal-outer-ring"
               />
 
@@ -398,10 +391,10 @@ export const EventCard: FC<EventCardProps> = ({
       {/* Spacer matching 3:2 image */}
       <div className="w-full aspect-[3/2] shrink-0" aria-hidden="true" />
       {/* Spacer matching body padding and elements above date row */}
-      <div className="pt-3 space-y-2" aria-hidden="true">
+      <div className="pt-3 space-y-2">
         <div className="h-5" aria-hidden="true" />
         <div className="min-h-[4.2rem]" aria-hidden="true" />
-        <div className="flex justify-end pt-0.5" aria-hidden="true">
+        <div className="flex justify-end pt-0.5">
           <button
             type="button"
             onClick={(e) => {

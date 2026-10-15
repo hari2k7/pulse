@@ -21,10 +21,10 @@ export const SanctumSeal: FC<SanctumSealProps> = ({
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      {/* Outer ambient glow */}
+      {/* Outer ambient glow without heavy multi-pass blur */}
       {glow && (
         <div
-          className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FF7A1A]/15 via-[#F5B642]/10 to-[#C8102E]/10 blur-2xl pointer-events-none"
+          className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(255,122,26,0.12)_0%,rgba(245,182,66,0.08)_50%,transparent_70%)] pointer-events-none"
           aria-hidden="true"
         />
       )}

@@ -23,9 +23,9 @@ export const EventFilters: FC<EventFiltersProps> = ({
     <div className={`space-y-6 ${className}`}>
       {/* Header with Clear All button */}
       <div className="flex items-center justify-between pb-3 border-b border-[#FF7A1A]/20">
-        <h3 className="text-xs font-bold text-[#F3EFE8] uppercase tracking-wider font-display">
+        <h2 className="text-xs font-bold text-[#F3EFE8] uppercase tracking-wider font-display">
           Filters
-        </h3>
+        </h2>
         {hasActive && (
           <button
             type="button"

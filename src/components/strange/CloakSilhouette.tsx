@@ -54,7 +54,7 @@ export const CloakSilhouette: FC<CloakSilhouetteProps> = ({
         viewBox="0 0 600 700"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full opacity-20 filter blur-[1px]"
+        className="w-full h-full opacity-20"
       >
         <defs>
           <linearGradient id="cloak-grad" x1="20%" y1="0%" x2="80%" y2="100%">

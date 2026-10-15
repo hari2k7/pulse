@@ -83,26 +83,32 @@ export const HomePage: FC = () => {
       <MultiverseHero />
 
       {/* 2. Temporal Convergence: Eye of Agamotto Countdown */}
-      <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center -mt-8 z-20">
+      <section className="relative w-full py-12 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center -mt-8 z-20 content-visibility-auto">
         <div className="w-full max-w-xl">
           <EyeOfAgamotto fallbackDate={earliestActiveDate} />
         </div>
       </section>
 
       {/* 3. Festival Animated Counters */}
-      <StatsSection events={events} prizePool={prizePool} />
+      <div className="content-visibility-auto-sm">
+        <StatsSection events={events} prizePool={prizePool} />
+      </div>
 
       {/* 4. Cloak of Levitation Sweeping Section Divider */}
       <CloakSilhouette variant="divider" />
 
       {/* 5. Featured Multiverse Events (Asymmetric Layout) */}
-      <FeaturedMultiverse events={events} />
+      <div className="content-visibility-auto-lg">
+        <FeaturedMultiverse events={events} />
+      </div>
 
       {/* 6. Multiverse Partner Marquee (Rendered only if festival.ts sponsors exist) */}
       <SponsorMarquee />
 
       {/* 7. Sanctum Sanctorum About Narrative */}
-      <SanctumAbout />
+      <div className="content-visibility-auto">
+        <SanctumAbout />
+      </div>
     </div>
   );
 };
