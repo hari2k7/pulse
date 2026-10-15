@@ -1,5 +1,7 @@
 import {
   useState,
+  useEffect,
+  useRef,
   type FC,
 } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -33,6 +35,102 @@ export const EventDetailPage: FC = () => {
 
   const [shareFeedback, setShareFeedback] = useState<string>('');
   const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({ 0: true });
+  const [imageFailed, setImageFailed] = useState<boolean>(false);
+  const bannerContainerRef = useRef<HTMLDivElement>(null);
+  const bannerImgRef = useRef<HTMLImageElement>(null);
+  const [isDrifting, setIsDrifting] = useState(true);
+  const [cloakRemoved, setCloakRemoved] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+    return false;
+  });
+  const [cloakSwept, setCloakSwept] = useState(false);
+
+  // One-time cloak reveal on load (sweeps off in 700ms then removed from DOM)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    const animTimer = setTimeout(() => {
+      setCloakSwept(true);
+    }, 50);
+
+    const removeTimer = setTimeout(() => {
+      setCloakRemoved(true);
+    }, 750);
+
+    return () => {
+      clearTimeout(animTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [event?.id]);
+
+  // Ken Burns drift pausing when tab is hidden or offscreen
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleVisibility = () => {
+      setIsDrifting(document.visibilityState === 'visible');
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    let observer: IntersectionObserver | null = null;
+    if (bannerContainerRef.current) {
+      observer = new IntersectionObserver(([entry]) => {
+        setIsDrifting(entry.isIntersecting && document.visibilityState === 'visible');
+      });
+      observer.observe(bannerContainerRef.current);
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      observer?.disconnect();
+    };
+  }, [event?.id]);
+
+  // Subtle parallax on scroll (image translateY at most 40px) via GSAP ScrollTrigger
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let mmRef: { revert: () => void } | null = null;
+
+    const initParallax = async () => {
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        const mm = gsap.matchMedia();
+
+        mm.add('(prefers-reduced-motion: no-preference)', () => {
+          if (bannerImgRef.current && bannerContainerRef.current) {
+            gsap.to(bannerImgRef.current, {
+              y: 40,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: bannerContainerRef.current,
+                start: 'top top',
+                end: 'bottom top',
+                scrub: true,
+              },
+            });
+          }
+        });
+
+        mmRef = mm;
+      } catch {
+        // Ignore
+      }
+    };
+
+    const timer = setTimeout(initParallax, 80);
+    return () => {
+      clearTimeout(timer);
+      mmRef?.revert();
+    };
+  }, [event?.id]);
 
   // SEO metadata per route pattern: "{event name} — STRANGE"
   useDocumentMeta({
@@ -106,10 +204,11 @@ export const EventDetailPage: FC = () => {
 
   // Derived event properties
   const bannerUrl = event.banner_image_url || event.cover_image_url;
-  const optimizedBanner = bannerUrl
+  const hasValidImage = Boolean(bannerUrl && !imageFailed);
+  const optimizedBanner = hasValidImage
     ? getOptimizedImageUrl(bannerUrl, 1920, 1080)
     : FALLBACK_IMAGE_DATA_URI;
-  const bannerSrcSet = bannerUrl
+  const bannerSrcSet = hasValidImage
     ? getImageSrcSet(bannerUrl, [640, 1024, 1440, 1920], 9 / 16)
     : undefined;
 
@@ -139,49 +238,124 @@ export const EventDetailPage: FC = () => {
   const hasContacts = !isPlaceholder && (coordinators.length > 0 || organizers.length > 0);
 
   return (
-    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)]">
+    <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-16 sm:pt-20">
       {/* -------------------------------------------------------------
-          HERO BANNER with Title, Category, Blurb & Horizontal Facts Strip
+          1. TOP BANNER IMAGE: Clear area showing image at full brightness
+          Desktop: ~55vh (min 280px, max 560px), Mobile: ~240px
           ------------------------------------------------------------- */}
-      <section className="relative w-full border-b border-white/10 bg-[#0D1020]/50 overflow-hidden">
-        {/* Banner image background with dark gradients */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src={optimizedBanner}
-            srcSet={bannerSrcSet}
-            sizes="100vw"
-            alt={event.banner_image_alt || event.cover_image_alt || event.name}
-            width="1920"
-            height="1080"
-            loading="eager"
-            fetchPriority="high"
-            decoding="sync"
-            style={{ viewTransitionName: `event-img-${event.id}` }}
-            className="w-full h-full object-cover object-center opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#07060D] via-[#07060D]/85 to-[#07060D]/70 pointer-events-none" />
+      <section
+        ref={bannerContainerRef}
+        aria-label="Event Banner"
+        className="relative w-full h-[240px] md:h-[55vh] md:min-h-[280px] md:max-h-[560px] bg-[#07060D] overflow-hidden select-none"
+      >
+        {/* Banner Image with Ken Burns drift & Parallax (full brightness, no dark overlay across middle) */}
+        <img
+          ref={bannerImgRef}
+          src={optimizedBanner}
+          srcSet={bannerSrcSet}
+          sizes="100vw"
+          alt={event.banner_image_alt || event.cover_image_alt || event.name}
+          width="1920"
+          height="1080"
+          loading="eager"
+          fetchPriority="high"
+          decoding="sync"
+          onError={() => setImageFailed(true)}
+          style={{
+            viewTransitionName: `event-img-${event.id}`,
+            animationPlayState: isDrifting ? 'running' : 'paused',
+          }}
+          className="w-full h-full object-cover object-center animate-ken-burns motion-reduce:transform-none"
+        />
+
+        {/* The ONLY scrim: light gradient at the very bottom edge (last ~25%) blending into page bg */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#07060D] via-[#07060D]/50 to-transparent pointer-events-none z-10"
+          aria-hidden="true"
+        />
+
+        {/* One large, faint orange portal ring partly cropped at right edge (rotating 60s+, low opacity) */}
+        <div
+          className="absolute -right-20 -top-20 w-[340px] h-[340px] md:w-[460px] md:h-[460px] z-10 pointer-events-none opacity-20 select-none overflow-visible"
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 200 200"
+            className="w-full h-full motion-safe:animate-[spin_75s_linear_infinite] motion-reduce:animate-none"
+            fill="none"
+          >
+            <circle cx="100" cy="100" r="92" stroke="#FF7A1A" strokeWidth="1.5" strokeDasharray="6 4" />
+            <circle cx="100" cy="100" r="80" stroke="#F5B642" strokeWidth="1" strokeDasharray="12 6" />
+            <circle cx="100" cy="100" r="68" stroke="#FF7A1A" strokeWidth="1.5" strokeDasharray="4 8" opacity="0.6" />
+            {Array.from({ length: 12 }).map((_, i) => (
+              <line
+                key={i}
+                x1="100"
+                y1="8"
+                x2="100"
+                y2="18"
+                stroke="#F5B642"
+                strokeWidth="1.5"
+                transform={`rotate(${i * 30} 100 100)`}
+              />
+            ))}
+          </svg>
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/events"
-              className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors"
-            >
-              Back to Events
-            </Link>
-            <span className="text-white/20">•</span>
-            {event.category && (
-              <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-[#07060D]/90 border border-white/20 text-[#F3EFE8]">
-                {event.category}
-              </span>
-            )}
-            {event.is_featured && <Badge variant="accent">Featured</Badge>}
-            {event.event_mode && <Badge variant="outline">{event.event_mode}</Badge>}
-          </div>
+        {/* One-time cloak reveal on load (deep red fabric texture sweeps off in 700ms then removed from DOM) */}
+        {!cloakRemoved && (
+          <div
+            className={`absolute inset-0 z-30 pointer-events-none transition-transform duration-700 ease-out motion-reduce:hidden ${
+              cloakSwept ? '-translate-x-full' : 'translate-x-0'
+            }`}
+            style={{
+              background: `repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 2px, transparent 2px, transparent 6px), linear-gradient(135deg, #42060B 0%, #6E0B15 45%, #8B0E1B 65%, #380509 100%)`,
+              boxShadow: 'inset 0 0 30px rgba(0, 0, 0, 0.9)',
+            }}
+            aria-hidden="true"
+          />
+        )}
 
-          <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-[#F3EFE8] leading-tight max-w-4xl">
+        {/* Thin double gold line with center diamond ornament at bottom edge of banner */}
+        <div className="absolute bottom-0 inset-x-0 z-20 pointer-events-none">
+          <div className="w-full h-[1px] bg-[#F5B642]/60 shadow-[0_0_6px_rgba(245,182,66,0.5)]" />
+          <div className="w-full h-[1px] mt-[1px] bg-[#FF7A1A]/80 shadow-[0_0_8px_rgba(255,122,26,0.6)]" />
+          <div
+            className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-[#F5B642] border border-[#FF7A1A] shadow-[0_0_8px_#FF7A1A]"
+            aria-hidden="true"
+          />
+        </div>
+      </section>
+
+      {/* -------------------------------------------------------------
+          2. HERO CONTENT: Sits BELOW the image area on page background
+          On desktop the title block overlaps the image bottom edge by max 48px
+          ------------------------------------------------------------- */}
+      <section className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 md:-mt-12 space-y-5 w-full">
+        {/* Navigation Breadcrumb & Category/Mode Badges */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/events"
+            className="text-xs uppercase tracking-wider font-semibold text-[#FF7A1A] hover:text-[#F5B642] transition-colors inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#07060D]/95 border border-white/10 shadow-md backdrop-blur-xs"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back to Events</span>
+          </Link>
+          <span className="text-white/20">•</span>
+          {event.category && (
+            <span className="text-xs font-semibold uppercase tracking-wider px-2.5 py-1.5 rounded-lg bg-[#07060D]/95 border border-white/15 text-[#F3EFE8] shadow-md backdrop-blur-xs">
+              {event.category}
+            </span>
+          )}
+          {event.is_featured && <Badge variant="accent">Featured</Badge>}
+          {event.event_mode && <Badge variant="outline">{event.event_mode}</Badge>}
+        </div>
+
+        {/* Title & Blurb on solid page background with AA contrast */}
+        <div className="space-y-3 pt-1">
+          <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-[#F3EFE8] leading-tight max-w-4xl drop-shadow-sm">
             {event.name}
           </h1>
 
@@ -190,92 +364,92 @@ export const EventDetailPage: FC = () => {
               {event.blurb}
             </p>
           )}
+        </div>
 
-          {/* Compact Horizontal Facts Strip with Primary Action Beside It */}
-          <div className="mt-4 p-4 rounded-xl bg-[#0D1020] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
-              <div>
-                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Date & Time</span>
-                <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.schedule_summary)}</span>
-              </div>
-              {scheduleVenue && (
-                <div>
-                  <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Venue</span>
-                  <span className="text-[#F3EFE8] font-medium">{scheduleVenue}</span>
-                </div>
-              )}
-              {event.min_teamsize && event.max_teamsize && (
-                <div>
-                  <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Team Size</span>
-                  <span className="text-[#F3EFE8] font-medium">
-                    {event.min_teamsize === event.max_teamsize
-                      ? `${event.min_teamsize} Member${event.min_teamsize > 1 ? 's' : ''}`
-                      : `${event.min_teamsize} – ${event.max_teamsize} Members`}
-                  </span>
-                </div>
-              )}
-              {event.registration_deadline && (
-                <div>
-                  <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Deadline</span>
-                  <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.registration_deadline)}</span>
-                </div>
-              )}
-              <div>
-                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Status</span>
-                {event.registration_status && (
-                  <StatusBadge type="registration" status={event.registration_status} size="sm" />
-                )}
-              </div>
+        {/* Compact Horizontal Facts Strip with Primary Action Beside It & 48px Heart */}
+        <div className="p-4 rounded-xl bg-[#0D1020] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+            <div>
+              <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Date & Time</span>
+              <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.schedule_summary)}</span>
             </div>
-
-            {/* Primary Action Button beside facts strip + Heart Toggle */}
-            <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10 flex items-center gap-2">
-              {isOpen ? (
-                <a
-                  href="#summary-card"
-                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95"
-                >
-                  Register
-                </a>
-              ) : (
-                <span className="inline-block px-2.5 py-1 rounded-[4px] border border-white/10 bg-[#141416] text-[12px] font-semibold font-sans normal-case text-[#9CA3AF]">
-                  {event.registration_status === 'SOLD_OUT'
-                    ? 'Sold out'
-                    : event.event_status === 'COMPLETED'
-                    ? 'Completed'
-                    : 'Registration closed'}
+            {scheduleVenue && (
+              <div>
+                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Venue</span>
+                <span className="text-[#F3EFE8] font-medium">{scheduleVenue}</span>
+              </div>
+            )}
+            {event.min_teamsize && event.max_teamsize && (
+              <div>
+                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Team Size</span>
+                <span className="text-[#F3EFE8] font-medium">
+                  {event.min_teamsize === event.max_teamsize
+                    ? `${event.min_teamsize} Member${event.min_teamsize > 1 ? 's' : ''}`
+                    : `${event.min_teamsize} – ${event.max_teamsize} Members`}
                 </span>
+              </div>
+            )}
+            {event.registration_deadline && (
+              <div>
+                <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Deadline</span>
+                <span className="font-mono text-[#F3EFE8] font-medium">{formatDateIST(event.registration_deadline)}</span>
+              </div>
+            )}
+            <div>
+              <span className="text-[#8E8A9F] block text-[10px] uppercase font-semibold">Status</span>
+              {event.registration_status && (
+                <StatusBadge type="registration" status={event.registration_status} size="sm" />
               )}
-
-              {/* Heart Toggle Button: 48px visual & hit area with 24px icon */}
-              <button
-                type="button"
-                onClick={() => event && toggleFavorite(event.id)}
-                aria-pressed={isFav}
-                aria-label={isFav ? `Remove ${event.name} from favorites` : `Add ${event.name} to favorites`}
-                className={`w-12 h-12 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl border bg-[#0D1020] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
-                  isFav
-                    ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
-                    : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
-                }`}
-              >
-                <svg
-                  className={`w-6 h-6 transition-transform ${
-                    isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-105' : 'fill-none text-[#B8B3C7]'
-                  }`}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </button>
             </div>
+          </div>
+
+          {/* Primary Action Button beside facts strip + Heart Toggle */}
+          <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10 flex items-center gap-2">
+            {isOpen ? (
+              <a
+                href="#summary-card"
+                className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-md"
+              >
+                Register
+              </a>
+            ) : (
+              <span className="inline-block px-2.5 py-1 rounded-[4px] border border-white/10 bg-[#141416] text-[12px] font-semibold font-sans normal-case text-[#9CA3AF]">
+                {event.registration_status === 'SOLD_OUT'
+                  ? 'Sold out'
+                  : event.event_status === 'COMPLETED'
+                  ? 'Completed'
+                  : 'Registration closed'}
+              </span>
+            )}
+
+            {/* Heart Toggle Button: 48px visual & hit area with 24px icon */}
+            <button
+              type="button"
+              onClick={() => event && toggleFavorite(event.id)}
+              aria-pressed={isFav}
+              aria-label={isFav ? `Remove ${event.name} from favorites` : `Add ${event.name} to favorites`}
+              className={`w-12 h-12 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl border bg-[#0D1020] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
+                isFav
+                  ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
+                  : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
+              }`}
+            >
+              <svg
+                className={`w-6 h-6 transition-transform ${
+                  isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-105' : 'fill-none text-[#B8B3C7]'
+                }`}
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </section>
@@ -747,14 +921,55 @@ export const EventDetailPage: FC = () => {
 
 const EventDetailSkeleton: FC = () => {
   return (
-    <div className="w-full min-h-screen bg-[#07060D] animate-pulse space-y-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)]">
-      <div className="w-full h-72 bg-[#0D1020]" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-4">
-          <div className="h-8 w-48 rounded bg-[#1A1030]" />
-          <div className="h-32 w-full rounded bg-[#1A1030]/60" />
+    <div
+      className="w-full min-h-screen bg-[#07060D] text-[#F3EFE8] pb-24 pt-[var(--navbar-height,64px)] animate-pulse overflow-x-clip"
+      role="status"
+      aria-label="Loading event details"
+    >
+      {/* 1. Banner image skeleton matching exact dimensions */}
+      <div className="w-full h-[240px] md:h-[55vh] md:min-h-[280px] md:max-h-[560px] bg-[#0D1020] relative border-b border-white/5" />
+
+      {/* 2. Hero content below banner image */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 md:-mt-12 space-y-5 w-full relative z-10">
+        {/* Breadcrumbs & Badges */}
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-28 rounded-lg bg-[#1A1030]" />
+          <div className="h-7 w-20 rounded-lg bg-[#1A1030]/70" />
         </div>
-        <div className="lg:col-span-4 h-72 rounded-xl bg-[#1A1030]/40" />
+
+        {/* Title & Blurb */}
+        <div className="space-y-3 pt-1">
+          <div className="h-10 sm:h-12 md:h-14 w-3/4 max-w-2xl rounded bg-[#1A1030]" />
+          <div className="h-4 w-full max-w-xl rounded bg-[#1A1030]/60" />
+        </div>
+
+        {/* Compact Horizontal Facts Strip & CTA */}
+        <div className="p-4 rounded-xl bg-[#0D1020] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="h-5 w-24 rounded bg-[#1A1030]" />
+            <div className="h-5 w-20 rounded bg-[#1A1030]" />
+            <div className="h-5 w-24 rounded bg-[#1A1030]" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-24 rounded-md bg-[#1A1030]" />
+            <div className="w-12 h-12 rounded-xl bg-[#1A1030]" />
+          </div>
+        </div>
+
+        {/* 3. Main layout: Overview + Summary Card */}
+        <div className="py-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="order-2 lg:order-1 lg:col-span-8 space-y-6">
+            <div className="p-6 rounded-xl bg-[#0D1020] border border-white/10 space-y-4">
+              <div className="h-6 w-32 rounded bg-[#1A1030]" />
+              <div className="space-y-2">
+                <div className="h-4 w-full rounded bg-[#1A1030]/60" />
+                <div className="h-4 w-5/6 rounded bg-[#1A1030]/60" />
+                <div className="h-4 w-4/6 rounded bg-[#1A1030]/60" />
+              </div>
+            </div>
+          </div>
+          <div className="order-1 lg:order-2 lg:col-span-4 h-80 rounded-xl bg-[#0D1020] border border-white/10 p-5" />
+        </div>
       </div>
     </div>
   );
