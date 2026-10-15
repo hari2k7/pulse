@@ -55,6 +55,8 @@ export interface FestivalConfig {
   expectedParticipants?: number;
   // TODO: Set confirmed colleges count
   participatingColleges?: number;
+  // TODO: Set general registration URL if available
+  registrationUrl?: string;
 }
 
 export const FESTIVAL_CONFIG: FestivalConfig = {
@@ -93,4 +95,7 @@ export const FESTIVAL_CONFIG: FestivalConfig = {
   // Unset = counters remain hidden.
   expectedParticipants: undefined,
   participatingColleges: undefined,
+
+  // TODO: Set official general registration link if external portal exists (unset = links to /events?registration=OPEN)
+  registrationUrl: undefined,
 };

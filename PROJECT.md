@@ -20,18 +20,27 @@ GSAP + ScrollTrigger (dynamic import only). ESLint with `eslint-plugin-jsx-a11y`
 No other animation, 3D or carousel libraries. No backend, no database, no auth.
 Deploy: Cloudflare Pages or Vercel (build `npm run build`, output `dist`, SPA rewrite).
 
-## 3. Routes
+## 3. Routes & Sling Ring Portal Architecture
 
 | Route | Purpose |
 |---|---|
-| `/` | Landing: Sling Ring portal hero, stats, countdown (Eye of Agamotto), featured horizontal scrub track, Sanctum footer |
-| `/events` | Discovery (Multiverse Index): search, multi-select filters, sort, uniform grid + timeline views |
-| `/events/:id` | Detail (Composed Layout): hero facts strip, overview + sticky summary, schedule & prizes, rules & FAQs, gallery & contacts |
+| `/` | Landing: Sling Ring portal hero with skippable intro sequence, ScrollTrigger scrub contraction, Multiverse chamber preview (4 realm portals), Artifacts of this Reality (featured 6), Time is Converging (countdown scrub), Sanctum About, Final Gateway ("YOUR NEXT REALITY STARTS HERE") |
+| `/events` | The Multiverse Index: Interactive realm portal selector row, archive controls (search, realm, date presets, status, mode, type, price, favorites), uniform grid with "ENTER DIMENSION" cards + timeline view, 12-card pagination |
+| `/events/:id` | Detail (Composed Layout): 60vh hero with realm breadcrumb ("EVENTS / {REALM} / {EVENT}"), composed sections ("INSIDE THIS REALITY"), sticky summary & mobile action bar, "READY TO ENTER THIS REALITY?" panel, "OTHER REALITIES WORTH EXPLORING" related row |
 | `/favorites` | Curated Saved Events: cross-tab synchronized favorites with uniform EventCard grid |
 | `*` | Not found |
 
-Pages `/events`, `/events/:id`, and `/favorites` are lazy-loaded (`React.lazy` + `Suspense`).
+All main routes are code-split (`React.lazy` + `Suspense`).
 There is NO `/schedule` page, route, or sitemap entry.
+
+### 3b. Data-Driven Realms (`src/lib/realms.ts`)
+Derived strictly from real API event data by precedence:
+1. `event_type === 'WORKSHOP'` -> **Creation Realm** (Emerald Green `#3DDC97`)
+2. Hackathon/competition categories -> **Challenge Realm** (Portal Orange `#FF7A1A`)
+3. Remaining `is_technical === true` -> **Tech Realm** (Electric Blue `#3BA3FF`)
+4. Remaining -> **Unbound Realm** (Amethyst Violet `#A66BFF`)
+
+Realms expose `id`, `name`, descriptor line (derived from present categories), accent color, real event count, and `realmOf(event)`. Exposed via CSS variable `--realm` for atmospheric page tinting. Hidden if count is 0. Sum of counts strictly equals total API events.
 
 ## 4. Events API (public, no auth, JSON, CORS open)
 
@@ -76,8 +85,9 @@ Detail rules from this data:
 ## 4b. Festival Configuration (`src/config/festival.ts`)
 
 Festival metadata is configured in `src/config/festival.ts`:
-- Optional fields: `festivalName`, `tagline`, `startDate` (ISO with +05:30), `endDate`, `venue`, `collegeName`, `organizers[]`, `sponsors[] {name, logoUrl, href, tier}`, `socials[]`, `contactEmail`, `expectedParticipants`, `participatingColleges`.
+- Optional fields: `festivalName`, `tagline`, `startDate` (ISO with +05:30), `endDate`, `venue`, `collegeName`, `organizers[]`, `sponsors[] {name, logoUrl, href, tier}`, `socials[]`, `contactEmail`, `expectedParticipants`, `participatingColleges`, `registrationUrl`.
 - **Strict honesty rule**: Anything unset is HIDDEN, never faked. Clear TODO comments indicate user-configurable fields.
+- When `registrationUrl` is set in `festival.ts`, general registration CTAs (like the Final Gateway) link out to it (`rel="noopener"`). When unset, they route to `/events?registration=OPEN` and state the live open count. Event-specific registration buttons link out ONLY if the event's API payload supplies a link, otherwise scrolling to the event summary panel.
 - There is NO `signInUrl` field. Sign In button is a dummy non-navigational button.
 - Countdown targets `festival.ts` `startDate`; if unset, falls back to the earliest upcoming ACTIVE event start from the API and labels it "Next event in". If neither exists, the countdown is hidden.
 - Counters: Real event list length live from API. Prize pool is summed ONLY from events whose detail data is loaded/cached in TanStack Query; if unavailable, the counter is hidden. Participants and colleges come ONLY from `festival.ts`, else hidden.
