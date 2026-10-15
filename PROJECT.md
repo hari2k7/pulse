@@ -145,7 +145,18 @@ No gradient text, no glow on everything, no glassmorphism, no identical-rounded-
   - Custom cursor active only on `(hover: hover)` and `(pointer: fine)` without reduced motion.
   - Small gold/orange diamond (10px square rotated 45deg) following within 1 frame.
   - Music-note trail from a pool of max 10 reused inline SVG notes drifting and fading in ~900ms.
-  - Class `has-custom-cursor` on `<html>` hides native cursor on interactive elements while preserving native text cursor on inputs/textareas/selects.
+  - Exactly one cursor visible at all times, decided solely by pointer position, NEVER by focus.
+  - Native zone (`input, textarea, select, [contenteditable="true"], [data-native-cursor]`): hides diamond, shows native cursor via high-specificity rules (including wrapper elements and labels). Outside native zone: diamond shows and native cursor is hidden, even if an input or select is focused. Recomputed on `pointermove`, `focusout`, `change`, and `window focus`.
+  - Native `<select>` (such as Sort) treated as native zone; state recomputes after popup closes on next `pointermove`, `focusout`, `change`, and `window focus`.
+- **Search & Controls**:
+  - Native browser clear/cancel/search decorations hidden on `input[type="search"]` via CSS (`::-webkit-search-cancel-button`, `::-webkit-search-decoration`, `::-webkit-search-results-button`, `::-webkit-search-results-decoration`, `::-ms-clear`, `::-ms-reveal`).
+  - Exactly ONE custom clear button: visible only when field has text, 44px hit area, `aria-label="Clear search"`, clears field & URL param, returns focus to input. Input has `pr-12` right padding so text never runs under button.
+- **Home Stats & Featured Row**:
+  - Prize pool calculated via `usePrizePool()` hook: fetches details of all ACTIVE events in idle queue (`requestIdleCallback`, max 3 concurrent, `staleTime: 30m`, skips on saveData/2G). Persisted in `localStorage["strange:prize-pool"]`. Slot always reserved with skeleton (0 CLS). Partial sum shows `+` suffix and retries once; complete sum shows exact total. GSAP count-up runs once when stat enters view.
+  - Featured Events row has a visible "Skip featured events" button beside heading, first focusable element in section, scrolls to next section (`#about` with `scroll-mt-20`) and focuses `h2#about-heading` (`tabindex="-1"`). Smooth scroll when motion allowed, instant under reduced motion.
+- **Event Detail Gallery & More in Theme**:
+  - Gallery images wrapped in `<button type="button">` with `aria-label="Open image N of M"` opening lazy-loaded `GalleryLightbox` (accessible modal dialog, `role="dialog"`, `aria-modal="true"`, focus trap, Escape, ArrowLeft/Right, touch swipe, neighbor preload only, spinner-free scaled thumbnail preview, error fallback card, body scroll lock, z-index above navbar/back-to-top, diamond cursor visible, back-to-top hidden).
+  - Final section after Contacts titled "More in {theme}" (from `src/lib/themes.ts` for current category): lists other events of same theme from cached list, excluding current event (upcoming/ACTIVE first, sorted by start date). Single horizontal CSS scroll-snap track of uniform `EventCard`s with 44px Previous/Next buttons (`aria-label="Scroll more events left/right"`, disabled at ends), keyboard scrollable (`tabIndex={0}`), swipe on touch, reset scroll to top on card click. Skeleton row in `EventDetailSkeleton`.
 - **Footer**:
   - Sanctum Sanctorum backdrop with slowly rotating seal (60s CSS).
   - Under multiverse coordinates: 5 round dummy icon buttons (Instagram, LinkedIn, X, YouTube, GitHub), 44px targets, thin gold border, subtle hover scale, `<button type="button">`, no navigation.
