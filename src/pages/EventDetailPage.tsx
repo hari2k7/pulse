@@ -354,7 +354,7 @@ export const EventDetailPage: FC = () => {
           height="1080"
           loading="eager"
           fetchPriority="high"
-          decoding="sync"
+          decoding="async"
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           onError={() => setImageFailed(true)}

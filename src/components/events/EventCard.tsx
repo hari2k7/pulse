@@ -142,7 +142,7 @@ export const EventCard: FC<EventCardProps> = ({
           height={400}
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : 'auto'}
-          decoding={priority ? 'sync' : 'async'}
+          decoding="async"
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           onError={() => setImageFailed(true)}
