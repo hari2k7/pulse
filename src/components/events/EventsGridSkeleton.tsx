@@ -110,9 +110,8 @@ export const EventsGridSkeleton: FC<EventsGridSkeletonProps> = ({ count = 9 }) =
                   className="flex flex-col h-full bg-[#0D1020] rounded-xl border border-white/10 p-3 sm:p-3.5 select-none animate-pulse motion-reduce:animate-none"
                   aria-hidden="true"
                 >
-                    {/* 3:2 Image block with small pills top-left and top-right */}
+                    {/* 3:2 Image block with ONLY top-right slots pill */}
                     <div className="relative aspect-[3/2] w-full rounded-lg bg-white/5 mb-3 overflow-hidden border border-white/10">
-                      <div className="absolute top-2.5 left-2.5 w-16 h-4 rounded bg-white/15" />
                       <div className="absolute top-2.5 right-2.5 w-20 h-4 rounded bg-white/15" />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0D1020] via-transparent to-transparent pointer-events-none" />
                     </div>
@@ -120,15 +119,21 @@ export const EventsGridSkeleton: FC<EventsGridSkeletonProps> = ({ count = 9 }) =
                     {/* Card Body */}
                     <div className="space-y-3 px-0.5 flex-1 flex flex-col justify-between">
                       <div className="space-y-2">
-                        {/* Date line with icon placeholder */}
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3.5 h-3.5 rounded-sm bg-white/15" />
-                          <div className="h-3 w-24 rounded bg-white/10" />
+                        {/* Type line placeholder */}
+                        <div className="h-3.5 w-24 rounded bg-white/10" />
+                        {/* Three-line title placeholder */}
+                        <div className="space-y-1.5 min-h-[4.2rem]">
+                          <div className="h-4.5 w-4/5 rounded bg-white/15" />
+                          <div className="h-4.5 w-3/5 rounded bg-white/10" />
+                          <div className="h-4.5 w-2/5 rounded bg-white/5" />
                         </div>
-                        {/* Two-line title */}
-                        <div className="space-y-1.5">
-                          <div className="h-5 w-4/5 rounded bg-white/15" />
-                          <div className="h-5 w-3/5 rounded bg-white/10" />
+                        {/* Date line with heart button placeholder */}
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-3.5 h-3.5 rounded-sm bg-white/15" />
+                            <div className="h-3 w-28 rounded bg-white/10" />
+                          </div>
+                          <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5" />
                         </div>
                       </div>
 

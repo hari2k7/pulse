@@ -8,6 +8,7 @@ import {
 } from '../../lib/images';
 import { formatDateIST } from '../../lib/format';
 import { useFavorites } from '../../lib/favorites';
+import { StatusBadge } from '../ui/StatusBadge';
 import type { EventSummary } from '../../lib/types';
 
 export interface EventCardProps {
@@ -126,10 +127,12 @@ export const EventCard: FC<EventCardProps> = ({
       <Link
         to={`/events/${event.id}`}
         onClick={handleCardClick}
+        title={title}
+        aria-label={title}
         {...handlers}
         className="group relative flex flex-col flex-1 h-full bg-[#0D1020] rounded-xl border border-white/10 card-strange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] p-3 sm:p-3.5 overflow-hidden transition-all hover:border-[#FF7A1A]/40"
       >
-      {/* 1. 3:2 Image with Category (top-left) and Slots Badge (top-right) */}
+      {/* 1. 3:2 Image with ONLY Slots Badge (top-right) */}
       <div className="relative w-full aspect-[3/2] rounded-lg overflow-hidden bg-[#07060D] shrink-0 border border-white/10">
         <img
           src={optimizedUrl}
@@ -149,18 +152,9 @@ export const EventCard: FC<EventCardProps> = ({
         {/* Ambient Dark Gradient Scrim at the bottom of the image */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0D1020] via-[#0D1020]/20 to-transparent pointer-events-none" />
 
-        {/* Category Label Top-Left (max-w ~45% with min-w-0 to guarantee no collision) */}
-        {category && (
-          <div className="absolute top-2.5 left-2.5 z-10 pointer-events-none max-w-[45%] min-w-0">
-            <span className="inline-block max-w-full truncate text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-black/80 border border-white/20 text-[#F3EFE8] backdrop-blur-sm">
-              {category}
-            </span>
-          </div>
-        )}
-
-        {/* Slots Badge Top-Right (max-w ~45% with min-w-0 to guarantee no collision) */}
+        {/* Slots Badge Top-Right ONLY (hidden when seat data missing or completed) */}
         {slotBadgeText && (
-          <div className="absolute top-2.5 right-2.5 z-10 pointer-events-none max-w-[45%] min-w-0 text-right">
+          <div className="absolute top-2.5 right-2.5 z-10 pointer-events-none max-w-[70%] min-w-0 text-right">
             <span className="inline-block max-w-full truncate text-[10px] sm:text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-black/80 border border-[#FF7A1A]/60 text-[#F5B642] backdrop-blur-sm">
               {slotBadgeText}
             </span>
@@ -168,34 +162,58 @@ export const EventCard: FC<EventCardProps> = ({
         )}
       </div>
 
-      {/* 2. Body: Date Row, Title, Full-Width Action Button */}
+      {/* 2. Body Order:
+          1) Type line ABOVE title + Status tag where it fits without crowding (flex-wrap, min-w-0)
+          2) Title with line-clamp-3 and fixed 3-line min-height
+          3) Date row with heart
+          4) Action button
+          5) Entry fee footer
+      */}
       <div className="pt-3 pb-1 flex-1 flex flex-col justify-between gap-3 min-w-0">
-        <div className="space-y-2 min-w-0 pr-10">
-          {/* Date Row with Calendar SVG Icon (hidden if missing) */}
-          {hasDate && (
-            <div className="flex items-center gap-1.5 text-xs text-[#8E8A9F]">
-              <svg
-                className="w-3.5 h-3.5 shrink-0 text-[#FF7A1A]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <span className="font-mono text-[11px] truncate">{dateFormatted}</span>
-            </div>
-          )}
+        <div className="space-y-2 min-w-0">
+          {/* Type line (small plain muted text, truncated 1 line) + Status tag */}
+          <div className="flex items-center justify-between gap-2 min-w-0 flex-wrap">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#8E8A9F] truncate max-w-[60%]">
+              {category || 'STRANGE'}
+            </span>
+            {event.registration_status && (
+              <StatusBadge type="registration" status={event.registration_status} size="sm" />
+            )}
+          </div>
 
-          {/* Title in bold, line-clamp-2 */}
-          <h3 className="font-display font-bold text-base sm:text-lg text-[#F3EFE8] line-clamp-2 leading-snug group-hover:text-[#FF7A1A] transition-colors break-words">
-            {title}
-          </h3>
+          {/* Title in bold, line-clamp-3 with reserved 3-line min-height for uniform card heights */}
+          <div className="min-h-[4.2rem]">
+            <h3 className="font-display font-bold text-[16px] leading-[1.3] text-[#F3EFE8] line-clamp-3 group-hover:text-[#FF7A1A] transition-colors break-words">
+              {title}
+            </h3>
+          </div>
+
+          {/* Date Row with heart button space beside it */}
+          <div className="flex items-center justify-between gap-2 min-w-0 pt-0.5">
+            {hasDate ? (
+              <div className="flex items-center gap-1.5 text-xs text-[#8E8A9F] min-w-0 truncate">
+                <svg
+                  className="w-3.5 h-3.5 shrink-0 text-[#FF7A1A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="font-mono text-[11px] truncate">{dateFormatted}</span>
+              </div>
+            ) : (
+              <div className="min-w-0" />
+            )}
+            {/* 48px reserved slot for heart button */}
+            <div className="w-12 h-12 shrink-0 pointer-events-none" aria-hidden="true" />
+          </div>
         </div>
 
         {/* Full-width Button (styled span, not a button element, goes to /events/:id) */}
@@ -377,39 +395,45 @@ export const EventCard: FC<EventCardProps> = ({
 
     {/* Heart (Favorites) toggle: a sibling of the Link (never nested inside it), placed in the card body next to the date row so it never overlaps image badges, z-index above the cloak lining, aria-pressed, aria-label "Add {name} to favorites" / "Remove {name} from favorites", 48px visual & hit area, stopPropagation, filled orange when active, thin border, short scale-pop (none under reduced motion), no layout shift */}
     <div className="absolute inset-0 pointer-events-none z-30 flex flex-col p-3 sm:p-3.5">
+      {/* Spacer matching 3:2 image */}
       <div className="w-full aspect-[3/2] shrink-0" aria-hidden="true" />
-      <div className="pt-2 flex justify-end" aria-hidden="true">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFavorite(event.id);
-          }}
-          aria-pressed={isFav}
-          aria-label={isFav ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
-          className={`pointer-events-auto -mt-1 -mr-1 w-12 h-12 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full border bg-[#07060D]/85 backdrop-blur-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
-            isFav
-              ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
-              : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
-          }`}
-        >
-          <svg
-            className={`w-6 h-6 transition-transform ${
-              isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-105' : 'fill-none text-[#B8B3C7] hover:text-[#FF7A1A]'
+      {/* Spacer matching body padding and elements above date row */}
+      <div className="pt-3 space-y-2" aria-hidden="true">
+        <div className="h-5" aria-hidden="true" />
+        <div className="min-h-[4.2rem]" aria-hidden="true" />
+        <div className="flex justify-end pt-0.5" aria-hidden="true">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(event.id);
+            }}
+            aria-pressed={isFav}
+            aria-label={isFav ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
+            className={`pointer-events-auto w-12 h-12 min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full border bg-[#07060D]/85 backdrop-blur-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
+              isFav
+                ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
+                : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
             }`}
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-            />
-          </svg>
-        </button>
+            <svg
+              className={`w-6 h-6 transition-transform ${
+                isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-105' : 'fill-none text-[#B8B3C7] hover:text-[#FF7A1A]'
+              }`}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -421,28 +445,33 @@ export const EventCardSkeleton: FC<{ className?: string }> = ({ className = '' }
     <div
       className={`flex flex-col bg-[#0D1020] rounded-xl border border-white/10 p-3 sm:p-3.5 select-none ${className}`}
     >
-      {/* 3:2 image block with small pill top-left and top-right */}
+      {/* 3:2 image block with ONLY top-right slots pill placeholder */}
       <div className="relative aspect-[3/2] w-full rounded-lg bg-white/5 mb-3 overflow-hidden">
-        <div className="absolute top-2.5 left-2.5 w-16 h-4 rounded bg-white/10" />
         <div className="absolute top-2.5 right-2.5 w-20 h-4 rounded bg-white/10" />
       </div>
 
       <div className="space-y-3 px-0.5 flex-1 flex flex-col justify-between">
         <div className="space-y-2">
-          {/* Date line with icon placeholder */}
-          <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-3.5 rounded-sm bg-white/10" />
-            <div className="h-3 w-28 rounded bg-white/10" />
+          {/* Type line placeholder */}
+          <div className="h-3.5 w-24 rounded bg-white/10" />
+          {/* Three-line title placeholder */}
+          <div className="space-y-1.5 min-h-[4.2rem]">
+            <div className="h-4.5 w-4/5 rounded bg-white/10" />
+            <div className="h-4.5 w-3/5 rounded bg-white/10" />
+            <div className="h-4.5 w-2/5 rounded bg-white/5" />
           </div>
-          {/* Two-line title */}
-          <div className="space-y-1.5">
-            <div className="h-5 w-4/5 rounded bg-white/10" />
-            <div className="h-5 w-3/5 rounded bg-white/10" />
+          {/* Date line with heart button placeholder */}
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3.5 h-3.5 rounded-sm bg-white/10" />
+              <div className="h-3 w-28 rounded bg-white/10" />
+            </div>
+            <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5" />
           </div>
         </div>
 
         {/* Full-width button block */}
-        <div className="h-9 w-full rounded-xl bg-white/10 mt-2" />
+        <div className="h-10 w-full rounded-xl bg-white/10 mt-1" />
 
         {/* Footer line */}
         <div className="pt-2.5 border-t border-white/10 flex items-center justify-between">
