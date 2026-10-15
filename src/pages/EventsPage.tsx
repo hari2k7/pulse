@@ -501,9 +501,12 @@ export const EventsPage: FC = () => {
             <EventTimeline events={filteredEvents} />
           ) : (
             /* Uniform Grid View: 1 col on mobile (375px), 2 on tablet (768px), 3 on desktop (1280px) */
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch content-visibility-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-stretch">
               {filteredEvents.map((event, index) => (
-                <div key={event.id} className="h-full">
+                <div
+                  key={event.id}
+                  className={`h-full ${index >= 2 ? 'content-visibility-auto' : ''}`}
+                >
                   <EventCard
                     event={event}
                     priority={index === 0}

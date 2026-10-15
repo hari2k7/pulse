@@ -195,7 +195,11 @@ export const EventDetailPage: FC = () => {
     setOpenFaqs((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
-  const { events: allEvents } = useEvents();
+  const [loadRelated, setLoadRelated] = useState(false);
+  useEffect(() => {
+    return runAfterLoadAndIdle(() => setLoadRelated(true));
+  }, []);
+  const { events: allEvents } = useEvents({ enabled: loadRelated });
   const moreTrackRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
   const [canScrollRight, setCanScrollRight] = useState<boolean>(false);

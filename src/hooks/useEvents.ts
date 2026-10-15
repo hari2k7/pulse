@@ -31,13 +31,26 @@ interface EventsState {
   error: ApiError | null;
 }
 
-export function useEvents(): UseEventsResult {
-  const [state, setState] = useState<EventsState>({
-    status: 'loading',
-    events: [],
-    stale: false,
-    fetchedAt: null,
-    error: null,
+export function useEvents(options?: { enabled?: boolean }): UseEventsResult {
+  const enabled = options?.enabled !== false;
+  const [state, setState] = useState<EventsState>(() => {
+    const cached = queryClient.getQueryData<GetEventsResult>(['events']);
+    if (cached) {
+      return {
+        status: 'success',
+        events: cached.events,
+        stale: cached.stale,
+        fetchedAt: cached.fetchedAt,
+        error: null,
+      };
+    }
+    return {
+      status: 'loading',
+      events: [],
+      stale: false,
+      fetchedAt: null,
+      error: null,
+    };
   });
   const [reloadIndex, setReloadIndex] = useState<number>(0);
 
@@ -51,6 +64,7 @@ export function useEvents(): UseEventsResult {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     let ignore = false;
     const isForce = reloadIndex > 0;
 
@@ -87,7 +101,7 @@ export function useEvents(): UseEventsResult {
     return () => {
       ignore = true;
     };
-  }, [reloadIndex]);
+  }, [reloadIndex, enabled]);
 
   return {
     status: state.status,
