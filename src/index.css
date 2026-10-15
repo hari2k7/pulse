@@ -189,6 +189,12 @@ html.has-custom-cursor select {
   cursor: pointer !important;
 }
 
+/* Instantaneous CSS suppression of diamond cursor over text inputs & selects */
+html.has-custom-cursor:has(input:hover, textarea:hover, select:hover, input:focus, textarea:focus, select:focus, [contenteditable="true"]:hover, [contenteditable="true"]:focus) .custom-diamond-cursor {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 /* Custom utilities */
 .font-display {
   font-family: var(--font-display);

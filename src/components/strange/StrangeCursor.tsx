@@ -138,7 +138,11 @@ export const StrangeCursor: FC = () => {
       }
 
       // Check if target is inside an input/textarea/select/contenteditable
-      const target = e.target as HTMLElement | null;
+      const hit =
+        typeof document !== 'undefined' && document.elementFromPoint
+          ? (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)
+          : null;
+      const target = hit || (e.target as HTMLElement | null);
       if (target) {
         const inputElement = !!target.closest(
           'input, textarea, select, [contenteditable="true"], [contenteditable=""]'
@@ -196,13 +200,31 @@ export const StrangeCursor: FC = () => {
       setIsVisible(true);
     };
 
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest(
+          'input, textarea, select, [contenteditable="true"], [contenteditable=""]'
+        )
+      ) {
+        setIsOnInput(true);
+      }
+    };
+
+    const handleFocusOut = () => {
+      setIsOnInput(false);
+    };
+
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('mousemove', handlePointerMove as unknown as EventListener, { passive: true });
     window.addEventListener('pointerdown', handlePointerDown, { passive: true });
     window.addEventListener('pointerup', handlePointerUp, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('mouseenter', handleMouseEnter);
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
 
     // Single rAF loop: diamond updates within 1 frame (zero lerp lag)
     const render = () => {
@@ -258,12 +280,15 @@ export const StrangeCursor: FC = () => {
       cancelAnimationFrame(animId);
       document.documentElement.classList.remove('has-custom-cursor');
       window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('mousemove', handlePointerMove as unknown as EventListener);
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('mouseenter', handleMouseEnter);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled]);
@@ -278,7 +303,7 @@ export const StrangeCursor: FC = () => {
       {/* 1. Small Diamond: roughly 10px square rotated 45deg, gold/orange fill with lighter outline */}
       <div
         ref={diamondRef}
-        className="absolute top-0 left-0 w-0 h-0 will-change-transform"
+        className="custom-diamond-cursor absolute top-0 left-0 w-0 h-0 will-change-transform"
         style={{
           opacity: isVisible && !isOnInput ? 1 : 0,
           transition: 'opacity 150ms ease-out',
