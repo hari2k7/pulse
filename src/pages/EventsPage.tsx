@@ -308,9 +308,11 @@ export const EventsPage: FC = () => {
                       updateFilters({ search: '' });
                     }}
                     aria-label="Remove search filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               )}
@@ -322,9 +324,11 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ themes: filters.themes.filter((t) => t !== theme) })}
                     aria-label={`Remove theme filter ${theme}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -336,9 +340,11 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ modes: filters.modes.filter((m) => m !== mode) })}
                     aria-label={`Remove mode filter ${mode}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -350,9 +356,11 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ types: filters.types.filter((t) => t !== type) })}
                     aria-label={`Remove format filter ${type}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -364,9 +372,11 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ prices: filters.prices.filter((p) => p !== price) })}
                     aria-label={`Remove admission filter ${price}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -378,9 +388,11 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ statuses: filters.statuses.filter((s) => s !== status) })}
                     aria-label={`Remove status filter ${status}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -392,9 +404,11 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ technical: filters.technical.filter((t) => t !== tech) })}
                     aria-label={`Remove track filter ${tech}`}
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -406,9 +420,11 @@ export const EventsPage: FC = () => {
                     type="button"
                     onClick={() => updateFilters({ showPast: false })}
                     aria-label="Remove past events filter"
-                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1"
+                    className="text-[#B8B3C7] hover:text-[#F3EFE8] ml-1 p-0.5 rounded focus:outline-none focus:ring-1 focus:ring-[#FF7A1A]"
                   >
-                    ×
+                    <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               )}

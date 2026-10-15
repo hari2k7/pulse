@@ -76,14 +76,14 @@ export const MultiverseHero: FC<MultiverseHeroProps> = ({ firstOpenEvent }) => {
     };
   }, []);
 
-  // Registration CTA behavior per Non-Negotiable Constraint 2
+  // Registration CTA behavior per 1.2 and 4.1 (plain text Register label, no arrows)
   const registerCta = firstOpenEvent?.registration_status === 'OPEN'
     ? {
         label: 'Register',
         to: `/events/${firstOpenEvent.id}`,
       }
     : {
-        label: 'How to Register',
+        label: 'Register',
         to: '/events',
       };
 

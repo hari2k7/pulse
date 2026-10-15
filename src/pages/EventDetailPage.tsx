@@ -518,7 +518,9 @@ export const EventDetailPage: FC = () => {
                       <ul className="space-y-1.5">
                         {event.eligibility.map((el, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <span className="text-[#3DDC97] shrink-0">✓</span>
+                            <svg className="w-3.5 h-3.5 text-[#3DDC97] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
                             <span>{el}</span>
                           </li>
                         ))}
@@ -592,9 +594,16 @@ export const EventDetailPage: FC = () => {
                           className="w-full p-3.5 text-left flex items-center justify-between gap-3 font-semibold text-xs sm:text-sm text-[#F3EFE8] hover:text-[#FF7A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]"
                         >
                           <span>{faq.question}</span>
-                          <span className="font-mono text-base text-[#FF7A1A] shrink-0">
-                            {isOpenState ? '−' : '+'}
-                          </span>
+                          <svg
+                            className={`w-4 h-4 text-[#FF7A1A] shrink-0 transition-transform duration-200 ${isOpenState ? 'rotate-180' : ''}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
                         </button>
                         {isOpenState && (
                           <div
