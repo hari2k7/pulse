@@ -7,8 +7,12 @@ import { FESTIVAL_CONFIG } from '../../config/festival';
 export const Footer: FC = () => {
   return (
     <footer className="relative bg-[#07060D] border-t border-[#FF7A1A]/20 pt-16 pb-12 px-4 sm:px-6 lg:px-8 mt-auto text-sm text-[#B8B3C7] overflow-hidden">
-      {/* Background Sanctum Seal Backdrop */}
-      <div className="absolute right-[-100px] sm:right-[-50px] bottom-[-80px] opacity-15 pointer-events-none select-none" aria-hidden="true">
+      {/* Background Sanctum Seal Backdrop with Slow CSS Rotation */}
+      <div
+        className="absolute right-[-100px] sm:right-[-50px] bottom-[-80px] opacity-15 pointer-events-none select-none animate-spell-spin"
+        style={{ animationDuration: '60s', transformOrigin: 'center' }}
+        aria-hidden="true"
+      >
         <SanctumSeal size={420} glow={false} />
       </div>
 
@@ -22,8 +26,9 @@ export const Footer: FC = () => {
             </p>
             <p className="text-xs text-[#B8B3C7] max-w-md leading-relaxed mt-1">
               Welcome to STRANGE, the multiverse convergence of technical innovation,
-              hackathons, robotics, and creative arts. Organized {FESTIVAL_CONFIG.collegeName ? `at ${FESTIVAL_CONFIG.collegeName}` : 'by the student council'}
-              {FESTIVAL_CONFIG.venue ? ` • Venue: ${FESTIVAL_CONFIG.venue}` : ''}.
+              hackathons, robotics, and creative arts.
+              {FESTIVAL_CONFIG.collegeName ? ` Organized at ${FESTIVAL_CONFIG.collegeName}` : ''}
+              {FESTIVAL_CONFIG.venue ? ` • Venue: ${FESTIVAL_CONFIG.venue}` : ''}
             </p>
             {FESTIVAL_CONFIG.contactEmail && (
               <p className="text-xs text-[#B8B3C7] mt-1">
@@ -38,7 +43,7 @@ export const Footer: FC = () => {
             )}
           </div>
 
-          {/* Navigation */}
+          {/* Realms: Events & Favorites */}
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-[#F3EFE8] mb-4">
               Realms
@@ -54,6 +59,11 @@ export const Footer: FC = () => {
                   Events
                 </Link>
               </li>
+              <li>
+                <Link to="/favorites" className="hover:text-[#F3EFE8] transition-colors">
+                  Favorites
+                </Link>
+              </li>
               {import.meta.env.DEV && (
                 <li>
                   <Link to="/styleguide" className="hover:text-[#F3EFE8] transition-colors">
@@ -64,18 +74,23 @@ export const Footer: FC = () => {
             </ul>
           </div>
 
-          {/* Connect */}
+          {/* Connect / Config-driven items only */}
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-[#F3EFE8] mb-4">
-              Connect
+              Sanctum
             </h2>
             <ul className="flex flex-col gap-2.5 text-xs">
-              <li>
-                <a href="/#about" className="hover:text-[#F3EFE8] transition-colors">
-                  About STRANGE
-                </a>
-              </li>
-              {FESTIVAL_CONFIG.socials && FESTIVAL_CONFIG.socials.length > 0 &&
+              {FESTIVAL_CONFIG.venue && (
+                <li className="text-[#B8B3C7]">
+                  Venue: {FESTIVAL_CONFIG.venue}
+                </li>
+              )}
+              {FESTIVAL_CONFIG.organizers && FESTIVAL_CONFIG.organizers.length > 0 && (
+                <li className="text-[#B8B3C7]">
+                  Organized by: {FESTIVAL_CONFIG.organizers.join(', ')}
+                </li>
+              )}
+              {FESTIVAL_CONFIG.socials && FESTIVAL_CONFIG.socials.length > 0 ? (
                 FESTIVAL_CONFIG.socials.map((social) => (
                   <li key={social.platform}>
                     <a
@@ -88,7 +103,10 @@ export const Footer: FC = () => {
                       {social.platform}
                     </a>
                   </li>
-                ))}
+                ))
+              ) : (
+                <li className="text-[#8E8A9F]">Official multiverse coordinates</li>
+              )}
             </ul>
           </div>
         </div>
