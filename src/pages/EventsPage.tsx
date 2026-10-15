@@ -9,7 +9,6 @@ import { EventTimeline } from '../components/events/EventTimeline';
 import { FilterDrawer } from '../components/events/FilterDrawer';
 import { EventsGridSkeleton } from '../components/events/EventsGridSkeleton';
 import { PortalSelectorRow } from '../components/events/PortalSelectorRow';
-import { ArrivalRingTrace } from '../components/events/ArrivalRingTrace';
 import { EmptyState } from '../components/states/EmptyState';
 import { ErrorState } from '../components/states/ErrorState';
 import { Button } from '../components/ui/Button';
@@ -166,9 +165,6 @@ export const EventsPage: FC = () => {
       className="w-full min-h-screen bg-[#07060D] text-[#F3EFE8] pt-[calc(var(--navbar-height)+20px)] md:pt-[calc(var(--navbar-height)+32px)] pb-24"
       style={{ '--realm': realmAccent } as CSSProperties}
     >
-      {/* 0. Arrival Ring Trace (In-app navigation only, <=600ms, skippable) */}
-      <ArrivalRingTrace />
-
       {/* Screen reader live announcement */}
       <div className="sr-only" aria-live="polite">
         {announceText}
