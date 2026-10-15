@@ -196,7 +196,7 @@ export const GalleryLightbox: FC<GalleryLightboxProps> = ({
     >
       {/* Top bar: counter & close button */}
       <div className="absolute top-4 inset-x-4 sm:inset-x-6 flex items-center justify-between z-20 pointer-events-none">
-        <div className="pointer-events-auto px-3 py-1.5 rounded-lg bg-[#07060D]/80 border border-white/10 text-xs font-mono font-bold text-[#F3EFE8]">
+        <div id="lightbox-counter" className="pointer-events-auto px-3 py-1.5 rounded-lg bg-[#07060D]/80 border border-white/10 text-xs font-mono font-bold text-[#F3EFE8]">
           {currentIndex + 1} / {total}
         </div>
 
@@ -265,6 +265,7 @@ export const GalleryLightbox: FC<GalleryLightboxProps> = ({
 
             {/* High-res image */}
             <img
+              id="lightbox-active-img"
               key={currentUrl}
               src={currentUrl}
               alt={`${eventName} photo ${currentIndex + 1}`}
