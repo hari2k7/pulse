@@ -111,29 +111,36 @@ No gradient text, no glow on everything, no glassmorphism, no identical-rounded-
   - STRANGE logo (wordmark + circular sigil), spell circles, Eye of Agamotto, Sanctum seal, Cloak silhouette.
 - **Cards**:
   - ALL CARDS THE SAME SIZE across Home, `/events`, and `/favorites`.
-  - Single `<Link>` to `/events/:id` inside a relative wrapper.
-  - Sibling heart toggle next to date row with 44px hit area and `stopPropagation`.
+  - Single `<Link>` to `/events/:id` inside a relative wrapper, with `title` and `aria-label`.
+  - Sibling heart toggle next to date row with 48px visual & hit area, 24px icon, and `stopPropagation`.
   - 3:2 image ratio, explicit width/height (600x400), lazy except LCP images.
-  - Category pill top-left, slot status pill top-right (each max-w 45%, min-w-0 to prevent overlap).
+  - Image has ONLY the slots-left pill top-right ("6 SLOTS LEFT", "TEAM SLOTS LEFT" when is_per_head is false, "ONLY 3 LEFT" at 5 or fewer, "SOLD OUT" when sold out, hidden when seat data is missing or event is completed).
+  - Body order: 1) Type line (raw category or theme name) above title with Status tag; 2) Title with line-clamp-3 and reserved 3-line min-height; 3) Date row with 48px heart slot; 4) Action button; 5) Entry fee footer.
   - Footer bar pinned with `mt-auto`.
   - Cloak peel + rotating portal on hover and focus-visible (~500ms). Reverses smoothly on leave.
   - Completely static under `prefers-reduced-motion` and touch devices.
+- **Status Badges**:
+  - Plain, small squared tag (radius 4px, 1px border, no blur), compact padding, sentence case text, semibold 12px body font.
+  - Natural muted tones with AA contrast on dark: open (soft green), sold out (muted brick red), closed/completed (grey).
+  - No blinking dots, pulse, ping, glow, gradient, or animations on any status badge.
 
 ## 6. Global Shell
 
 - **Navbar**:
-  - Floating centered bar (max-width ~1100px), near-black `#07060D` fill, no blur.
-  - Double gold/orange lines along top/bottom with pointed diamond-shaped ends and fine lattice pattern.
-  - Small diamond ornaments at center top/bottom lines, thin vertical dividers.
-  - Items: Home (house icon), Events (mandala icon), Favorites (heart icon) with always-visible uppercase labels.
-  - Active route: orange underline with small diamond, `aria-current="page"`.
-  - Center: STRANGE wordmark.
-  - Right: pill button "Sign In" with glowing orange outline and up-right arrow (`<button type="button">`, dummy, no onClick/navigation/modal/auth).
-  - Mobile: compact version fitting 375px without horizontal scroll.
+  - 3-column grid layout: `grid-template-columns: 1fr auto 1fr`, left group justify-self start, logo in the exact center column, dummy Sign In pill justify-self end. Logo is mathematically centered within 1px at every width (768, 1024, 1280, 1920).
+  - Mobile (below lg and at 375px): simplified floating bar showing only the STRANGE logo and a 44px hamburger `<button>` with aria-expanded/aria-controls.
+  - Mobile Menu Panel: full-width drawer under bar with Home, Events, Favorites, and dummy Sign In pill. Trap focus while open, body scroll lock, morphing icon, close on Escape, route change, outside click, or resize to desktop.
   - One shared CSS variable `--navbar-height`; pages start with `padding-top = var(--navbar-height) + 32px` mobile / `48px` desktop.
 - **ScrollToTop**:
   - Enforces `window.scrollTo({ top: 0, left: 0, behavior: "instant" })` on pathname changes (NOT search param changes) when navigation is not "POP".
   - Preserves back/forward scroll restoration. Scrolls hash element into view if present.
+- **Back to Top Cloak Button** (Home and `/events` only):
+  - Fixed bottom-right (20px, bottom: calc(20px + env(safe-area-inset-bottom))), 56px visual size, 48px min hit area.
+  - Original inline SVG floating red Cloak of Levitation with upward glowing arrow.
+  - Tooltip "Back to Top" on hover/focus (hidden on touch).
+  - Visibility: Home appears when hero is 100% out of view (IntersectionObserver); Events appears after scrolling 600px; hidden at top.
+  - States: idle gentle float, unfurl on hover, 600ms upward sweep + 12 pooled gold particles on click, smooth scroll to top.
+  - Instant scroll and no animations under reduced motion / touch.
 - **Cursor**:
   - Custom cursor active only on `(hover: hover)` and `(pointer: fine)` without reduced motion.
   - Small gold/orange diamond (10px square rotated 45deg) following within 1 frame.
@@ -141,6 +148,7 @@ No gradient text, no glow on everything, no glassmorphism, no identical-rounded-
   - Class `has-custom-cursor` on `<html>` hides native cursor on interactive elements while preserving native text cursor on inputs/textareas/selects.
 - **Footer**:
   - Sanctum Sanctorum backdrop with slowly rotating seal (60s CSS).
+  - Under multiverse coordinates: 5 round dummy icon buttons (Instagram, LinkedIn, X, YouTube, GitHub), 44px targets, thin gold border, subtle hover scale, `<button type="button">`, no navigation.
   - Only real links to Events, Favorites, and config-driven items.
   - Copyright line and "SEE YOU IN ANOTHER REALITY."
   - Zero "Built with" text anywhere in the project.
