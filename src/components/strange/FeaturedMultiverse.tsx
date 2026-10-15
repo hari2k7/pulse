@@ -212,6 +212,31 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
     }
   };
 
+  const handleSkipFeatured = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const nextSection =
+      (sectionRef.current?.nextElementSibling as HTMLElement) || document.getElementById('about');
+    if (!nextSection) return;
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const behavior = prefersReduced ? 'instant' : 'smooth';
+
+    // Account for fixed floating navbar offset
+    const navbarOffset = 80;
+    const targetTop = nextSection.getBoundingClientRect().top + window.scrollY - navbarOffset;
+
+    window.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: behavior as ScrollBehavior,
+    });
+
+    const heading = nextSection.querySelector('h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  };
+
   // Spec: Hide the section if fewer than 3 events
   if (!shouldRender) {
     return null;
@@ -236,12 +261,21 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
               <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FF7A1A] block mb-1">
                 Curated Dimensions
               </span>
-              <h2
-                id="featured-multiverse-heading"
-                className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]"
-              >
-                FEATURED EVENTS
-              </h2>
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <h2
+                  id="featured-multiverse-heading"
+                  className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]"
+                >
+                  FEATURED EVENTS
+                </h2>
+                <a
+                  href="#about"
+                  onClick={handleSkipFeatured}
+                  className="px-3 py-1.5 rounded-lg bg-[#0D1020] border border-white/10 text-xs font-semibold text-[#F3EFE8] hover:border-[#FF7A1A] hover:text-[#FF7A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] inline-flex items-center"
+                >
+                  Skip featured events
+                </a>
+              </div>
             </div>
 
             <div className="flex items-center gap-4">

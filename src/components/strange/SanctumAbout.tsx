@@ -7,7 +7,7 @@ export const SanctumAbout: FC = () => {
   return (
     <section
       id="about"
-      className="relative w-full pt-8 pb-16 sm:pt-10 sm:pb-20 bg-[#07060D] border-t border-[#FF7A1A]/20 overflow-hidden"
+      className="scroll-mt-20 relative w-full pt-8 pb-16 sm:pt-10 sm:pb-20 bg-[#07060D] border-t border-[#FF7A1A]/20 overflow-hidden"
       aria-labelledby="about-heading"
     >
       {/* Background Sanctum Seal Backdrop */}
@@ -21,7 +21,8 @@ export const SanctumAbout: FC = () => {
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-8">
         <h2
           id="about-heading"
-          className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]"
+          tabIndex={-1}
+          className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8] outline-none"
         >
           A TECH FEST BEYOND REALITY
         </h2>
