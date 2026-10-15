@@ -91,7 +91,15 @@ export interface EventDetailApiResponse {
   event: EventDetail;
 }
 
-export type ApiErrorKind = 'network' | 'timeout' | 'http' | 'notfound' | 'invalid';
+export type ApiErrorKind =
+  | 'network'
+  | 'timeout'
+  | 'http'
+  | 'notfound'
+  | 'invalid'
+  | 'circuit_open'
+  | 'offline'
+  | 'ratelimit';
 
 export interface GetEventsResult {
   events: EventSummary[];

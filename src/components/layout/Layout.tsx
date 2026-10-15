@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense, type FC, type ReactNode } from 're
 import { Outlet, useLocation } from 'react-router-dom';
 import { Footer } from './Footer';
 import { Navbar } from './Navbar';
+import { OfflineBanner } from './OfflineBanner';
 
 // Lazy-load cursor after first paint so it never blocks LCP or hydration
 const StrangeCursor = lazy(() =>
@@ -43,6 +44,9 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
 
       {/* Primary Sticky Header */}
       <Navbar />
+
+      {/* Global Offline Resilience Banner */}
+      <OfflineBanner />
 
       {/* Main Landmark */}
       <main id="main" className="w-full flex-1 flex flex-col outline-none">

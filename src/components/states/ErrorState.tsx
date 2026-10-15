@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { useState, useCallback, type FC } from 'react';
 import type { ApiErrorKind } from '../../lib/types';
 import { Button } from '../ui/Button';
 
@@ -11,31 +11,83 @@ export interface ErrorStateProps {
   className?: string;
 }
 
+const DEFAULT_ERROR_COPY: Record<ApiErrorKind, { title: string; message: string; badge: string }> = {
+  timeout: {
+    title: 'Connection Timed Out',
+    message: 'The multiverse coordinates took longer than 8 seconds to respond. Check your connection and try again.',
+    badge: 'Timeout (8s)',
+  },
+  network: {
+    title: 'Network Connection Failed',
+    message: 'Unable to reach the events service. Please verify your internet connection or try again shortly.',
+    badge: 'Network Error',
+  },
+  offline: {
+    title: 'You Are Currently Offline',
+    message: 'Your temporal connection is severed. Showing cached coordinates until connection restores.',
+    badge: 'Offline Mode',
+  },
+  http: {
+    title: 'Multiverse Server Error',
+    message: 'The upstream server encountered a temporal disruption (5xx). Please try again in a few moments.',
+    badge: 'Server Error',
+  },
+  ratelimit: {
+    title: 'Too Many Requests',
+    message: 'Rate limit exceeded (429). The portal is resting briefly before accepting new requests.',
+    badge: 'Rate Limited (429)',
+  },
+  invalid: {
+    title: 'Malformed Response Data',
+    message: 'The received coordinates could not be validated. Please try reloading.',
+    badge: 'Invalid Format',
+  },
+  notfound: {
+    title: 'Event Not Found',
+    message: 'The specified multiverse event does not exist or has been shifted to another reality.',
+    badge: 'Not Found (404)',
+  },
+  circuit_open: {
+    title: 'Circuit Breaker Active',
+    message: 'Repeated connection failures detected. Temporarily pausing requests for 15s to protect bandwidth.',
+    badge: 'Circuit Open (15s)',
+  },
+};
+
 export const ErrorState: FC<ErrorStateProps> = ({
-  title = 'Unable to load content',
-  message = 'A network or server error occurred. Please try again.',
+  title,
+  message,
   errorKind,
   onRetry,
   isRetrying = false,
   className = '',
 }) => {
-  const kindBadge = errorKind
-    ? {
-        network: 'Network Error',
-        timeout: 'Connection Timed Out (8s)',
-        http: 'Server Unavailable',
-        notfound: 'Resource Not Found',
-        invalid: 'Invalid Response Data',
-      }[errorKind]
-    : null;
+  const [retrying, setRetrying] = useState(false);
+
+  const copy = errorKind ? DEFAULT_ERROR_COPY[errorKind] : null;
+  const displayTitle = title || copy?.title || 'Unable to load content';
+  const displayMessage =
+    message || copy?.message || 'A network or server error occurred. Please try again.';
+  const displayBadge = copy?.badge;
+
+  const handleRetry = useCallback(() => {
+    if (retrying || isRetrying || !onRetry) return;
+    setRetrying(true);
+    onRetry();
+    setTimeout(() => {
+      setRetrying(false);
+    }, 800);
+  }, [retrying, isRetrying, onRetry]);
+
+  const busy = retrying || isRetrying;
 
   return (
     <div
-      className={`flex flex-col items-center justify-center text-center p-8 md:p-12 rounded-[4px] bg-[#1c1c1c] border border-red-500/20 max-w-lg mx-auto my-8 shadow-xl ${className}`}
+      className={`flex flex-col items-center justify-center text-center p-8 md:p-12 rounded-[4px] bg-[#0D1020] border border-[#FF7A1A]/30 max-w-lg mx-auto my-8 shadow-2xl ${className}`}
       role="alert"
-      aria-live="assertive"
+      aria-live="polite"
     >
-      <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-[#e50914] mb-4">
+      <div className="w-16 h-16 rounded-full bg-[#FF7A1A]/10 flex items-center justify-center text-[#FF7A1A] mb-4">
         <svg
           className="w-8 h-8"
           fill="none"
@@ -52,23 +104,26 @@ export const ErrorState: FC<ErrorStateProps> = ({
         </svg>
       </div>
 
-      {kindBadge && (
-        <span className="text-[11px] font-mono uppercase tracking-wider text-[#e50914] bg-[#e50914]/10 border border-[#e50914]/30 px-2 py-0.5 rounded-[4px] mb-3">
-          {kindBadge}
+      {displayBadge && (
+        <span className="text-[11px] font-mono uppercase tracking-wider text-[#F5B642] bg-[#FF7A1A]/10 border border-[#FF7A1A]/30 px-2.5 py-0.5 rounded-[4px] mb-3">
+          {displayBadge}
         </span>
       )}
 
-      <h2 className="text-xl md:text-2xl font-bold text-white mb-2">{title}</h2>
-      <p className="text-sm md:text-base text-[#b3b3b3] max-w-md mb-6 leading-relaxed">
-        {message}
+      <h2 className="text-xl md:text-2xl font-display font-bold text-[#F3EFE8] mb-2">
+        {displayTitle}
+      </h2>
+      <p className="text-sm md:text-base text-[#B8B3C7] max-w-md mb-6 leading-relaxed">
+        {displayMessage}
       </p>
 
       {onRetry && (
         <Button
           variant="primary"
           size="md"
-          onClick={onRetry}
-          isLoading={isRetrying}
+          onClick={handleRetry}
+          disabled={busy}
+          isLoading={busy}
           leftIcon={
             <svg
               className="w-4 h-4"
