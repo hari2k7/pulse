@@ -174,17 +174,13 @@ export const EventsPage: FC = () => {
         {/* 1. Page Header (Single H1 per page) */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-[#FF7A1A]/10 border border-[#FF7A1A]/30 mb-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A1A] animate-pulse" />
-              <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#FF7A1A]">
-                {events.length} Available Coordinates
-              </span>
-            </div>
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-[#F3EFE8] tracking-wider leading-none">
               THE MULTIVERSE INDEX
             </h1>
-            <p className="text-sm sm:text-base text-[#B8B3C7] mt-2 font-medium tracking-wide">
-              Every reality has something waiting for you.
+            <p className="text-sm sm:text-base text-[#B8B3C7] mt-3 font-medium tracking-wide">
+              {events.length > 0
+                ? `${events.length} events across 4 realms. Every reality has something waiting for you.`
+                : 'Every reality has something waiting for you.'}
             </p>
           </div>
 

@@ -63,14 +63,6 @@ export const SanctumAbout: FC = () => {
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-8">
-        {/* Subtle Realm Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0D1020] border border-[#F5B642]/30">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#F5B642]" />
-          <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#F5B642]">
-            The Sanctum Philosophy
-          </span>
-        </div>
-
         {/* Heading */}
         <h2
           id="about-heading"

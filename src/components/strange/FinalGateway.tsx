@@ -100,13 +100,6 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
 
       {/* Foreground Content */}
       <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center text-center space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF7A1A]/10 border border-[#FF7A1A]/40">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A1A] animate-ping" />
-          <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#FF7A1A]">
-            Temporal Nexus
-          </span>
-        </div>
-
         <h2
           id="gateway-heading"
           className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-[#F3EFE8] tracking-wider leading-tight drop-shadow-xl"

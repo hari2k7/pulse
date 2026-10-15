@@ -70,19 +70,15 @@ export const FavoritesPage: FC = () => {
       {/* Header with Title and Live Count */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
-              FAVORITES
-            </h1>
-            <span
-              aria-live="polite"
-              className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#FF7A1A]/20 border border-[#FF7A1A]/40 text-[#F5B642]"
-            >
-              {isLoading ? favorites.length : favoriteEvents.length}
-            </span>
-          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8]">
+            FAVORITES
+          </h1>
           <p className="text-sm text-[#B8B3C7]">
-            Your curated collection of bookmarked dimensions and competitions.
+            {isLoading
+              ? 'Loading your saved events...'
+              : `${favoriteEvents.length} saved ${
+                  favoriteEvents.length === 1 ? 'event' : 'events'
+                }. Your curated collection of bookmarked dimensions and competitions.`}
           </p>
         </div>
 

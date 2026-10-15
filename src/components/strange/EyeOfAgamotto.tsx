@@ -168,12 +168,14 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
 
       {/* Heading */}
       <div className="mb-6 flex flex-col items-center">
-        <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#FF7A1A] mb-1.5">
-          {isFallback ? 'Next event in' : 'Temporal Alignment'}
-        </span>
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-[#F3EFE8] tracking-wider">
           TIME IS CONVERGING.
         </h2>
+        {isFallback && (
+          <p className="text-xs sm:text-sm text-[#B8B3C7] mt-1 font-medium">
+            Next event in
+          </p>
+        )}
       </div>
 
       {/* The Eye of Agamotto Medallion Artwork */}

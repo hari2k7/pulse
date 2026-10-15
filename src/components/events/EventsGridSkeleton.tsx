@@ -22,8 +22,7 @@ export const EventsGridSkeleton: FC<EventsGridSkeletonProps> = ({ count = 12 }) 
       <span className="sr-only">Loading Multiverse Index</span>
 
       {/* 1. Header Row */}
-      <div className="border-b border-white/10 pb-6 space-y-2">
-        <div className="h-4 w-32 rounded bg-white/10 animate-pulse" />
+      <div className="border-b border-white/10 pb-6 space-y-3">
         <div className="h-10 sm:h-12 w-80 max-w-full rounded bg-white/15 animate-pulse" />
         <div className="h-4 w-64 max-w-full rounded bg-white/5 animate-pulse" />
       </div>

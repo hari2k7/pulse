@@ -259,9 +259,6 @@ export const FeaturedMultiverse: FC<FeaturedMultiverseProps> = ({ events }) => {
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#FF7A1A]/20 pb-6">
             <div>
-              <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#FF7A1A] block mb-1">
-                Curated Dimensions
-              </span>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <h2
                   id="featured-multiverse-heading"

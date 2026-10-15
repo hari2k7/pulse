@@ -58,12 +58,6 @@ export const ChamberPreview: FC<ChamberPreviewProps> = ({ events }) => {
       <div className="relative z-10 max-w-7xl mx-auto flex flex-col items-center">
         {/* Section Header */}
         <div className="text-center max-w-3xl mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF7A1A]/10 border border-[#FF7A1A]/30 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A1A] animate-pulse" />
-            <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#FF7A1A]">
-              Dimensional Gateways
-            </span>
-          </div>
           <h2
             id="chamber-heading"
             className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-[#F3EFE8] tracking-wider leading-tight"
