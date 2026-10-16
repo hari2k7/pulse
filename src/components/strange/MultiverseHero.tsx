@@ -160,15 +160,24 @@ export const MultiverseHero: FC = () => {
 
   // Scene 2 (Scroll): CSS sticky wrapper + GSAP ScrollTrigger on the wrapper
   useEffect(() => {
-    if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return;
+    if (typeof window === 'undefined' || isLite) return;
 
     let ctx: gsap.Context | null = null;
+    let cleanupListeners: (() => void) | null = null;
 
     const initScrollTrigger = async () => {
       try {
         const { gsap } = await import('gsap');
         const { ScrollTrigger } = await import('gsap/ScrollTrigger');
         gsap.registerPlugin(ScrollTrigger);
+
+        // Prevent mobile address bar height fluctuations from causing jumps
+        ScrollTrigger.config({
+          ignoreMobileResize: true,
+          autoRefreshEvents: 'visibilitychange,DOMContentLoaded,load',
+        });
+
+        let tl: gsap.core.Timeline | null = null;
 
         ctx = gsap.context(() => {
           const mm = gsap.matchMedia();
@@ -185,15 +194,54 @@ export const MultiverseHero: FC = () => {
 
             if (!wrapper || !textGroup) return;
 
-            const tl = gsap.timeline({
+            tl = gsap.timeline({
               scrollTrigger: {
                 trigger: wrapper,
-                start: 'top top',
-                end: 'bottom bottom',
+                start: () => 'top top',
+                end: () => 'bottom bottom',
                 scrub: 0.5,
+                invalidateOnRefresh: true,
+                fastScrollEnd: true,
                 onUpdate: (self) => {
                   const p = self.progress;
                   isHeroScrolledRef.current = p > 0.02;
+
+                  // Force full hero visibility at scroll 0 so resize/fullscreen never traps in end state
+                  if (p <= 0.005 || window.scrollY <= 2) {
+                    if (textGroup) {
+                      textGroup.style.opacity = '1';
+                      textGroup.style.transform = 'none';
+                      textGroup.style.pointerEvents = '';
+                    }
+                    if (ctaLink) {
+                      ctaLink.removeAttribute('tabindex');
+                    }
+                    if (exitVoidRef.current) {
+                      exitVoidRef.current.style.opacity = '0';
+                    }
+                    if (vignetteRef.current) {
+                      vignetteRef.current.style.opacity = '0';
+                    }
+                    if (singularityRef.current) {
+                      singularityRef.current.style.opacity = '0';
+                    }
+                    if (shockwaveRef.current) {
+                      shockwaveRef.current.style.opacity = '0';
+                    }
+                    if (ring) {
+                      ring.style.opacity = '1';
+                      ring.style.transform = 'none';
+                    }
+                    if (portal) {
+                      portal.style.opacity = '1';
+                      portal.style.transform = 'none';
+                    }
+                    if (chamber) {
+                      chamber.style.opacity = '1';
+                      chamber.style.transform = 'none';
+                    }
+                    return;
+                  }
 
                   // Scale < 0.5 happens around progress 0.22
                   const isShrunk = p >= 0.22;
@@ -386,6 +434,36 @@ export const MultiverseHero: FC = () => {
             }
           });
         }, wrapperRef);
+
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+        const debouncedRefresh = () => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            ScrollTrigger.refresh();
+            if (window.scrollY <= 5 && tl) {
+              tl.progress(0);
+            }
+          }, 150);
+        };
+
+        window.addEventListener('resize', debouncedRefresh, { passive: true });
+        window.addEventListener('orientationchange', debouncedRefresh, { passive: true });
+        document.addEventListener('fullscreenchange', debouncedRefresh);
+        document.addEventListener('webkitfullscreenchange', debouncedRefresh);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', debouncedRefresh);
+        }
+
+        cleanupListeners = () => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          window.removeEventListener('resize', debouncedRefresh);
+          window.removeEventListener('orientationchange', debouncedRefresh);
+          document.removeEventListener('fullscreenchange', debouncedRefresh);
+          document.removeEventListener('webkitfullscreenchange', debouncedRefresh);
+          if (window.visualViewport) {
+            window.visualViewport.removeEventListener('resize', debouncedRefresh);
+          }
+        };
       } catch (err) {
         console.warn('Hero GSAP scroll scrub skipped:', err);
       }
@@ -395,6 +473,7 @@ export const MultiverseHero: FC = () => {
 
     return () => {
       cancelIdle();
+      cleanupListeners?.();
       ctx?.revert();
     };
   }, [isLite]);
@@ -402,7 +481,7 @@ export const MultiverseHero: FC = () => {
   // Whether to use sticky layout (JS available + not lite + not reduced motion)
   // Computed once at mount using useMemo (stable in SPA — no SSR hydration).
   const useStickyLayout = useMemo(() => {
-    if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return false;
+    if (typeof window === 'undefined' || isLite) return false;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, [isLite]);
 
@@ -487,7 +566,7 @@ export const MultiverseHero: FC = () => {
 
           {/* Layer 2: Soft Volumetric Light Shafts (Desktop non-lite only) */}
           {!isLite && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 hidden lg:block" aria-hidden="true">
               <div className="absolute -top-[20%] left-[8%] w-[380px] sm:w-[520px] h-[140%] bg-gradient-to-b from-[#FFE082]/12 via-[#FF7A1A]/04 to-transparent rotate-[-24deg] origin-top blur-xl animate-light-shaft pointer-events-none" />
               <div className="absolute -top-[20%] right-[10%] w-[320px] sm:w-[460px] h-[140%] bg-gradient-to-b from-[#FFE082]/10 via-[#F5B642]/03 to-transparent rotate-[22deg] origin-top blur-xl animate-light-shaft pointer-events-none [animation-delay:4.5s]" />
             </div>
@@ -529,7 +608,7 @@ export const MultiverseHero: FC = () => {
 
           {/* Layer 5: Film Grain & Floating Dust Motes (Desktop non-lite only) */}
           {!isLite && (
-            <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-60 z-20" aria-hidden="true" />
+            <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-60 z-20 hidden lg:block" aria-hidden="true" />
           )}
 
           {!isLite && (
@@ -676,11 +755,6 @@ export const MultiverseHero: FC = () => {
           aria-hidden="true"
         />
       </div>
-
-      {/* After the sticky child ends: transparent spacer so the wrapper's bottom is reachable */}
-      {useStickyLayout && (
-        <div className="h-[100svh] pointer-events-none" aria-hidden="true" />
-      )}
     </div>
   );
 };
