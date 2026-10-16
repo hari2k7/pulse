@@ -1205,6 +1205,7 @@ export const EventDetailPage: FC = () => {
                     width={400}
                     height={300}
                     loading="lazy"
+                    decoding="async"
                     crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

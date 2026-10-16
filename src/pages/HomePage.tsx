@@ -147,7 +147,9 @@ export const HomePage: FC = () => {
       </SectionErrorBoundary>
 
       {/* Multiverse Partner Marquee (Rendered only if festival.ts sponsors exist) */}
-      <SponsorMarquee />
+      <div className="content-visibility-auto">
+        <SponsorMarquee />
+      </div>
 
       {/* Scene 8: Final Gateway (Register for Strange / Live Open Status) */}
       <SectionErrorBoundary sectionName="final-gateway">

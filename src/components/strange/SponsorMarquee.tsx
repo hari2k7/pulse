@@ -39,8 +39,11 @@ export const SponsorMarquee: FC = () => {
                   <img
                     src={sponsor.logoUrl}
                     alt={`${sponsor.name} logo`}
+                    width="120"
+                    height="32"
                     className="h-8 max-w-[140px] object-contain filter grayscale hover:grayscale-0 transition-all"
                     loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <span className="font-display font-bold text-sm tracking-wider text-[#F3EFE8]">
