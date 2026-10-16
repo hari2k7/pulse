@@ -4,7 +4,7 @@
 
 ---
 
-## 🌌 Overview & Design Rationale
+## Overview & Design Rationale
 
 **STRANGE** departs completely from conventional, flat corporate tech fest websites. The entire experience is architected around a single, cohesive visual metaphor: the **Sling Ring portal** connecting alternate realms of technical mastery.
 
@@ -19,7 +19,7 @@
 
 ---
 
-## 🔮 Data-Driven Realms (`src/lib/realms.ts`)
+## Data-Driven Realms (`src/lib/realms.ts`)
 
 Every event in the live API belongs to **exactly one realm**, derived strictly according to a deterministic four-tier precedence hierarchy:
 
@@ -44,7 +44,7 @@ Precedence 4: All remaining events                 -> Unbound Realm    (#A66BFF)
 
 ---
 
-## ⚡ Performance & Lighthouse Audit Results
+## Performance & Lighthouse Audit Results
 
 All pages meet and exceed the >= 85 performance threshold on both mobile and desktop.
 
@@ -65,7 +65,7 @@ All pages meet and exceed the >= 85 performance threshold on both mobile and des
 
 ---
 
-## 🛠️ Configuration Guide (`src/config/festival.ts`)
+## Configuration Guide (`src/config/festival.ts`)
 
 All overarching festival metadata is centralized in `src/config/festival.ts`.
 
@@ -105,7 +105,7 @@ export interface FestivalConfig {
 - [ ] `participatingColleges`: *Unset* (Hidden from stats)
 - [ ] `registrationUrl`: *Unset* (Registration is intentionally unavailable on this website; see Registration Notice below)
 
-### 📝 Registration Availability Notice
+### Registration Availability Notice
 Registration is **intentionally unavailable on this website** because the upstream backend API provides no registration URL, and this website features no checkout or registration flow. Under the project's strict data honesty principle, a clickable Register button with no real registration flow would be misleading.
 
 - **Current Behavior (`registrationUrl` unset)**:
@@ -127,7 +127,7 @@ Registration is **intentionally unavailable on this website** because the upstre
 
 ---
 
-## 🛡️ Reliability & Error Handling (Judge Test Steps)
+## Reliability & Error Handling (Judge Test Steps)
 
 STRANGE provides rock-solid fault tolerance against upstream API disruptions, offline conditions, and network anomalies:
 
@@ -158,7 +158,7 @@ STRANGE provides rock-solid fault tolerance against upstream API disruptions, of
 
 ---
 
-## 🚀 Scalability Readiness (Judge Test Steps)
+## Scalability Readiness (Judge Test Steps)
 
 Architected for 5,000–10,000 daily users with minimal server load and optimal caching:
 
@@ -180,7 +180,7 @@ Architected for 5,000–10,000 daily users with minimal server load and optimal 
 
 ---
 
-## 🎴 Favorites Page Dedicated 3-Column Grid
+## Favorites Page Dedicated 3-Column Grid
 
 Per Task 1 specifications:
 - `/events` remains 100% untouched with its original dynamic auto-fill grid.
@@ -194,7 +194,7 @@ Per Task 1 specifications:
 
 ---
 
-## 🎨 Original Artwork & Third-Party Disclosure
+## Original Artwork & Third-Party Disclosure
 
 - **Custom Artwork & SVGs**: All visual assets (`SlingRingPortal.tsx`, `SanctumChamberWorld.tsx`, `RealmWorldSvg.tsx`, `EyeOfAgamotto.tsx`, `SanctumAbout.tsx`, `FinalGateway.tsx`, and the Cloak of Levitation `BackToTop.tsx`) are 100% custom-crafted vector SVG and canvas implementations. Strictly no copyrighted Marvel assets, character likenesses, or external screenshot media are used.
 - **Typography**: Open-source Google Fonts (Cinzel, Inter) self-hosted locally in `/public/fonts/` with zero third-party font network dependencies.
@@ -203,7 +203,7 @@ Per Task 1 specifications:
 
 ---
 
-## 💻 Development & Production Commands
+## Development & Production Commands
 
 ```bash
 # Install dependencies
