@@ -181,7 +181,7 @@ export const EventDetailPage: FC = () => {
 
   // ScrollTrigger reveals: panels rise/fade with stagger, prizes count up, schedule timeline draws down, related cards slide in
   useEffect(() => {
-    if (typeof window === 'undefined' || isLite || !event) return;
+    if (typeof window === 'undefined' || isLite || !event || window.innerWidth < 768) return;
 
     let ctx: { revert: () => void } | undefined;
     let active = true;
@@ -284,11 +284,11 @@ export const EventDetailPage: FC = () => {
       }
     };
 
-    const timer = setTimeout(initDetailScroll, 40);
+    const cancelIdle = runAfterLoadAndIdle(initDetailScroll);
 
     return () => {
       active = false;
-      clearTimeout(timer);
+      cancelIdle();
       ctx?.revert();
     };
   }, [event, isLite]);

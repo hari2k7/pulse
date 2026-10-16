@@ -27,7 +27,7 @@ export class SimulatedApiError extends Error {
 }
 
 export function getSimMode(): SimMode | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !import.meta.env.DEV) {
     return null;
   }
 
@@ -48,8 +48,9 @@ export function getSimMode(): SimMode | null {
     'offline',
   ];
 
-  if (validModes.includes(param as SimMode)) {
-    return param as SimMode;
+  const normalized = param === '503' ? '503-with-retry-after' : param;
+  if (validModes.includes(normalized as SimMode)) {
+    return normalized as SimMode;
   }
 
   return null;

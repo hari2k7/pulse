@@ -7,6 +7,9 @@
 /index.html
   Cache-Control: public, max-age=0, must-revalidate, no-cache
 
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate, no-cache
+
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

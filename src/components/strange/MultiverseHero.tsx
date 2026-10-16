@@ -96,141 +96,7 @@ export const MultiverseHero: FC = () => {
     };
   }, [isLite]);
 
-  // P1: Hero Text Cursor-Proximity Variable Typography (Cinzel Variable wght 400-900)
-  useEffect(() => {
-    if (typeof window === 'undefined' || isLite) return;
-    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    if (isReduced || !hasFinePointer) return;
-
-    let cleanup = () => {};
-
-    const cancelIdle = runAfterLoadAndIdle(() => {
-      const h1 = h1Ref.current;
-      const sticky = stickyRef.current;
-      if (!h1 || !sticky) return;
-
-      const spans = Array.from(h1.querySelectorAll<HTMLSpanElement>('.hero-ch'));
-      if (spans.length !== 7) return;
-
-      // Lock advance width at max weight (900) to prevent layout shifts/CLS
-      spans.forEach((span) => {
-        span.style.fontVariationSettings = "'wght' 900";
-      });
-      const widths = spans.map((span) => {
-        const rect = span.getBoundingClientRect();
-        return Math.ceil(rect.width * 10) / 10;
-      });
-      spans.forEach((span, i) => {
-        span.style.width = `${widths[i]}px`;
-        span.style.fontVariationSettings = "'wght' 700";
-      });
-
-      // Cache bounding-box centers for all letters
-      const centers: { x: number; y: number }[] = [];
-      const updateCenters = () => {
-        centers.length = 0;
-        spans.forEach((span) => {
-          const rect = span.getBoundingClientRect();
-          centers.push({
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2,
-          });
-        });
-      };
-      updateCenters();
-
-      let pointerX = -9999;
-      let pointerY = -9999;
-      let pointerInside = false;
-      let rafId = 0;
-      let isRunning = false;
-      const currentWeights = [700, 700, 700, 700, 700, 700, 700];
-
-      const step = () => {
-        const isScrolled = isHeroScrolledRef.current;
-        let isSettled = true;
-
-        spans.forEach((span, i) => {
-          let targetWeight = 700;
-          if (!isScrolled && pointerInside && centers[i]) {
-            const dx = pointerX - centers[i].x;
-            const dy = pointerY - centers[i].y;
-            const dist = Math.hypot(dx, dy);
-
-            if (dist < 220) {
-              // Smooth cosine falloff from 900 at 0px to 400 at 220px
-              const t = (1 + Math.cos((dist / 220) * Math.PI)) / 2;
-              targetWeight = 400 + 500 * t;
-            } else {
-              targetWeight = 400;
-            }
-          }
-
-          const diff = targetWeight - currentWeights[i];
-          if (Math.abs(diff) > 0.4) {
-            currentWeights[i] += diff * 0.12;
-            isSettled = false;
-          } else {
-            currentWeights[i] = targetWeight;
-          }
-
-          span.style.fontVariationSettings = `'wght' ${Math.round(currentWeights[i])}`;
-        });
-
-        if (!isSettled || (pointerInside && !isScrolled)) {
-          rafId = requestAnimationFrame(step);
-        } else {
-          isRunning = false;
-          spans.forEach((span) => {
-            span.style.willChange = 'auto';
-          });
-        }
-      };
-
-      const startRaf = () => {
-        if (!isRunning) {
-          isRunning = true;
-          spans.forEach((span) => {
-            span.style.willChange = 'font-variation-settings';
-          });
-          rafId = requestAnimationFrame(step);
-        }
-      };
-
-      const handlePointerMove = (e: PointerEvent) => {
-        pointerX = e.clientX;
-        pointerY = e.clientY;
-        pointerInside = true;
-        startRaf();
-      };
-
-      const handlePointerLeave = () => {
-        pointerInside = false;
-        startRaf();
-      };
-
-      const handleResize = () => {
-        updateCenters();
-      };
-
-      sticky.addEventListener('pointermove', handlePointerMove, { passive: true });
-      sticky.addEventListener('pointerleave', handlePointerLeave, { passive: true });
-      window.addEventListener('resize', handleResize, { passive: true });
-
-      cleanup = () => {
-        cancelAnimationFrame(rafId);
-        sticky.removeEventListener('pointermove', handlePointerMove);
-        sticky.removeEventListener('pointerleave', handlePointerLeave);
-        window.removeEventListener('resize', handleResize);
-      };
-    }, 400);
-
-    return () => {
-      cancelIdle();
-      cleanup();
-    };
-  }, [isLite]);
+  // Criterion A: Hero variable typography effect removed per effect shedding order
 
   // Intro Sequence Phases: 'done' by default (SSR/immediate), or animated on first visit
   const [introPhase, setIntroPhase] = useState<'dark' | 'tracing' | 'igniting' | 'opening' | 'done'>('done');
@@ -293,9 +159,8 @@ export const MultiverseHero: FC = () => {
   }, [isLite, skipIntro]);
 
   // Scene 2 (Scroll): CSS sticky wrapper + GSAP ScrollTrigger on the wrapper
-  // NO pin, NO pin-spacer — just a tall div and sticky child.
   useEffect(() => {
-    if (typeof window === 'undefined' || isLite) return;
+    if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return;
 
     let ctx: gsap.Context | null = null;
 
@@ -537,7 +402,7 @@ export const MultiverseHero: FC = () => {
   // Whether to use sticky layout (JS available + not lite + not reduced motion)
   // Computed once at mount using useMemo (stable in SPA — no SSR hydration).
   const useStickyLayout = useMemo(() => {
-    if (typeof window === 'undefined' || isLite) return false;
+    if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return false;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, [isLite]);
 

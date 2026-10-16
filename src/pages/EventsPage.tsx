@@ -23,6 +23,7 @@ import {
   type EventSortOption,
 } from '../lib/filters';
 import { getRealms, getRealmMetadata, type RealmId } from '../lib/realms';
+import { runAfterLoadAndIdle } from '../lib/idle';
 
 export const EventsPage: FC = () => {
   useDocumentMeta({
@@ -140,7 +141,7 @@ export const EventsPage: FC = () => {
 
   // 1. Heading and portal row fade/rise once on initial render
   useEffect(() => {
-    if (budget === 'lite') return;
+    if (budget === 'lite' || (typeof window !== 'undefined' && window.innerWidth < 768)) return;
 
     let ctx: { revert: () => void } | undefined;
     let active = true;
@@ -170,10 +171,11 @@ export const EventsPage: FC = () => {
       }
     };
 
-    initHeaderAnim();
+    const cancelIdle = runAfterLoadAndIdle(initHeaderAnim);
 
     return () => {
       active = false;
+      cancelIdle();
       ctx?.revert();
     };
   }, [budget]);

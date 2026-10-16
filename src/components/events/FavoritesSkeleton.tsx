@@ -21,7 +21,7 @@ export const FavoritesSkeleton: FC = () => {
 
   return (
     <div
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[calc(100vh-var(--navbar-height,72px))]"
+      className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[calc(100vh-var(--navbar-height,72px))]"
       role="status"
       aria-label="Loading favorites"
     >

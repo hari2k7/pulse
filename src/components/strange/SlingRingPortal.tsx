@@ -32,9 +32,8 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
   const budget = useEffectsBudget();
   const isLite = budget === 'lite';
 
-  // Desktop non-lite shimmer support check
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-  const isShimmerAllowed = !isLite && isDesktop;
+  // Criterion A: Heat shimmer removed per effect shedding order
+  const isShimmerAllowed = false;
 
   // Single capped canvas sparks: loaded after window load + idle
   useEffect(() => {
@@ -173,27 +172,6 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      {/* 0. SVG Shimmer Filter Definition (only on ring element, never full screen) */}
-      <svg className="absolute w-0 h-0 overflow-hidden" aria-hidden="true">
-        <defs>
-          <filter id="portal-heat-shimmer" x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.035 0.08"
-              numOctaves="2"
-              result="warp"
-            >
-              <animate
-                attributeName="baseFrequency"
-                dur="9s"
-                values="0.035 0.08; 0.045 0.12; 0.035 0.08"
-                repeatCount="indefinite"
-              />
-            </feTurbulence>
-            <feDisplacementMap in="SourceGraphic" in2="warp" scale="4.5" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-      </svg>
 
       {/* Layer 1: Ambient Radial Golden Haze */}
       <div
