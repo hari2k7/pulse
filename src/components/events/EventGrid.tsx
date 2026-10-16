@@ -16,27 +16,21 @@ export interface EventGridProps {
   batchKey?: string;
   /** Extra classes on the grid root */
   className?: string;
+  /** Grid variant: 'default' (/events unchanged) or 'favorites' (3-col desktop on /favorites) */
+  variant?: 'default' | 'favorites';
 }
 
 /**
- * Shared EventGrid — identical container, columns, gap, and card for
- * /events (grid view) AND /favorites. No compact variant.
- *
- * Grid columns (P3):
- * - Below 640px  : 1 column (mobile unchanged)
- * - 640px+       : repeat(auto-fill, minmax(340px, 1fr)) — 2 cols @ 768, 3 @ 1280+
- * - Max-width    : 1440px (applied by page container)
- * - Gap          : 24px (sm+)
- *
- * Animation: GSAP ScrollTrigger.batch on unrevealed cards, tracks revealed IDs
- * in an internal ref. Never re-hides already-revealed cards. Resets when batchKey
- * changes (filter/search/sort change). New cards from "Show more" animate-in only.
+ * EventGrid — shared layout for /events and /favorites.
+ * - /events (default): repeat(auto-fill, minmax(340px, 1fr)) via .event-grid-root
+ * - /favorites: exactly 3 columns on desktop via .favorites-grid-root (Task 1)
  */
 export const EventGrid: FC<EventGridProps> = ({
   events,
   priorityCount = 2,
   batchKey = '',
   className = '',
+  variant = 'default',
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const budget = useEffectsBudget();
@@ -125,10 +119,12 @@ export const EventGrid: FC<EventGridProps> = ({
   // Re-run when events count changes (Show More added new cards) or batchKey reset
   }, [budget, events.length, batchKey]);
 
+  const rootClass = variant === 'favorites' ? 'favorites-grid-root' : 'event-grid-root';
+
   return (
     <div
       ref={gridRef}
-      className={`event-grid-root grid items-stretch ${className}`}
+      className={`${rootClass} grid items-stretch ${className}`}
     >
       {events.map((event, idx) => (
         <div
@@ -147,16 +143,24 @@ export const EventGrid: FC<EventGridProps> = ({
   );
 };
 
-/** Loading skeleton matching EventGrid column layout (P3) */
-export const EventGridSkeleton: FC<{ count?: number; className?: string }> = ({
+/** Loading skeleton matching EventGrid column layout */
+export const EventGridSkeleton: FC<{
+  count?: number;
+  className?: string;
+  variant?: 'default' | 'favorites';
+}> = ({
   count = 8,
   className = '',
-}) => (
-  <div className={`event-grid-root grid items-stretch ${className}`}>
-    {Array.from({ length: count }).map((_, i) => (
-      <div key={i} className="h-full">
-        <EventCardSkeleton className="h-full animate-pulse" />
-      </div>
-    ))}
-  </div>
-);
+  variant = 'default',
+}) => {
+  const rootClass = variant === 'favorites' ? 'favorites-grid-root' : 'event-grid-root';
+  return (
+    <div className={`${rootClass} grid items-stretch ${className}`}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="h-full">
+          <EventCardSkeleton className="h-full animate-pulse" />
+        </div>
+      ))}
+    </div>
+  );
+};

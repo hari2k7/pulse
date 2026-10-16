@@ -28,8 +28,10 @@
 > P6. LIGHTHOUSE 90+ MOBILE: fetchpriority high LCP, preconnect, preload font. Post-load+idle dynamic imports. Entry chunk <150KB gzip. srcset+sizes+lazy+decoding async+explicit w/h. content-visibility:auto below fold. Pause offscreen animations.
 > P7. BACKEND ERROR HANDLING: Audit all; distinct UI per failure; error boundaries; image fallback; localStorage resilient; npm run check script; README Reliability section.
 > P8. SCALABILITY: Hand-written sw.js (stale-while-revalidate assets/fonts, network-first+8s API, offline index.html). README Scalability section.
-> P9. VERIFY: screenshots 375/768/1280/1920, failure tests, Lighthouse before/after table, files changed report.
-
+> **Final Freeze Pass Rules (THIS PROMPT WINS — supersedes any prior entry)**:
+> F1. FAVORITES PAGE ONLY: 3 CARDS PER ROW. /events must stay EXACTLY as it is now (same grid, same card size, same skeleton). /favorites gets its own grid variant: below 640px 1 col; 640-1023px 2 cols; 1024px+ EXACTLY 3 cols at every desktop width. Container max-width 1240px, gap 24px, items-stretch, all cards equal size. 1 or 2 saved cards must never stretch wider than one column. Card width ~380-390px at 1280px. Favorites skeleton matches 3-column grid.
+> F2. REGISTER BUTTONS: "NOT AVAILABLE ON THIS WEBSITE" NOTICE. All real Register actions (FinalGateway, detail hero, sticky summary, mobile bottom action bar, "READY TO ENTER THIS REALITY?") render with aria-disabled="true" (not a link), visibly inactive (muted, non-gradient, no hover glow, cursor default), do not navigate/scroll/network. Plain text below: "Registration is not available on this website." On detail page add plain line below: "Registration status for this event: {status}". Connected with aria-describedby. Contrast AA, >=14px text. If registrationUrl is set in festival.ts, acts as normal link for OPEN events and notice is hidden. Landing FinalGateway removes link to /events?registration=OPEN.
+> F3. FINAL JUDGING-CRITERIA CHECK. Full audit of criteria A-F with PASS/FIXED/REMAINING table. Commit after each task.
 
 ## 1. Goal
 

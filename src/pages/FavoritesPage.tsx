@@ -68,7 +68,7 @@ export const FavoritesPage: FC = () => {
   // Error state with retry
   if (status === 'error' && favorites.length > 0 && favoriteEvents.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-16 min-h-[60vh] flex items-center justify-center">
+      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-16 min-h-[60vh] flex items-center justify-center">
         <ErrorState
           title="Multiverse Portal Disrupted"
           message={error?.message || 'Unable to load your saved favorites at this time.'}
@@ -82,7 +82,7 @@ export const FavoritesPage: FC = () => {
   const isLoading = status === 'loading' && favorites.length > 0;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[calc(100vh-var(--navbar-height,72px))]">
+    <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[calc(100vh-var(--navbar-height,72px))]">
       {/* Stale Cache Notice Banner */}
       {stale && (
         <div
@@ -123,9 +123,9 @@ export const FavoritesPage: FC = () => {
         </Link>
       </div>
 
-      {/* Shared EventGrid (identical layout to /events) */}
+      {/* Shared EventGrid with 3-column favorites layout (Task 1) */}
       {isLoading ? (
-        <EventGridSkeleton count={Math.min(favorites.length, 8)} />
+        <EventGridSkeleton count={Math.min(favorites.length, 6)} variant="favorites" />
       ) : favoriteEvents.length === 0 ? (
         <div className="py-12">
           <EmptyState
@@ -143,11 +143,12 @@ export const FavoritesPage: FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Shared EventGrid — same columns/gap/card as /events */}
+          {/* Shared EventGrid — variant="favorites" gives 3-col fixed desktop layout */}
           <EventGrid
             events={visibleEvents}
             priorityCount={2}
             batchKey="favorites"
+            variant="favorites"
           />
 
           {/* Auto-load sentinel */}
