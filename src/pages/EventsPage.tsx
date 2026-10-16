@@ -4,7 +4,7 @@ import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
 import { useFavorites } from '../lib/favorites';
 import { useEffectsBudget } from '../hooks/useEffectsBudget';
-import { EventCard } from '../components/events/EventCard';
+import { EventGrid } from '../components/events/EventGrid';
 import { EventFilters } from '../components/events/EventFilters';
 import { EventTimeline } from '../components/events/EventTimeline';
 import { FilterDrawer } from '../components/events/FilterDrawer';
@@ -134,10 +134,9 @@ export const EventsPage: FC = () => {
 
   const headerRef = useRef<HTMLDivElement>(null);
   const portalRowRef = useRef<HTMLElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const budget = useEffectsBudget();
-  const animatedCardsRef = useRef<Set<string>>(new Set());
-  const prevFilterKeyRef = useRef<string>(filterKey);
+  const isAutoLoadingRef = useRef<boolean>(false);
 
   // 1. Heading and portal row fade/rise once on initial render
   useEffect(() => {
@@ -179,85 +178,36 @@ export const EventsPage: FC = () => {
     };
   }, [budget]);
 
-  // 2. Cards fade-rise in batches (ScrollTrigger.batch, new batches from "Show 12 more" animate only the newly added cards, never the whole grid again, and never re-trigger on filter changes)
+  // Auto-load sentinel: IntersectionObserver triggers next 12 when sentinel enters viewport
   useEffect(() => {
-    if (budget === 'lite' || view === 'timeline') return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return;
 
-    const isFilterChange = filterKey !== prevFilterKeyRef.current;
-    prevFilterKeyRef.current = filterKey;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (isAutoLoadingRef.current) return;
 
-    let ctx: { revert: () => void } | undefined;
-    let active = true;
+        // Load next 12 only if more remain
+        setVisibleCount((prev) => {
+          const remaining = filteredEvents.length - prev;
+          if (remaining <= 0) return prev;
+          isAutoLoadingRef.current = true;
+          // Reset flag after a tick so we don't double-load
+          setTimeout(() => { isAutoLoadingRef.current = false; }, 400);
+          const next = prev + 12;
+          const shown = Math.min(next, filteredEvents.length);
+          setAnnounceText(`Showing ${shown} of ${filteredEvents.length} events`);
+          return next;
+        });
+      },
+      { rootMargin: '400px' }
+    );
 
-    const initBatch = async () => {
-      try {
-        const { gsap } = await import('gsap');
-        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-        gsap.registerPlugin(ScrollTrigger);
-
-        if (!active || !gridRef.current) return;
-
-        // If this render was triggered by a filter change:
-        // "never re-trigger on filter changes"
-        if (isFilterChange) {
-          const cardEls = gridRef.current.querySelectorAll<HTMLElement>('.event-batch-card');
-          cardEls.forEach((el) => {
-            el.setAttribute('data-revealed', 'true');
-            const id = el.getAttribute('data-event-card-id');
-            if (id) animatedCardsRef.current.add(id);
-            gsap.set(el, { opacity: 1, y: 0 });
-          });
-          ScrollTrigger.refresh();
-          return;
-        }
-
-        ctx = gsap.context(() => {
-          const mm = gsap.matchMedia();
-          mm.add('(prefers-reduced-motion: no-preference)', () => {
-            const unrevealed = gridRef.current?.querySelectorAll<HTMLElement>(
-              '.event-batch-card:not([data-revealed])'
-            );
-            if (!unrevealed || unrevealed.length === 0) return;
-
-            unrevealed.forEach((el) => {
-              el.setAttribute('data-revealed', 'true');
-              const id = el.getAttribute('data-event-card-id');
-              if (id) animatedCardsRef.current.add(id);
-            });
-
-            gsap.set(unrevealed, { opacity: 0, y: 24 });
-
-            ScrollTrigger.batch(unrevealed, {
-              start: 'top 85%',
-              once: true,
-              onEnter: (batch) => {
-                gsap.to(batch, {
-                  opacity: 1,
-                  y: 0,
-                  stagger: 0.08,
-                  duration: 0.5,
-                  ease: 'power2.out',
-                  overwrite: 'auto',
-                });
-              },
-            });
-
-            ScrollTrigger.refresh();
-          });
-        }, gridRef);
-      } catch {
-        // Fallback
-      }
-    };
-
-    const timer = setTimeout(initBatch, 30);
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-      ctx?.revert();
-    };
-  }, [budget, visibleEvents, filterKey, view]);
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [filteredEvents.length]);
 
   const handleShowMore = () => {
     const nextCount = visibleCount + 12;
@@ -660,23 +610,24 @@ export const EventsPage: FC = () => {
               /* Timeline View */
               <EventTimeline events={filteredEvents} />
             ) : (
-              /* Uniform Grid View */
-              <div className="space-y-10">
-                <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {visibleEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      data-event-card-id={event.id}
-                      className="event-batch-card h-full"
-                    >
-                      <EventCard event={event} />
-                    </div>
-                  ))}
-                </div>
+              /* Uniform Grid View — shared EventGrid (same layout as /favorites) */
+              <div className="space-y-6">
+                <EventGrid
+                  events={visibleEvents}
+                  priorityCount={2}
+                  batchKey={filterKey}
+                />
 
-                {/* Show 12 More Pagination Button */}
-                {remainingCount > 0 && (
-                  <div className="flex flex-col items-center justify-center pt-4 pb-8 space-y-2">
+                {/* Auto-load sentinel — IntersectionObserver triggers 12 more */}
+                <div ref={sentinelRef} aria-hidden="true" className="h-1" />
+
+                {/* Viewing count + fallback Show More button (saveData / lite / IO unavailable) */}
+                <div className="flex flex-col items-center justify-center pt-2 pb-6 gap-2">
+                  <span aria-live="polite" className="text-[11px] font-mono text-[#B8B3C7]">
+                    {announceText || `Viewing ${visibleEvents.length} of ${filteredEvents.length} events`}
+                  </span>
+
+                  {remainingCount > 0 && (
                     <button
                       type="button"
                       onClick={handleShowMore}
@@ -684,11 +635,8 @@ export const EventsPage: FC = () => {
                     >
                       Show {Math.min(12, remainingCount)} more events
                     </button>
-                    <span className="text-[11px] font-mono text-[#B8B3C7]">
-                      Viewing {visibleEvents.length} of {filteredEvents.length} total events
-                    </span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </main>

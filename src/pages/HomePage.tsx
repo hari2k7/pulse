@@ -3,10 +3,10 @@ import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
 import { usePrizePool } from '../hooks/usePrizePool';
 import { MultiverseHero } from '../components/strange/MultiverseHero';
-import { ChamberPreview } from '../components/strange/ChamberPreview';
-import { FeaturedMultiverse } from '../components/strange/FeaturedMultiverse';
 import { EyeOfAgamotto } from '../components/strange/EyeOfAgamotto';
 import { StatsSection } from '../components/strange/StatsSection';
+import { ChamberPreview } from '../components/strange/ChamberPreview';
+import { FeaturedMultiverse } from '../components/strange/FeaturedMultiverse';
 import { SanctumAbout } from '../components/strange/SanctumAbout';
 import { SponsorMarquee } from '../components/strange/SponsorMarquee';
 import { FinalGateway } from '../components/strange/FinalGateway';
@@ -81,40 +81,65 @@ export const HomePage: FC = () => {
 
   return (
     <div className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] overflow-x-clip">
-      {/* Scene 1 & 2: Multiverse Hero with Dominant Sling Ring Portal & Scroll Scrub */}
+      {/*
+       * SECTION ORDER (R3):
+       * 1. Hero (sticky closing wrapper — 260vh desktop / 180vh mobile)
+       * 2. Eye of Agamotto countdown ("TIME IS CONVERGING.")
+       * 3. Stats row + red cloak-fabric divider
+       * 4. "EVERY REALITY HAS AN EVENT." realm portals (ChamberPreview)
+       * 5. Featured ("ARTIFACTS OF THIS REALITY")
+       * 6. About (Sanctum)
+       * 7. Sponsor Marquee (hidden if no sponsors)
+       * 8. Final Gateway
+       * 9. Footer
+       */}
+
+      {/* Scene 1 & 2: Multiverse Hero with Dominant Sling Ring Portal & Sticky Scroll Closing */}
       <MultiverseHero />
 
-      {/* Scene 3: Multiverse Chamber Preview (4 Realm Portals) */}
-      <SectionErrorBoundary sectionName="chamber-preview">
-        <div className="content-visibility-auto">
-          <ChamberPreview events={events} />
-        </div>
-      </SectionErrorBoundary>
+      {/*
+       * Fade top edge up from darkness so there is no blank gap / abrupt cut
+       * after the hero wrapper ends.
+       */}
+      <div
+        className="w-full h-12 sm:h-16 bg-gradient-to-b from-[#07060D] to-transparent -mt-12 sm:-mt-16 pointer-events-none z-20 relative"
+        aria-hidden="true"
+      />
 
-      {/* Scene 4: Featured Artifacts of this Reality (Max 6 Cards) */}
-      <SectionErrorBoundary sectionName="featured-artifacts">
-        <div className="content-visibility-auto-lg">
-          <FeaturedMultiverse events={events} />
-        </div>
-      </SectionErrorBoundary>
-
-      {/* Scene 5: Time is Converging (Eye of Agamotto Countdown) */}
+      {/* Scene 3: Time Is Converging — Eye of Agamotto Countdown */}
       <SectionErrorBoundary sectionName="countdown">
-        <section className="relative w-full py-16 sm:py-20 md:py-24 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center z-20 content-visibility-auto">
+        <section
+          id="time-convergence"
+          className="relative w-full py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center z-20 content-visibility-auto"
+        >
           <div className="w-full max-w-2xl">
             <EyeOfAgamotto fallbackDate={earliestActiveDate} />
           </div>
         </section>
       </SectionErrorBoundary>
 
-      {/* Restored Stats Counter Row & Red Cloak Fabric Strip: Placed immediately AFTER countdown and before About */}
+      {/* Scene 4: Animated Stats Counter Row + Red Cloak-Fabric Divider */}
       <SectionErrorBoundary sectionName="stats">
         <div className="content-visibility-auto-sm">
           <StatsSection events={events} prizePool={prizePool} />
         </div>
       </SectionErrorBoundary>
 
-      {/* Scene 6: Sanctum About Narrative */}
+      {/* Scene 5: "EVERY REALITY HAS AN EVENT." — Multiverse Chamber Preview (4 Realm Portals) */}
+      <SectionErrorBoundary sectionName="chamber-preview">
+        <div className="content-visibility-auto">
+          <ChamberPreview events={events} />
+        </div>
+      </SectionErrorBoundary>
+
+      {/* Scene 6: Featured "ARTIFACTS OF THIS REALITY" (Max 6 Cards) */}
+      <SectionErrorBoundary sectionName="featured-artifacts">
+        <div className="content-visibility-auto-lg">
+          <FeaturedMultiverse events={events} />
+        </div>
+      </SectionErrorBoundary>
+
+      {/* Scene 7: Sanctum About Narrative */}
       <SectionErrorBoundary sectionName="about">
         <div className="content-visibility-auto">
           <SanctumAbout />
@@ -124,7 +149,7 @@ export const HomePage: FC = () => {
       {/* Multiverse Partner Marquee (Rendered only if festival.ts sponsors exist) */}
       <SponsorMarquee />
 
-      {/* Scene 7: Final Gateway (Register for Strange / Live Open Status) */}
+      {/* Scene 8: Final Gateway (Register for Strange / Live Open Status) */}
       <SectionErrorBoundary sectionName="final-gateway">
         <div className="content-visibility-auto">
           <FinalGateway events={events} />

@@ -1,9 +1,9 @@
-import { useState, useMemo, type FC } from 'react';
+import { useState, useEffect, useRef, useMemo, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
 import { useFavorites } from '../lib/favorites';
-import { EventCard, EventCardSkeleton } from '../components/events/EventCard';
+import { EventGrid, EventGridSkeleton } from '../components/events/EventGrid';
 import { EmptyState } from '../components/states/EmptyState';
 import { ErrorState } from '../components/states/ErrorState';
 
@@ -16,9 +16,11 @@ export const FavoritesPage: FC = () => {
   const { status, events, stale, error, retry } = useEvents();
   const { favorites } = useFavorites();
 
-  // Pagination per Task 5: 12 initial cards
+  // Pagination: 12 initial, +12 via scroll sentinel or button
   const [visibleCount, setVisibleCount] = useState<number>(12);
   const [announceText, setAnnounceText] = useState<string>('');
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const isAutoLoadingRef = useRef<boolean>(false);
 
   // Filter events from useEvents() by saved ids in favorites (ignore obsolete ids)
   const favoriteEvents = useMemo(() => {
@@ -27,10 +29,41 @@ export const FavoritesPage: FC = () => {
     return events.filter((e) => favSet.has(e.id));
   }, [events, favorites]);
 
-  // Visible batched favorite events per Task 5
+  // Visible batched favorite events
   const visibleEvents = useMemo(() => {
     return favoriteEvents.slice(0, visibleCount);
   }, [favoriteEvents, visibleCount]);
+
+  const remainingCount = favoriteEvents.length - visibleCount;
+
+  // Auto-load sentinel via IntersectionObserver
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (isAutoLoadingRef.current) return;
+
+        setVisibleCount((prev) => {
+          const remaining = favoriteEvents.length - prev;
+          if (remaining <= 0) return prev;
+          isAutoLoadingRef.current = true;
+          setTimeout(() => { isAutoLoadingRef.current = false; }, 400);
+          const next = prev + 12;
+          const shown = Math.min(next, favoriteEvents.length);
+          setAnnounceText(`Showing ${shown} of ${favoriteEvents.length} saved events`);
+          return next;
+        });
+      },
+      { rootMargin: '400px' }
+    );
+
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [favoriteEvents.length]);
 
   // Error state with retry
   if (status === 'error' && favorites.length > 0 && favoriteEvents.length === 0) {
@@ -49,7 +82,7 @@ export const FavoritesPage: FC = () => {
   const isLoading = status === 'loading' && favorites.length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[calc(100vh-var(--navbar-height,72px))]">
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-[calc(var(--navbar-height)+32px)] md:pt-[calc(var(--navbar-height)+48px)] pb-12 md:pb-16 space-y-8 bg-[#07060D] text-[#F3EFE8] min-h-[calc(100vh-var(--navbar-height,72px))]">
       {/* Stale Cache Notice Banner */}
       {stale && (
         <div
@@ -90,15 +123,9 @@ export const FavoritesPage: FC = () => {
         </Link>
       </div>
 
-      {/* Empty State vs Uniform Shared EventCard Grid */}
+      {/* Shared EventGrid (identical layout to /events) */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-          {Array.from({ length: Math.min(favorites.length, 6) }).map((_, i) => (
-            <div key={i} className="h-full">
-              <EventCardSkeleton className="animate-pulse h-full" />
-            </div>
-          ))}
-        </div>
+        <EventGridSkeleton count={Math.min(favorites.length, 8)} />
       ) : favoriteEvents.length === 0 ? (
         <div className="py-12">
           <EmptyState
@@ -116,33 +143,36 @@ export const FavoritesPage: FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {visibleEvents.map((event, index) => (
-              <div key={event.id} className={`h-full ${index >= 2 ? 'content-visibility-card' : ''}`}>
-                <EventCard event={event} priority={index === 0} className="h-full" />
-              </div>
-            ))}
-          </div>
+          {/* Shared EventGrid — same columns/gap/card as /events */}
+          <EventGrid
+            events={visibleEvents}
+            priorityCount={2}
+            batchKey="favorites"
+          />
 
-          {/* Show 12 more pagination button per Task 5 */}
-          {visibleCount < favoriteEvents.length && (
-            <div className="flex flex-col items-center justify-center pt-8 pb-4">
+          {/* Auto-load sentinel */}
+          <div ref={sentinelRef} aria-hidden="true" className="h-1" />
+
+          {/* Viewing count + fallback button */}
+          <div className="flex flex-col items-center justify-center pt-2 pb-4 gap-2">
+            <span aria-live="polite" className="text-[11px] font-mono text-[#B8B3C7]">
+              {announceText || `Viewing ${visibleEvents.length} of ${favoriteEvents.length} saved events`}
+            </span>
+
+            {remainingCount > 0 && (
               <button
                 type="button"
                 onClick={() => {
                   const next = Math.min(favoriteEvents.length, visibleCount + 12);
                   setVisibleCount(next);
-                  setAnnounceText(`Showing ${next} of ${favoriteEvents.length} favorite events`);
+                  setAnnounceText(`Showing ${next} of ${favoriteEvents.length} saved events`);
                 }}
                 className="px-6 py-3 rounded-[4px] bg-[#0D1020] hover:bg-[#1A1030] text-[#F3EFE8] hover:text-[#FF7A1A] font-display font-semibold text-sm tracking-wider uppercase border border-[#FF7A1A]/40 transition-all hover:border-[#FF7A1A] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer"
               >
                 Show 12 more
               </button>
-              <div aria-live="polite" className="sr-only">
-                {announceText}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
