@@ -485,11 +485,13 @@ export const MultiverseHero: FC = () => {
             <div className="w-12 sm:w-16 md:w-24 h-full bg-gradient-to-l from-[#040509] via-[#0E101B] to-transparent opacity-85 border-l border-[#F5B642]/10" />
           </div>
 
-          {/* Layer 2: Soft Volumetric Light Shafts */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-            <div className="absolute -top-[20%] left-[8%] w-[380px] sm:w-[520px] h-[140%] bg-gradient-to-b from-[#FFE082]/12 via-[#FF7A1A]/04 to-transparent rotate-[-24deg] origin-top blur-xl animate-light-shaft pointer-events-none" />
-            <div className="absolute -top-[20%] right-[10%] w-[320px] sm:w-[460px] h-[140%] bg-gradient-to-b from-[#FFE082]/10 via-[#F5B642]/03 to-transparent rotate-[22deg] origin-top blur-xl animate-light-shaft pointer-events-none [animation-delay:4.5s]" />
-          </div>
+          {/* Layer 2: Soft Volumetric Light Shafts (Desktop non-lite only) */}
+          {!isLite && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+              <div className="absolute -top-[20%] left-[8%] w-[380px] sm:w-[520px] h-[140%] bg-gradient-to-b from-[#FFE082]/12 via-[#FF7A1A]/04 to-transparent rotate-[-24deg] origin-top blur-xl animate-light-shaft pointer-events-none" />
+              <div className="absolute -top-[20%] right-[10%] w-[320px] sm:w-[460px] h-[140%] bg-gradient-to-b from-[#FFE082]/10 via-[#F5B642]/03 to-transparent rotate-[22deg] origin-top blur-xl animate-light-shaft pointer-events-none [animation-delay:4.5s]" />
+            </div>
+          )}
 
           {/* Layer 3: Dominant Sling Ring Portal (Behind Headline Text) */}
           <SectionErrorBoundary sectionName="hero-portal">
@@ -525,8 +527,10 @@ export const MultiverseHero: FC = () => {
             style={{ opacity: 0, background: 'radial-gradient(circle at center, transparent 25%, #07060D 65%)' }}
           />
 
-          {/* Layer 5: Film Grain & Floating Dust Motes */}
-          <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-60 z-20" aria-hidden="true" />
+          {/* Layer 5: Film Grain & Floating Dust Motes (Desktop non-lite only) */}
+          {!isLite && (
+            <div className="absolute inset-0 pointer-events-none bg-film-grain opacity-60 z-20" aria-hidden="true" />
+          )}
 
           {!isLite && (
             <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 hidden lg:block" aria-hidden="true">

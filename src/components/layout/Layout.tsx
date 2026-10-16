@@ -17,12 +17,16 @@ const BackToTop = lazy(() =>
 import { runAfterLoadAndIdle } from '../../lib/idle';
 import { SectionErrorBoundary } from '../common/SectionErrorBoundary';
 
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
+
 export interface LayoutProps {
   children?: ReactNode;
 }
 
 export const Layout: FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const budget = useEffectsBudget();
+  const isLite = budget === 'lite';
   const [mountCursor, setMountCursor] = useState(false);
   const showBackToTop = location.pathname === '/' || location.pathname === '/events';
 
@@ -57,8 +61,8 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       {/* Footer Landmark */}
       <Footer />
 
-      {/* Lazy-loaded atmospheric interactive cursor */}
-      {mountCursor && (
+      {/* Lazy-loaded atmospheric interactive cursor (desktop non-lite only) */}
+      {!isLite && mountCursor && (
         <SectionErrorBoundary sectionName="cursor">
           <Suspense fallback={null}>
             <StrangeCursor />
@@ -66,13 +70,26 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         </SectionErrorBoundary>
       )}
 
-      {/* Lazy-loaded Back to Top Cloak Button (Home and /events only) */}
-      {mountCursor && showBackToTop && (
-        <SectionErrorBoundary sectionName="back-to-top">
-          <Suspense fallback={null}>
-            <BackToTop />
-          </Suspense>
-        </SectionErrorBoundary>
+      {/* Lazy-loaded Back to Top Button (Home and /events only) */}
+      {showBackToTop && (
+        isLite ? (
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+            className="fixed bottom-6 right-6 z-40 p-3 rounded-full bg-[#1A1030]/90 border border-[#F5B642]/40 text-[#F5B642] shadow-lg active:scale-95"
+            aria-label="Back to top"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        ) : mountCursor && (
+          <SectionErrorBoundary sectionName="back-to-top">
+            <Suspense fallback={null}>
+              <BackToTop />
+            </Suspense>
+          </SectionErrorBoundary>
+        )
       )}
     </div>
   );

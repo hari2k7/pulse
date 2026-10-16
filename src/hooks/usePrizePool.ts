@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { getEvent, isCircuitOpen } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
 import { runAfterLoadAndIdle } from '../lib/idle';
+import { isLiteDevice } from './useEffectsBudget';
 import type { EventSummary, EventDetail } from '../lib/types';
 
 export interface UsePrizePoolResult {
@@ -88,6 +89,11 @@ export function usePrizePool(events: EventSummary[]): UsePrizePoolResult {
 
   useEffect(() => {
     if (typeof window === 'undefined' || events.length === 0 || isFetchingRef.current) {
+      return;
+    }
+
+    // Step 6: Never fetch in lite mode on mobile first load (use persisted value only)
+    if (isLiteDevice()) {
       return;
     }
 

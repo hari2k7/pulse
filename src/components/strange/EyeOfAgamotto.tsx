@@ -191,7 +191,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
         >
           <g ref={ringsGroupRef} style={{ transformOrigin: 'center' }}>
             {/* Ring 1 (Outer Ornate Shell): Slow Clockwise 45s */}
-            <g className="animate-spell-spin" style={{ animationDuration: '45s', animationPlayState: animState, transformOrigin: 'center' }}>
+            <g className={!isLite ? "animate-spell-spin" : ""} style={{ animationDuration: '45s', animationPlayState: animState, transformOrigin: 'center' }}>
               <circle cx="120" cy="120" r="112" stroke="#F5B642" strokeWidth="2" strokeOpacity="0.85" />
               <circle cx="120" cy="120" r="104" stroke="#FF7A1A" strokeWidth="1.2" strokeDasharray="3 5 8 5" strokeOpacity="0.7" />
               {/* Cardinal Relic Notches */}
@@ -202,7 +202,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
             </g>
 
             {/* Ring 2 (Runic Glyph Band): Counter-Clockwise 30s */}
-            <g className="animate-spell-spin-reverse" style={{ animationDuration: '30s', animationPlayState: animState, transformOrigin: 'center' }}>
+            <g className={!isLite ? "animate-spell-spin-reverse" : ""} style={{ animationDuration: '30s', animationPlayState: animState, transformOrigin: 'center' }}>
               <circle cx="120" cy="120" r="88" stroke="#3DDC97" strokeWidth="1.5" strokeOpacity="0.65" />
               <polygon
                 points="120,38 190,162 50,162"
@@ -219,7 +219,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
             </g>
 
             {/* Ring 3 (Interlocking Aperture): Clockwise 18s */}
-            <g className="animate-spell-spin" style={{ animationDuration: '18s', animationPlayState: animState, transformOrigin: 'center' }}>
+            <g className={!isLite ? "animate-spell-spin" : ""} style={{ animationDuration: '18s', animationPlayState: animState, transformOrigin: 'center' }}>
               <circle cx="120" cy="120" r="62" stroke="#FF7A1A" strokeWidth="2" strokeOpacity="0.9" />
               <path
                 d="M120 58 Q145 95 182 120 Q145 145 120 182 Q95 145 58 120 Q95 95 120 58 Z"
@@ -231,7 +231,7 @@ export const EyeOfAgamotto: FC<EyeOfAgamottoProps> = ({
             </g>
 
             {/* Center Eye Aperture: Time Stone Emerald Glow */}
-            <g className="animate-portal-pulse" style={{ transformOrigin: 'center' }}>
+            <g className={!isLite ? "animate-portal-pulse" : ""} style={{ transformOrigin: 'center' }}>
               <ellipse cx="120" cy="120" rx="36" ry="24" fill="#07060D" stroke="#3DDC97" strokeWidth="2.5" />
               <circle cx="120" cy="120" r="14" fill="#3DDC97" fillOpacity="0.3" stroke="#F5B642" strokeWidth="1.5" />
               <circle cx="120" cy="120" r="6" fill="#3DDC97" />

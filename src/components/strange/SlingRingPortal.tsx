@@ -187,7 +187,7 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
           isChamberVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
         }`}
         style={{
-          boxShadow: 'inset 0 0 35px rgba(255,122,26,0.5), inset 0 0 70px rgba(7,6,13,0.8)',
+          boxShadow: isLite ? undefined : 'inset 0 0 35px rgba(255,122,26,0.5), inset 0 0 70px rgba(7,6,13,0.8)',
         }}
       >
         <SanctumChamberWorld />
@@ -241,7 +241,7 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
           />
 
           {/* Layer B: Outer Fiery Corona Arc 1: Clockwise fast (14s) */}
-          <g className="animate-spell-spin" style={{ animationDuration: '14s', transformOrigin: '300px 300px' }}>
+          <g className={!isLite ? "animate-spell-spin" : ""} style={{ animationDuration: '14s', transformOrigin: '300px 300px' }}>
             <circle
               cx="300"
               cy="300"
@@ -259,7 +259,7 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
           </g>
 
           {/* Layer C: Inner Fiery Arc 2: Counter-Clockwise (10s) with varied thickness */}
-          <g className="animate-spell-spin-reverse" style={{ animationDuration: '10s', transformOrigin: '300px 300px' }}>
+          <g className={!isLite ? "animate-spell-spin-reverse" : ""} style={{ animationDuration: '10s', transformOrigin: '300px 300px' }}>
             <circle
               cx="300"
               cy="300"

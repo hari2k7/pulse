@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, type FC, type ChangeEvent, type CSSProperties } from 'react';
+import { useState, useMemo, useRef, useEffect, lazy, Suspense, type FC, type ChangeEvent, type CSSProperties } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
@@ -6,8 +6,13 @@ import { useFavorites } from '../lib/favorites';
 import { useEffectsBudget } from '../hooks/useEffectsBudget';
 import { EventGrid } from '../components/events/EventGrid';
 import { EventFilters } from '../components/events/EventFilters';
-import { EventTimeline } from '../components/events/EventTimeline';
-import { FilterDrawer } from '../components/events/FilterDrawer';
+
+const EventTimeline = lazy(() =>
+  import('../components/events/EventTimeline').then((m) => ({ default: m.EventTimeline }))
+);
+const FilterDrawer = lazy(() =>
+  import('../components/events/FilterDrawer').then((m) => ({ default: m.FilterDrawer }))
+);
 import { EventsGridSkeleton } from '../components/events/EventsGridSkeleton';
 import { PortalSelectorRow } from '../components/events/PortalSelectorRow';
 import { EmptyState } from '../components/states/EmptyState';
@@ -613,7 +618,9 @@ export const EventsPage: FC = () => {
               />
             ) : view === 'timeline' ? (
               /* Timeline View */
-              <EventTimeline events={filteredEvents} />
+              <Suspense fallback={<EventsGridSkeleton count={6} />}>
+                <EventTimeline events={filteredEvents} />
+              </Suspense>
             ) : (
               /* Uniform Grid View — shared EventGrid (same layout as /favorites) */
               <div className="space-y-6">
@@ -649,21 +656,23 @@ export const EventsPage: FC = () => {
       </div>
 
       {/* Mobile Filter Drawer */}
-      <FilterDrawer
-        isOpen={mobileDrawerOpen}
-        onClose={() => setMobileDrawerOpen(false)}
-        triggerRef={filterButtonRef}
-      >
-        <EventFilters
-          filters={filters}
-          onChange={updateFilters}
-          onReset={() => {
-            handleResetFilters();
-            setMobileDrawerOpen(false);
-          }}
-          hasActive={hasFilters}
-        />
-      </FilterDrawer>
+      <Suspense fallback={null}>
+        <FilterDrawer
+          isOpen={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          triggerRef={filterButtonRef}
+        >
+          <EventFilters
+            filters={filters}
+            onChange={updateFilters}
+            onReset={() => {
+              handleResetFilters();
+              setMobileDrawerOpen(false);
+            }}
+            hasActive={hasFilters}
+          />
+        </FilterDrawer>
+      </Suspense>
     </div>
   );
 };

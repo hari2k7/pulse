@@ -1,6 +1,7 @@
 import { useState, useMemo, type FC, type MouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePrefetchEvent } from '../../hooks/useEvents';
+import { useEffectsBudget } from '../../hooks/useEffectsBudget';
 import {
   getOptimizedImageUrl,
   getImageSrcSet,
@@ -36,6 +37,8 @@ export const EventCard: FC<EventCardProps> = ({
   const { handlers } = usePrefetchEvent(event.id);
   const [imageFailed, setImageFailed] = useState<boolean>(false);
   const [isExpanding, setIsExpanding] = useState<boolean>(false);
+  const budget = useEffectsBudget();
+  const isLite = budget === 'lite';
 
   const rawImageUrl = event.cover_image_url;
   const hasValidImage = Boolean(rawImageUrl && !imageFailed);
@@ -295,51 +298,53 @@ export const EventCard: FC<EventCardProps> = ({
           </div>
         </div>
 
-        {/* 3. Cloak of Levitation Backside Hover Reveal */}
-        <div className="cloak-backside" aria-hidden="true">
-          <div className="cloak-lining flex flex-col justify-between p-5 md:p-6 overflow-hidden relative">
-            <div className="space-y-2 min-w-0 relative z-10">
-              <div
-                className="text-xs font-bold uppercase tracking-widest truncate"
-                style={{ color: realm.accentColor }}
-              >
-                {realm.name}
+        {/* 3. Cloak of Levitation Backside Hover Reveal (Desktop non-lite only) */}
+        {!isLite && (
+          <div className="cloak-backside" aria-hidden="true">
+            <div className="cloak-lining flex flex-col justify-between p-5 md:p-6 overflow-hidden relative">
+              <div className="space-y-2 min-w-0 relative z-10">
+                <div
+                  className="text-xs font-bold uppercase tracking-widest truncate"
+                  style={{ color: realm.accentColor }}
+                >
+                  {realm.name}
+                </div>
+                <h4 className="card-portal-title font-display font-bold text-base sm:text-lg text-[#FFF8E7] line-clamp-2 leading-snug break-words">
+                  {title}
+                </h4>
+                <p className="text-xs sm:text-sm text-[#E8DCC0] line-clamp-3 leading-relaxed">
+                  {blurb}
+                </p>
               </div>
-              <h4 className="card-portal-title font-display font-bold text-base sm:text-lg text-[#FFF8E7] line-clamp-2 leading-snug break-words">
-                {title}
-              </h4>
-              <p className="text-xs sm:text-sm text-[#E8DCC0] line-clamp-3 leading-relaxed">
-                {blurb}
-              </p>
-            </div>
 
-            {/* Central Portal Opening */}
-            <div
-              className={`card-portal-container ${isExpanding ? 'portal-expanding' : ''}`}
-              aria-hidden="true"
-            >
-              <svg
-                viewBox="0 0 120 120"
-                className="w-full h-full overflow-visible drop-shadow-[0_0_12px_rgba(255,122,26,0.5)]"
+              {/* Central Portal Opening */}
+              <div
+                className={`card-portal-container ${isExpanding ? 'portal-expanding' : ''}`}
+                aria-hidden="true"
               >
-                <circle cx="60" cy="60" r="42" fill="#07060D" />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="45"
-                  stroke={realm.accentColor}
-                  strokeWidth="2.5"
-                  strokeDasharray="20 8 40 12"
-                />
-              </svg>
-            </div>
+                <svg
+                  viewBox="0 0 120 120"
+                  className="w-full h-full overflow-visible drop-shadow-[0_0_12px_rgba(255,122,26,0.5)]"
+                >
+                  <circle cx="60" cy="60" r="42" fill="#07060D" />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="45"
+                    stroke={realm.accentColor}
+                    strokeWidth="2.5"
+                    strokeDasharray="20 8 40 12"
+                  />
+                </svg>
+              </div>
 
-            <div className="relative z-10 flex items-center justify-between border-t border-[#D4AF37]/30 pt-2 text-xs text-[#FFE5A3] font-mono">
-              <span>{category || 'STRANGE'}</span>
-              <span>ENTER DIMENSION</span>
+              <div className="relative z-10 flex items-center justify-between border-t border-[#D4AF37]/30 pt-2 text-xs text-[#FFE5A3] font-mono">
+                <span>{category || 'STRANGE'}</span>
+                <span>ENTER DIMENSION</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </Link>
 
       {/* 4. Sibling Heart Button (Positioned over the reserved slot, no overlap, accessible, 48px hit area) */}

@@ -1,19 +1,34 @@
-import { useMemo, type FC } from 'react';
+import { useMemo, lazy, Suspense, type FC } from 'react';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useEvents } from '../hooks/useEvents';
 import { usePrizePool } from '../hooks/usePrizePool';
 import { MultiverseHero } from '../components/strange/MultiverseHero';
-import { EyeOfAgamotto } from '../components/strange/EyeOfAgamotto';
-import { StatsSection } from '../components/strange/StatsSection';
-import { ChamberPreview } from '../components/strange/ChamberPreview';
-import { FeaturedMultiverse } from '../components/strange/FeaturedMultiverse';
-import { SanctumAbout } from '../components/strange/SanctumAbout';
-import { SponsorMarquee } from '../components/strange/SponsorMarquee';
-import { FinalGateway } from '../components/strange/FinalGateway';
 import { ErrorState } from '../components/states/ErrorState';
 import { EmptyState } from '../components/states/EmptyState';
 import { Button } from '../components/ui/Button';
 import { SectionErrorBoundary } from '../components/common/SectionErrorBoundary';
+
+const EyeOfAgamotto = lazy(() =>
+  import('../components/strange/EyeOfAgamotto').then((m) => ({ default: m.EyeOfAgamotto }))
+);
+const StatsSection = lazy(() =>
+  import('../components/strange/StatsSection').then((m) => ({ default: m.StatsSection }))
+);
+const ChamberPreview = lazy(() =>
+  import('../components/strange/ChamberPreview').then((m) => ({ default: m.ChamberPreview }))
+);
+const FeaturedMultiverse = lazy(() =>
+  import('../components/strange/FeaturedMultiverse').then((m) => ({ default: m.FeaturedMultiverse }))
+);
+const SanctumAbout = lazy(() =>
+  import('../components/strange/SanctumAbout').then((m) => ({ default: m.SanctumAbout }))
+);
+const SponsorMarquee = lazy(() =>
+  import('../components/strange/SponsorMarquee').then((m) => ({ default: m.SponsorMarquee }))
+);
+const FinalGateway = lazy(() =>
+  import('../components/strange/FinalGateway').then((m) => ({ default: m.FinalGateway }))
+);
 
 export const HomePage: FC = () => {
   useDocumentMeta({
@@ -113,7 +128,9 @@ export const HomePage: FC = () => {
           className="relative w-full py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-[#07060D] flex justify-center z-20 content-visibility-auto"
         >
           <div className="w-full max-w-2xl">
-            <EyeOfAgamotto fallbackDate={earliestActiveDate} />
+            <Suspense fallback={null}>
+              <EyeOfAgamotto fallbackDate={earliestActiveDate} />
+            </Suspense>
           </div>
         </section>
       </SectionErrorBoundary>
@@ -121,40 +138,52 @@ export const HomePage: FC = () => {
       {/* Scene 4: Animated Stats Counter Row + Red Cloak-Fabric Divider */}
       <SectionErrorBoundary sectionName="stats">
         <div className="content-visibility-auto-sm">
-          <StatsSection events={events} prizePool={prizePool} />
+          <Suspense fallback={null}>
+            <StatsSection events={events} prizePool={prizePool} />
+          </Suspense>
         </div>
       </SectionErrorBoundary>
 
       {/* Scene 5: "EVERY REALITY HAS AN EVENT." — Multiverse Chamber Preview (4 Realm Portals) */}
       <SectionErrorBoundary sectionName="chamber-preview">
         <div className="content-visibility-auto">
-          <ChamberPreview events={events} />
+          <Suspense fallback={null}>
+            <ChamberPreview events={events} />
+          </Suspense>
         </div>
       </SectionErrorBoundary>
 
       {/* Scene 6: Featured "ARTIFACTS OF THIS REALITY" (Max 6 Cards) */}
       <SectionErrorBoundary sectionName="featured-artifacts">
         <div className="content-visibility-auto-lg">
-          <FeaturedMultiverse events={events} />
+          <Suspense fallback={null}>
+            <FeaturedMultiverse events={events} />
+          </Suspense>
         </div>
       </SectionErrorBoundary>
 
       {/* Scene 7: Sanctum About Narrative */}
       <SectionErrorBoundary sectionName="about">
         <div className="content-visibility-auto">
-          <SanctumAbout />
+          <Suspense fallback={null}>
+            <SanctumAbout />
+          </Suspense>
         </div>
       </SectionErrorBoundary>
 
       {/* Multiverse Partner Marquee (Rendered only if festival.ts sponsors exist) */}
       <div className="content-visibility-auto">
-        <SponsorMarquee />
+        <Suspense fallback={null}>
+          <SponsorMarquee />
+        </Suspense>
       </div>
 
       {/* Scene 8: Final Gateway (Register for Strange / Live Open Status) */}
       <SectionErrorBoundary sectionName="final-gateway">
         <div className="content-visibility-auto">
-          <FinalGateway events={events} />
+          <Suspense fallback={null}>
+            <FinalGateway events={events} />
+          </Suspense>
         </div>
       </SectionErrorBoundary>
     </div>
