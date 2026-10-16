@@ -191,13 +191,14 @@ export const EventsPage: FC = () => {
         if (!entry?.isIntersecting) return;
         if (isAutoLoadingRef.current) return;
 
+        isAutoLoadingRef.current = true;
+        setTimeout(() => {
+          isAutoLoadingRef.current = false;
+        }, 400);
+
         // Load next 12 only if more remain
         setVisibleCount((prev) => {
-          const remaining = filteredEvents.length - prev;
-          if (remaining <= 0) return prev;
-          isAutoLoadingRef.current = true;
-          // Reset flag after a tick so we don't double-load
-          setTimeout(() => { isAutoLoadingRef.current = false; }, 400);
+          if (prev >= filteredEvents.length) return prev;
           const next = prev + 12;
           const shown = Math.min(next, filteredEvents.length);
           setAnnounceText(`Showing ${shown} of ${filteredEvents.length} events`);
@@ -212,10 +213,12 @@ export const EventsPage: FC = () => {
   }, [filteredEvents.length]);
 
   const handleShowMore = () => {
-    const nextCount = visibleCount + 12;
-    setVisibleCount(nextCount);
-    const shown = Math.min(nextCount, filteredEvents.length);
-    setAnnounceText(`Showing ${shown} of ${filteredEvents.length} events`);
+    setVisibleCount((prev) => {
+      const next = prev + 12;
+      const shown = Math.min(next, filteredEvents.length);
+      setAnnounceText(`Showing ${shown} of ${filteredEvents.length} events`);
+      return next;
+    });
   };
 
   // Loading skeleton state

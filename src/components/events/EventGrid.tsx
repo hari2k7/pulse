@@ -25,6 +25,10 @@ export interface EventGridProps {
  * - /events (default): repeat(auto-fill, minmax(340px, 1fr)) via .event-grid-root
  * - /favorites: exactly 3 columns on desktop via .favorites-grid-root (Task 1)
  */
+interface ScrollTriggerInstance {
+  kill?: () => void;
+}
+
 export const EventGrid: FC<EventGridProps> = ({
   events,
   priorityCount = 2,
@@ -39,19 +43,25 @@ export const EventGrid: FC<EventGridProps> = ({
   const revealedRef = useRef<Set<string>>(new Set());
   // Track the last batchKey seen to detect filter changes
   const lastBatchKeyRef = useRef<string>(batchKey);
+  // Store all active ScrollTriggers to clean up ONLY on unmount or batchKey change
+  const triggersRef = useRef<ScrollTriggerInstance[]>([]);
 
-  // When batchKey changes, reset revealed tracking so next render re-animates
+  // When batchKey changes (filter changed), clean up previous triggers and reset revealed tracking
   useEffect(() => {
     if (batchKey !== lastBatchKeyRef.current) {
       lastBatchKeyRef.current = batchKey;
-      revealedRef.current = new Set();
+      triggersRef.current.forEach((t) => t?.kill?.());
+      triggersRef.current = [];
+      revealedRef.current.clear();
     }
   }, [batchKey]);
 
   useEffect(() => {
-    if (budget === 'lite') return;
+    if (budget === 'lite') {
+      events.forEach((e) => revealedRef.current.add(e.id));
+      return;
+    }
 
-    let ctx: { revert: () => void } | undefined;
     let active = true;
 
     const initBatch = async () => {
@@ -62,62 +72,116 @@ export const EventGrid: FC<EventGridProps> = ({
 
         if (!active || !gridRef.current) return;
 
-        ctx = gsap.context(() => {
-          const mm = gsap.matchMedia();
-          mm.add('(prefers-reduced-motion: no-preference)', () => {
-            // Only animate cards not yet revealed
-            const allCards = gridRef.current?.querySelectorAll<HTMLElement>('.ev-grid-card');
-            if (!allCards || allCards.length === 0) return;
+        const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-            const unrevealed: HTMLElement[] = [];
-            allCards.forEach((el) => {
-              const id = el.getAttribute('data-ev-id') ?? '';
-              if (!revealedRef.current.has(id)) {
-                unrevealed.push(el);
-              }
-            });
+        // Find all card elements currently in the DOM
+        const allCards = gridRef.current.querySelectorAll<HTMLElement>('.ev-grid-card');
+        if (!allCards || allCards.length === 0) return;
 
-            if (unrevealed.length === 0) return;
+        const unrevealed: HTMLElement[] = [];
+        allCards.forEach((el) => {
+          const id = el.getAttribute('data-ev-id') ?? '';
+          if (!id || revealedRef.current.has(id)) {
+            // Already revealed: leave untouched so style and scroll position stay preserved
+            return;
+          }
+          unrevealed.push(el);
+        });
 
-            // Mark as revealed immediately so resize/re-renders don't re-hide them
-            unrevealed.forEach((el) => {
-              const id = el.getAttribute('data-ev-id') ?? '';
+        if (unrevealed.length === 0) {
+          ScrollTrigger.refresh();
+          return;
+        }
+
+        if (isReducedMotion) {
+          unrevealed.forEach((el) => {
+            const id = el.getAttribute('data-ev-id') ?? '';
+            if (id) revealedRef.current.add(id);
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+          });
+          ScrollTrigger.refresh();
+          return;
+        }
+
+        // Animate unrevealed cards when they enter the viewport
+        // Crucial: DO NOT pre-hide with gsap.set(opacity: 0)!
+        // Using fromTo on enter ensures cards are never stuck at opacity 0 if scroll jumps
+        const newTriggers = ScrollTrigger.batch(unrevealed, {
+          start: 'top 95%',
+          once: true,
+          onEnter: (batch) => {
+            batch.forEach((el) => {
+              const id = el.getAttribute('data-ev-id');
               if (id) revealedRef.current.add(id);
             });
-
-            gsap.set(unrevealed, { opacity: 0, y: 24 });
-
-            ScrollTrigger.batch(unrevealed, {
-              start: 'top 90%',
-              once: true,
-              onEnter: (batch) => {
-                gsap.to(batch, {
-                  opacity: 1,
-                  y: 0,
-                  stagger: 0.07,
-                  duration: 0.46,
-                  ease: 'power2.out',
-                  overwrite: 'auto',
-                });
-              },
+            gsap.fromTo(
+              batch,
+              { opacity: 0, y: 16 },
+              {
+                opacity: 1,
+                y: 0,
+                stagger: 0.05,
+                duration: 0.38,
+                ease: 'power2.out',
+                clearProps: 'opacity,transform',
+                overwrite: 'auto',
+              }
+            );
+          },
+          onEnterBack: (batch) => {
+            batch.forEach((el) => {
+              const id = el.getAttribute('data-ev-id');
+              if (id) revealedRef.current.add(id);
             });
+            gsap.fromTo(
+              batch,
+              { opacity: 0, y: 16 },
+              {
+                opacity: 1,
+                y: 0,
+                stagger: 0.05,
+                duration: 0.38,
+                ease: 'power2.out',
+                clearProps: 'opacity,transform',
+                overwrite: 'auto',
+              }
+            );
+          },
+        });
 
-            ScrollTrigger.refresh();
-          });
-        }, gridRef);
+        if (Array.isArray(newTriggers)) {
+          triggersRef.current.push(...newTriggers);
+        }
+
+        ScrollTrigger.refresh();
       } catch {
-        // No GSAP — cards just appear
+        // Fallback: all cards visible
+        gridRef.current?.querySelectorAll<HTMLElement>('.ev-grid-card').forEach((el) => {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        });
       }
     };
 
-    const timer = setTimeout(initBatch, 30);
+    const timer = setTimeout(initBatch, 20);
+
     return () => {
       active = false;
       clearTimeout(timer);
-      ctx?.revert();
+      // NOTE: Do NOT call ctx?.revert() or kill existing triggers on re-render!
+      // Existing cards must stay revealed and preserve their styles/nodes.
     };
-  // Re-run when events count changes (Show More added new cards) or batchKey reset
-  }, [budget, events.length, batchKey]);
+  // Re-run ONLY when new cards are appended or batchKey changes
+  }, [budget, events, batchKey]);
+
+  // Cleanup on final unmount of EventGrid component
+  useEffect(() => {
+    return () => {
+      triggersRef.current.forEach((t) => t?.kill?.());
+      triggersRef.current = [];
+    };
+  }, []);
 
   const rootClass = variant === 'favorites' ? 'favorites-grid-root' : 'event-grid-root';
 

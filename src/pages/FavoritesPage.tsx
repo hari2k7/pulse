@@ -47,11 +47,13 @@ export const FavoritesPage: FC = () => {
         if (!entry?.isIntersecting) return;
         if (isAutoLoadingRef.current) return;
 
+        isAutoLoadingRef.current = true;
+        setTimeout(() => {
+          isAutoLoadingRef.current = false;
+        }, 400);
+
         setVisibleCount((prev) => {
-          const remaining = favoriteEvents.length - prev;
-          if (remaining <= 0) return prev;
-          isAutoLoadingRef.current = true;
-          setTimeout(() => { isAutoLoadingRef.current = false; }, 400);
+          if (prev >= favoriteEvents.length) return prev;
           const next = prev + 12;
           const shown = Math.min(next, favoriteEvents.length);
           setAnnounceText(`Showing ${shown} of ${favoriteEvents.length} saved events`);
@@ -164,9 +166,11 @@ export const FavoritesPage: FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const next = Math.min(favoriteEvents.length, visibleCount + 12);
-                  setVisibleCount(next);
-                  setAnnounceText(`Showing ${next} of ${favoriteEvents.length} saved events`);
+                  setVisibleCount((prev) => {
+                    const next = Math.min(favoriteEvents.length, prev + 12);
+                    setAnnounceText(`Showing ${next} of ${favoriteEvents.length} saved events`);
+                    return next;
+                  });
                 }}
                 className="px-6 py-3 rounded-[4px] bg-[#0D1020] hover:bg-[#1A1030] text-[#F3EFE8] hover:text-[#FF7A1A] font-display font-semibold text-sm tracking-wider uppercase border border-[#FF7A1A]/40 transition-all hover:border-[#FF7A1A] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] cursor-pointer"
               >

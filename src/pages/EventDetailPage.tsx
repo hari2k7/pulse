@@ -260,22 +260,36 @@ export const EventDetailPage: FC = () => {
 
             // 4. Related cards slide in
             if (moreTrackRef.current) {
-              gsap.set(moreTrackRef.current, { opacity: 0, x: 24 });
-              ScrollTrigger.create({
-                trigger: moreTrackRef.current,
-                start: 'top 85%',
-                once: true,
-                onEnter: () => {
-                  if (moreTrackRef.current) {
-                    gsap.to(moreTrackRef.current, {
+              const track = moreTrackRef.current;
+              const rect = track.getBoundingClientRect();
+              if (rect.top < window.innerHeight * 0.95) {
+                gsap.set(track, { opacity: 1, x: 0, clearProps: 'opacity,transform' });
+              } else {
+                gsap.set(track, { opacity: 0, x: 24 });
+                ScrollTrigger.create({
+                  trigger: track,
+                  start: 'top 90%',
+                  once: true,
+                  onEnter: () => {
+                    gsap.to(track, {
                       opacity: 1,
                       x: 0,
-                      duration: 0.6,
+                      duration: 0.5,
                       ease: 'power2.out',
+                      clearProps: 'opacity,transform',
                     });
-                  }
-                },
-              });
+                  },
+                  onEnterBack: () => {
+                    gsap.to(track, {
+                      opacity: 1,
+                      x: 0,
+                      duration: 0.5,
+                      ease: 'power2.out',
+                      clearProps: 'opacity,transform',
+                    });
+                  },
+                });
+              }
             }
           });
         });
