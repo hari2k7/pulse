@@ -169,7 +169,7 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
     <div
       ref={containerRef}
       className={`relative flex items-center justify-center select-none pointer-events-none ${className}`}
-      style={{ width: size, height: size }}
+      style={{ width: 'var(--portal-size, 560px)', height: 'var(--portal-size, 560px)' }}
       aria-hidden="true"
     >
 

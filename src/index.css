@@ -123,6 +123,26 @@
   }
 }
 
+/* ─── Hero portal size: pure CSS, evaluated at first paint ──────────────────
+   Viewport units (vw/svh) re-evaluate when the address bar shows/hides or
+   orientation changes — no JS measurement needed at mount.
+   Desktop (≥768px): fixed 580px (sticky 100svh viewport).
+   Mobile portrait: min(80vw, 44svh). Short screens: min(72vw, 38svh).
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --portal-size: min(80vw, 44svh);
+}
+@media (max-width: 767px) and (max-height: 700px) {
+  :root {
+    --portal-size: min(72vw, 38svh);
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --portal-size: 580px;
+  }
+}
+
 /* Visible, accessible focus-visible ring for keyboard navigation (AA contrast) */
 :focus-visible {
   outline: 2px solid #ff7a1a;

@@ -191,6 +191,7 @@ export const MultiverseHero: FC = () => {
                 start: 'top top',
                 end: 'bottom bottom',
                 scrub: 0.5,
+                invalidateOnRefresh: true,
                 onUpdate: (self) => {
                   const p = self.progress;
                   isHeroScrolledRef.current = p > 0.02;
@@ -391,10 +392,53 @@ export const MultiverseHero: FC = () => {
       }
     };
 
-    const cancelIdle = runAfterLoadAndIdle(initScrollTrigger, 800);
+    const cancelIdle = runAfterLoadAndIdle(() => {
+      // Wait for fonts to be ready so text metrics are stable before ScrollTrigger
+      // measures distances. Then wait one rAF so the browser has painted.
+      const onReady = () => requestAnimationFrame(initScrollTrigger);
+      if (typeof document.fonts?.ready?.then === 'function') {
+        document.fonts.ready.then(onReady);
+      } else {
+        onReady();
+      }
+    }, 800);
+
+    // Debounced ScrollTrigger.refresh() for address-bar / orientation / fullscreen changes.
+    // These change svh-based CSS values (--portal-size) and the sticky trigger bounds.
+    let refreshTimer: ReturnType<typeof setTimeout>;
+    let scrollTriggerRef: typeof import('gsap/ScrollTrigger').ScrollTrigger | null = null;
+
+    // Capture ScrollTrigger reference after first init so debouncedRefresh can call .refresh()
+    import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
+      scrollTriggerRef = ScrollTrigger;
+    }).catch(() => { /* not yet loaded */ });
+
+    const debouncedRefresh = () => {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        try {
+          if (scrollTriggerRef) scrollTriggerRef.refresh();
+        } catch { /* ignore */ }
+      }, 150);
+    };
+    window.addEventListener('resize', debouncedRefresh, { passive: true });
+    window.addEventListener('orientationchange', debouncedRefresh, { passive: true });
+    document.addEventListener('fullscreenchange', debouncedRefresh);
+    document.addEventListener('webkitfullscreenchange', debouncedRefresh);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', debouncedRefresh, { passive: true });
+    }
 
     return () => {
       cancelIdle();
+      clearTimeout(refreshTimer);
+      window.removeEventListener('resize', debouncedRefresh);
+      window.removeEventListener('orientationchange', debouncedRefresh);
+      document.removeEventListener('fullscreenchange', debouncedRefresh);
+      document.removeEventListener('webkitfullscreenchange', debouncedRefresh);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', debouncedRefresh);
+      }
       ctx?.revert();
     };
   }, [isLite]);
@@ -405,19 +449,9 @@ export const MultiverseHero: FC = () => {
     if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return false;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, [isLite]);
-
-  // Responsive portal size: desktop sticky uses fixed 580px (in a 100svh viewport it's always fine).
-  // Mobile non-sticky: size is clamped to min(80vw, 44svh) with a fallback of min(72vw, 38svh) on
-  // very short screens (height < 700px). We compute once at mount.
-  const portalSize = useMemo(() => {
-    if (typeof window === 'undefined') return 520;
-    if (window.innerWidth >= 768) return 580;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // Portrait mobile: min(80vw, 44svh), but on short phones (< 700px) use min(72vw, 38svh)
-    if (vh < 700) return Math.round(Math.min(vw * 0.72, vh * 0.38));
-    return Math.round(Math.min(vw * 0.80, vh * 0.44));
-  }, []);
+  // Portal size is now pure CSS (--portal-size variable in index.css).
+  // No JS measurement at mount — the CSS var re-evaluates whenever the viewport
+  // or address bar changes, so first-load always equals post-resize.
 
   return (
     /*
@@ -483,7 +517,7 @@ export const MultiverseHero: FC = () => {
           className={`relative w-full flex items-center justify-center transition-transform duration-1000 ease-out ${
             introPhase === 'opening' ? 'scale-105' : 'scale-100'
           } ${useStickyLayout ? 'h-full' : 'flex-1'}`}
-          style={useStickyLayout ? undefined : { minHeight: `${typeof window !== 'undefined' ? Math.max(portalSize + 32, 300) : 300}px` }}
+          style={useStickyLayout ? undefined : { minHeight: 'var(--portal-size, 300px)' }}
         >
           {/* Layer 0: Far Windows with Twilight Glow */}
           <div
@@ -527,7 +561,7 @@ export const MultiverseHero: FC = () => {
               aria-hidden="true"
             >
               <SlingRingPortal
-                size={portalSize}
+                size={560}
                 introPhase={introPhase === 'dark' ? 'tracing' : introPhase}
                 ringRef={portalRingRef}
                 chamberRef={chamberRef}
@@ -617,6 +651,11 @@ export const MultiverseHero: FC = () => {
                 ? 'max-w-4xl mx-auto space-y-6 px-4 sm:px-6 pt-[var(--navbar-height)]'
                 : 'space-y-4 px-0'
             }`}
+            style={useStickyLayout ? undefined : {
+              // Constrain the text block to the same box as the portal ring.
+              // Uses the same CSS var so text can never spill outside the ring on first paint.
+              maxWidth: 'var(--portal-size)',
+            }}
           >
             {/* Real H1 Title (LCP Element — NEVER hidden by JS per Hard Rule 2) */}
             <div className="relative inline-block">
