@@ -40,6 +40,7 @@ const GalleryLightbox = lazy(() =>
 );
 import { SectionErrorBoundary } from '../components/common/SectionErrorBoundary';
 import { useEffectsBudget } from '../hooks/useEffectsBudget';
+import { FESTIVAL_CONFIG } from '../config/festival';
 
 export const EventDetailPage: FC = () => {
   const budget = useEffectsBudget();
@@ -482,6 +483,9 @@ export const EventDetailPage: FC = () => {
       ? 'Completed'
       : 'Registration closed';
 
+  const effectiveRegistrationUrl = event.registration_url || FESTIVAL_CONFIG.registrationUrl;
+  const hasRegistrationUrl = Boolean(effectiveRegistrationUrl);
+
   return (
     <div
       className="w-full flex flex-col bg-[#07060D] text-[#F3EFE8] pt-16 sm:pt-20 pb-24 sm:pb-28 lg:pb-16 relative overflow-x-clip"
@@ -699,46 +703,49 @@ export const EventDetailPage: FC = () => {
           </div>
 
           {/* Primary Action Button beside facts strip + Heart Toggle */}
-          <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10 flex items-center gap-2">
-            {isOpen ? (
-              event.registration_url ? (
-                <a
-                  href={event.registration_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-md"
+          <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              {hasRegistrationUrl ? (
+                isOpen ? (
+                  <a
+                    href={effectiveRegistrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-md"
+                  >
+                    <span>Register</span>
+                    <svg className="w-3.5 h-3.5 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
+                    </svg>
+                  </a>
+                ) : (
+                  <span className="inline-block px-3 py-1.5 rounded-[4px] border border-white/10 bg-[#141416] text-[12px] font-semibold font-sans normal-case text-[#9CA3AF] select-none">
+                    {registrationStatusText}
+                  </span>
+                )
+              ) : (
+                <button
+                  type="button"
+                  aria-disabled="true"
+                  aria-describedby="hero-registration-notice"
+                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
                 >
                   <span>Register</span>
-                  <svg className="w-3.5 h-3.5 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
-                  </svg>
-                </a>
-              ) : (
-                <a
-                  href="#summary-card"
-                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-md"
-                >
-                  Register
-                </a>
-              )
-            ) : (
-              <span className="inline-block px-3 py-1.5 rounded-[4px] border border-white/10 bg-[#141416] text-[12px] font-semibold font-sans normal-case text-[#9CA3AF] select-none">
-                {registrationStatusText}
-              </span>
-            )}
+                </button>
+              )}
 
-            {/* Heart Toggle Button: 48px visual & hit area with 24px icon */}
-            <button
-              type="button"
-              onClick={() => event && toggleFavorite(event.id)}
-              aria-pressed={isFav}
-              aria-label={isFav ? `Remove ${event.name} from favorites` : `Add ${event.name} to favorites`}
-              className={`w-12 h-12 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl border bg-[#0D1020] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
-                isFav
-                  ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
-                  : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
-              }`}
-            >
+              {/* Heart Toggle Button: 48px visual & hit area with 24px icon */}
+              <button
+                type="button"
+                onClick={() => event && toggleFavorite(event.id)}
+                aria-pressed={isFav}
+                aria-label={isFav ? `Remove ${event.name} from favorites` : `Add ${event.name} to favorites`}
+                className={`w-12 h-12 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl border bg-[#0D1020] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] active:scale-95 motion-reduce:active:scale-100 ${
+                  isFav
+                    ? 'border-[#FF7A1A]/60 text-[#FF7A1A]'
+                    : 'border-white/15 text-[#B8B3C7] hover:text-[#FF7A1A] hover:border-[#FF7A1A]/40'
+                }`}
+              >
               <svg
                 className={`w-6 h-6 transition-transform ${
                   isFav ? 'fill-[#FF7A1A] text-[#FF7A1A] scale-105' : 'fill-none text-[#B8B3C7]'
@@ -756,8 +763,16 @@ export const EventDetailPage: FC = () => {
               </svg>
             </button>
           </div>
+
+          {!hasRegistrationUrl && (
+            <div id="hero-registration-notice" className="text-sm text-[#B8B3C7] space-y-0.5 max-w-sm">
+              <p className="m-0 leading-normal">Registration is not available on this website.</p>
+              <p className="m-0 leading-normal">Registration status for this event: {registrationStatusText}</p>
+            </div>
+          )}
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* -------------------------------------------------------------
           3. COMPOSED 12-COLUMN MAIN LAYOUT: INSIDE THIS REALITY
@@ -834,10 +849,10 @@ export const EventDetailPage: FC = () => {
 
               {/* Primary action & honest registration notice */}
               <div className="pt-2 space-y-2">
-                {isOpen ? (
-                  event.registration_url ? (
+                {hasRegistrationUrl ? (
+                  isOpen ? (
                     <a
-                      href={event.registration_url}
+                      href={effectiveRegistrationUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A] shadow-md inline-flex items-center justify-center gap-1.5 hover:brightness-110 transition-all"
@@ -848,26 +863,25 @@ export const EventDetailPage: FC = () => {
                       </svg>
                     </a>
                   ) : (
-                    <div
-                      className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A] shadow-md select-none"
-                    >
-                      REGISTRATION OPEN
+                    <div className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-semibold normal-case bg-white/5 border border-white/10 text-[#9CA3AF] select-none">
+                      {registrationStatusText}
                     </div>
                   )
                 ) : (
-                  <div className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-semibold normal-case bg-white/5 border border-white/10 text-[#9CA3AF] select-none">
-                    {registrationStatusText}
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      aria-disabled="true"
+                      aria-describedby="summary-registration-notice"
+                      className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-bold uppercase tracking-wider bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
+                    >
+                      <span>REGISTER</span>
+                    </button>
+                    <div id="summary-registration-notice" className="text-sm text-[#B8B3C7] text-center space-y-0.5">
+                      <p className="m-0 leading-normal">Registration is not available on this website.</p>
+                      <p className="m-0 leading-normal">Registration status for this event: {registrationStatusText}</p>
+                    </div>
                   </div>
-                )}
-
-                {isOpen && (
-                  <p className="text-[11px] text-[#B8B3C7] text-center leading-normal">
-                    Registration is open on-campus at event desks until{' '}
-                    <span className="font-mono text-[#F5B642]">
-                      {event.registration_deadline ? formatDateIST(event.registration_deadline) : 'start time'}
-                    </span>
-                    .
-                  </p>
                 )}
               </div>
 
@@ -1347,17 +1361,11 @@ export const EventDetailPage: FC = () => {
               </div>
             </div>
 
-            <div className="shrink-0 flex items-center gap-3">
-              {/*
-                REGISTRATION FLOW HOOK:
-                In a production deployment with live registration or ticket sales, this is where the external
-                gateway, payment SDK, or student auth modal would mount. Currently no fake checkout or success
-                screen is shown, adhering strictly to the honest data rule.
-              */}
-              {isOpen ? (
-                event.registration_url ? (
+            <div className="shrink-0 flex flex-col items-start sm:items-end gap-2">
+              {hasRegistrationUrl ? (
+                isOpen ? (
                   <a
-                    href={event.registration_url}
+                    href={effectiveRegistrationUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs sm:text-sm px-6 py-3 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-lg active:scale-95"
@@ -1368,17 +1376,25 @@ export const EventDetailPage: FC = () => {
                     </svg>
                   </a>
                 ) : (
-                  <a
-                    href="#summary-card"
-                    className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs sm:text-sm px-6 py-3 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-lg active:scale-95"
-                  >
-                    Register Now
-                  </a>
+                  <span className="inline-block px-4 py-2.5 rounded-[4px] border border-white/10 bg-[#141416] text-xs font-semibold font-sans normal-case text-[#9CA3AF] select-none">
+                    {registrationStatusText}
+                  </span>
                 )
               ) : (
-                <span className="inline-block px-4 py-2.5 rounded-[4px] border border-white/10 bg-[#141416] text-xs font-semibold font-sans normal-case text-[#9CA3AF] select-none">
-                  {registrationStatusText}
-                </span>
+                <>
+                  <button
+                    type="button"
+                    aria-disabled="true"
+                    aria-describedby="reality-panel-registration-notice"
+                    className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs sm:text-sm px-6 py-3 rounded-[4px] bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
+                  >
+                    <span>Register for Reality</span>
+                  </button>
+                  <div id="reality-panel-registration-notice" className="text-sm text-[#B8B3C7] text-left sm:text-right space-y-0.5 max-w-sm">
+                    <p className="m-0 leading-normal">Registration is not available on this website.</p>
+                    <p className="m-0 leading-normal">Registration status for this event: {registrationStatusText}</p>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -1492,45 +1508,56 @@ export const EventDetailPage: FC = () => {
             : 'opacity-100 translate-y-0'
         }`}
       >
-        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="font-display font-bold text-lg text-[#F3EFE8] leading-tight truncate">
-              {formatPrice(event.price, event.is_per_head)}
+        <div className="max-w-md mx-auto flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-display font-bold text-lg text-[#F3EFE8] leading-tight truncate">
+                {formatPrice(event.price, event.is_per_head)}
+              </div>
+              <div className="text-[11px] text-[#B8B3C7] truncate">
+                {event.event_status === 'ACTIVE' && remaining !== null
+                  ? seatsText
+                  : registrationStatusText}
+              </div>
             </div>
-            <div className="text-[11px] text-[#B8B3C7] truncate">
-              {event.event_status === 'ACTIVE' && remaining !== null
-                ? seatsText
-                : registrationStatusText}
-            </div>
-          </div>
-          <div className="shrink-0">
-            {isOpen ? (
-              event.registration_url ? (
-                <a
-                  href={event.registration_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-md active:scale-95"
+            <div className="shrink-0">
+              {hasRegistrationUrl ? (
+                isOpen ? (
+                  <a
+                    href={effectiveRegistrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-md active:scale-95"
+                  >
+                    <span>Register</span>
+                    <svg className="w-3.5 h-3.5 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
+                    </svg>
+                  </a>
+                ) : (
+                  <span className="inline-block px-3 py-1.5 rounded-[4px] border border-white/10 bg-[#141416] text-[11px] font-semibold font-sans normal-case text-[#9CA3AF] select-none">
+                    {registrationStatusText}
+                  </span>
+                )
+              ) : (
+                <button
+                  type="button"
+                  aria-disabled="true"
+                  aria-describedby="mobile-bottom-registration-notice"
+                  className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
                 >
                   <span>Register</span>
-                  <svg className="w-3.5 h-3.5 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
-                  </svg>
-                </a>
-              ) : (
-                <a
-                  href="#summary-card"
-                  className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors shadow-md active:scale-95"
-                >
-                  Register
-                </a>
-              )
-            ) : (
-              <span className="inline-block px-3 py-1.5 rounded-[4px] border border-white/10 bg-[#141416] text-[11px] font-semibold font-sans normal-case text-[#9CA3AF] select-none">
-                {registrationStatusText}
-              </span>
-            )}
+                </button>
+              )}
+            </div>
           </div>
+
+          {!hasRegistrationUrl && (
+            <div id="mobile-bottom-registration-notice" className="text-sm text-[#B8B3C7] border-t border-white/10 pt-1.5 space-y-0.5">
+              <p className="m-0 leading-tight">Registration is not available on this website.</p>
+              <p className="m-0 leading-tight">Registration status for this event: {registrationStatusText}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

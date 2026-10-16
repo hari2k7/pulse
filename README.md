@@ -103,9 +103,27 @@ export interface FestivalConfig {
 - [ ] `contactEmail`: *Unset* (Hidden)
 - [ ] `expectedParticipants`: *Unset* (Hidden from stats)
 - [ ] `participatingColleges`: *Unset* (Hidden from stats)
-- [ ] `registrationUrl`: *Unset* (Final gateway button redirects to `/events?registration=OPEN`)
+- [ ] `registrationUrl`: *Unset* (Registration is intentionally unavailable on this website; see Registration Notice below)
 
----
+### 📝 Registration Availability Notice
+Registration is **intentionally unavailable on this website** because the upstream backend API provides no registration URL, and this website features no checkout or registration flow. Under the project's strict data honesty principle, a clickable Register button with no real registration flow would be misleading.
+
+- **Current Behavior (`registrationUrl` unset)**:
+  Every real Register button (Landing Final Gateway, Event Detail Hero action, Sticky Summary panel, Mobile Bottom Action Bar, and the "READY TO ENTER THIS REALITY?" panel) renders with `aria-disabled="true"` (not a link), styled as visibly inactive (muted background, no hover glow, default cursor), does not navigate or scroll, and displays plain text directly below:
+  ```
+  Registration is not available on this website.
+  Registration status for this event: {Registration open | Sold out | Registration closed | Completed}
+  ```
+  The note is linked via `aria-describedby` for screen reader announcements.
+- **How to Enable Registration**:
+  Set `registrationUrl` to your official registration portal URL in `src/config/festival.ts`:
+  ```typescript
+  export const FESTIVAL_CONFIG: FestivalConfig = {
+    // ...
+    registrationUrl: 'https://your-college-fest-registration.com',
+  };
+  ```
+  When `registrationUrl` (or an individual event's API `registration_url`) is set, Register buttons for events with `registration_status: "OPEN"` automatically activate as standard external links (`rel="noopener noreferrer"`), and the unavailable notice is hidden. Closed, Sold Out, and Completed events remain inactive displaying their real status.
 
 ## 🎨 Original Artwork & Vector Assets
 

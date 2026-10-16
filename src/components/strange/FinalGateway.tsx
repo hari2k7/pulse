@@ -249,22 +249,22 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
               </svg>
             </a>
           ) : (
-            <Link
-              to="/events?registration=OPEN"
-              className="inline-flex items-center gap-2.5 px-8 sm:px-10 py-4 rounded-md bg-[#FF7A1A] text-[#07060D] font-display font-bold text-sm sm:text-base uppercase tracking-wider hover:bg-[#F5B642] transition-colors shadow-[0_0_30px_rgba(255,122,26,0.6)] border border-[#FFE082] active:scale-95"
-            >
-              <span>REGISTER FOR STRANGE</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                aria-hidden="true"
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                aria-disabled="true"
+                aria-describedby="gateway-registration-notice"
+                className="inline-flex items-center gap-2.5 px-8 sm:px-10 py-4 rounded-md bg-[#1F2438] text-[#8E8B99] font-display font-bold text-sm sm:text-base uppercase tracking-wider border border-white/10 cursor-default select-none shadow-none"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
-              </svg>
-            </Link>
+                <span>REGISTER FOR STRANGE</span>
+              </button>
+              <p
+                id="gateway-registration-notice"
+                className="text-sm text-[#B8B3C7] text-center max-w-md m-0"
+              >
+                Registration is not available on this website.
+              </p>
+            </div>
           )}
 
           {/* Secondary reassurance / link */}
