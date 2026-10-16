@@ -248,7 +248,7 @@ export const EventsPage: FC = () => {
         {announceText}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* 1. Page Header (Single H1 per page) */}
         <div
           ref={headerRef}

@@ -717,12 +717,20 @@ html.document-hidden * {
    --------------------------------------------------------------- */
 .event-grid-root {
   grid-template-columns: repeat(1, 1fr);
+  gap: 24px;
 }
 
 @media (min-width: 640px) {
   .event-grid-root {
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .event-grid-root {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 28px;
   }
 }
 

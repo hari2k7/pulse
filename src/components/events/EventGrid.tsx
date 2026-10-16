@@ -128,10 +128,7 @@ export const EventGrid: FC<EventGridProps> = ({
   return (
     <div
       ref={gridRef}
-      className={`event-grid-root grid gap-5 sm:gap-6 items-stretch ${className}`}
-      style={{
-        gridTemplateColumns: 'repeat(1, 1fr)',
-      }}
+      className={`event-grid-root grid items-stretch ${className}`}
     >
       {events.map((event, idx) => (
         <div
@@ -155,7 +152,7 @@ export const EventGridSkeleton: FC<{ count?: number; className?: string }> = ({
   count = 8,
   className = '',
 }) => (
-  <div className={`event-grid-root grid gap-5 sm:gap-6 items-stretch ${className}`}>
+  <div className={`event-grid-root grid items-stretch ${className}`}>
     {Array.from({ length: count }).map((_, i) => (
       <div key={i} className="h-full">
         <EventCardSkeleton className="h-full animate-pulse" />

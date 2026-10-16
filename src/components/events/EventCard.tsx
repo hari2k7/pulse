@@ -140,7 +140,7 @@ export const EventCard: FC<EventCardProps> = ({
 
   return (
     <div
-      className={`relative flex flex-col h-full group [container-type:inline-size] [--card-pad:12px] sm:[--card-pad:14px] ${className}`}
+      className={`relative flex flex-col h-full group [container-type:inline-size] [--card-pad:20px] md:[--card-pad:24px] ${className}`}
     >
       {/* Clickable Card Link Container */}
       <Link
@@ -148,7 +148,7 @@ export const EventCard: FC<EventCardProps> = ({
         onClick={handleCardClick}
         title={title}
         {...handlers}
-        className="relative flex flex-col flex-1 h-full bg-[#0D1020] rounded-xl border border-white/10 card-strange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] p-3 sm:p-3.5 overflow-hidden transition-all duration-300 group-hover:-translate-y-1 group-hover:border-[#FF7A1A]/50 group-hover:shadow-[0_12px_32px_rgba(0,0,0,0.8)] select-none"
+        className="relative flex flex-col flex-1 h-full bg-[#0D1020] rounded-xl border border-white/10 card-strange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A] p-5 md:p-6 overflow-hidden transition-all duration-300 group-hover:-translate-y-1 group-hover:border-[#FF7A1A]/50 group-hover:shadow-[0_12px_32px_rgba(0,0,0,0.8)] select-none"
       >
         {/* Gold Corner Illuminating Details */}
         <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-[#F5B642]/30 group-hover:border-[#F5B642] transition-colors pointer-events-none z-20" aria-hidden="true" />
@@ -157,11 +157,11 @@ export const EventCard: FC<EventCardProps> = ({
         <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b border-r border-[#F5B642]/30 group-hover:border-[#F5B642] transition-colors pointer-events-none z-20" aria-hidden="true" />
 
         {/* 1. Cinematic 3:2 Image with slots badge & dark bottom fade */}
-        <div className="relative w-full aspect-[3/2] rounded-lg overflow-hidden bg-[#07060D] shrink-0 border border-white/10">
+        <div className="relative w-full aspect-[3/2] md:min-h-[210px] rounded-lg overflow-hidden bg-[#07060D] shrink-0 border border-white/10">
           <img
             src={optimizedUrl}
             srcSet={srcSet}
-            sizes="(max-width: 640px) calc(100vw - 56px), (max-width: 1024px) 50vw, 380px"
+            sizes="(max-width: 640px) calc(100vw - 56px), (max-width: 1024px) 50vw, 440px"
             alt={event.cover_image_alt || title}
             width={600}
             height={400}
@@ -205,27 +205,32 @@ export const EventCard: FC<EventCardProps> = ({
         </div>
 
         {/* 2. Body Order in Dark Lower Area */}
-        <div className="pt-3 pb-1 flex-1 flex flex-col justify-between gap-3 min-w-0">
-          <div className="space-y-1.5 min-w-0">
+        <div className="pt-4 pb-1 flex-1 flex flex-col justify-between gap-3.5 min-w-0">
+          <div className="space-y-2 min-w-0">
             {/* Type line ABOVE title (left) + Reserved 48px slot for Heart (right) */}
-            <div className="flex items-center justify-between gap-2 min-w-0 h-7">
-              <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#B8B3C7] truncate max-w-[calc(100%-48px)]">
+            <div className="flex items-center justify-between gap-2 min-w-0 h-12">
+              <span className="text-xs font-mono font-medium uppercase tracking-wider text-[#B8B3C7] truncate max-w-[calc(100%-48px)]">
                 {category || realm.name}
               </span>
               {/* 48px reserved spacing so type line never overlaps the heart button */}
               <div className="w-12 h-12 shrink-0 pointer-events-none" aria-hidden="true" />
             </div>
 
-            {/* Title with line-clamp-3 and reserved 3-line height */}
-            <div className="min-h-[4.2rem] flex items-start">
-              <h3 className="font-display font-bold text-[16px] leading-[1.3] text-[#F3EFE8] line-clamp-3 group-hover:text-[#F5B642] transition-colors break-words">
+            {/* Title with line-clamp-2 md:line-clamp-3 */}
+            <div className="min-h-[3.6rem] flex items-start">
+              <h3 className="font-display font-bold text-base sm:text-lg md:text-xl leading-snug text-[#F3EFE8] line-clamp-2 md:line-clamp-3 group-hover:text-[#F5B642] transition-colors break-words">
                 {title}
               </h3>
             </div>
 
+            {/* Blurb clamp: 2 lines mobile, 3 lines md+ */}
+            <p className="text-xs md:text-sm text-[#B8B3C7] line-clamp-2 md:line-clamp-3 leading-relaxed">
+              {blurb}
+            </p>
+
             {/* Date, Team Size, and Plain Registration Status Tag */}
-            <div className="flex items-center justify-between gap-2 min-w-0 pt-0.5">
-              <div className="flex items-center gap-1.5 min-w-0 truncate text-xs text-[#B8B3C7]">
+            <div className="flex items-center justify-between gap-2 min-w-0 pt-1 text-xs sm:text-sm text-[#B8B3C7]">
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
                 {hasDate && (
                   <div className="flex items-center gap-1.5 truncate">
                     <svg
@@ -242,46 +247,46 @@ export const EventCard: FC<EventCardProps> = ({
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <span className="font-mono text-[11px] truncate">{dateFormatted}</span>
+                    <span className="font-mono text-xs truncate">{dateFormatted}</span>
                   </div>
                 )}
                 {teamSizeText && (
-                  <span className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[#B8B3C7]">
+                  <span className="hidden sm:inline-block text-[11px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[#B8B3C7]">
                     {teamSizeText}
                   </span>
                 )}
               </div>
               <span
-                className={`shrink-0 text-[10px] sm:text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${statusTagColor}`}
+                className={`shrink-0 text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded border ${statusTagColor}`}
               >
                 {statusTagText}
               </span>
             </div>
           </div>
 
-          {/* Full-Width Action Button: STRICTLY "ENTER DIMENSION" */}
-          <div className="pt-1">
-            <span className="w-full block py-2.5 px-3 text-center text-xs font-bold uppercase tracking-widest rounded-lg bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A] shadow-[0_2px_12px_rgba(255,122,26,0.3)] group-hover:brightness-110 transition-all">
+          {/* Full-Width Action Button: min-height 48px on md+ (44px on mobile) */}
+          <div className="pt-2">
+            <span className="w-full min-h-[44px] md:min-h-[48px] py-3 md:py-3.5 px-4 text-center text-xs md:text-sm font-bold uppercase tracking-widest rounded-lg bg-gradient-to-r from-[#FF7A1A] to-[#F5B642] text-[#07060D] border border-[#FF7A1A] shadow-[0_2px_12px_rgba(255,122,26,0.3)] group-hover:brightness-110 group-hover:shadow-[0_4px_20px_rgba(255,122,26,0.5)] transition-all flex items-center justify-center">
               ENTER DIMENSION
             </span>
           </div>
 
           {/* Footer Bar: Entry fee and price */}
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2 min-w-0 mt-auto">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-[#B8B3C7]">
+          <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 min-w-0 mt-auto">
+            <span className="font-mono text-xs uppercase tracking-wider text-[#B8B3C7]">
               ENTRY FEE
             </span>
 
             <div className="text-right truncate">
               {isFree ? (
-                <span className="font-bold text-sm text-[#F5B642]">Free</span>
+                <span className="font-bold text-sm md:text-base text-[#F5B642]">Free</span>
               ) : (
-                <span className="font-bold text-sm text-[#F5B642]">
+                <span className="font-bold text-sm md:text-base text-[#F5B642]">
                   ₹
                   {new Intl.NumberFormat('en-IN', {
                     maximumFractionDigits: 0,
                   }).format(event.price as number)}
-                  <span className="text-[10px] text-[#B8B3C7] font-normal ml-1">
+                  <span className="text-xs text-[#B8B3C7] font-normal ml-1">
                     {isPerHead ? 'per person' : 'per team'}
                   </span>
                 </span>
@@ -292,18 +297,18 @@ export const EventCard: FC<EventCardProps> = ({
 
         {/* 3. Cloak of Levitation Backside Hover Reveal */}
         <div className="cloak-backside" aria-hidden="true">
-          <div className="cloak-lining flex flex-col justify-between p-4 overflow-hidden relative">
+          <div className="cloak-lining flex flex-col justify-between p-5 md:p-6 overflow-hidden relative">
             <div className="space-y-2 min-w-0 relative z-10">
               <div
-                className="text-[10px] font-bold uppercase tracking-widest truncate"
+                className="text-xs font-bold uppercase tracking-widest truncate"
                 style={{ color: realm.accentColor }}
               >
                 {realm.name}
               </div>
-              <h4 className="card-portal-title font-display font-bold text-base text-[#FFF8E7] line-clamp-2 leading-snug break-words">
+              <h4 className="card-portal-title font-display font-bold text-base sm:text-lg text-[#FFF8E7] line-clamp-2 leading-snug break-words">
                 {title}
               </h4>
-              <p className="text-xs text-[#E8DCC0] line-clamp-3 leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#E8DCC0] line-clamp-3 leading-relaxed">
                 {blurb}
               </p>
             </div>
@@ -329,7 +334,7 @@ export const EventCard: FC<EventCardProps> = ({
               </svg>
             </div>
 
-            <div className="relative z-10 flex items-center justify-between border-t border-[#D4AF37]/30 pt-2 text-[10px] text-[#FFE5A3] font-mono">
+            <div className="relative z-10 flex items-center justify-between border-t border-[#D4AF37]/30 pt-2 text-xs text-[#FFE5A3] font-mono">
               <span>{category || 'STRANGE'}</span>
               <span>ENTER DIMENSION</span>
             </div>
@@ -348,7 +353,7 @@ export const EventCard: FC<EventCardProps> = ({
           toggleFavorite(event.id);
         }}
         style={{
-          top: 'calc(var(--card-pad) + (100cqw - var(--card-pad) * 2) * 2 / 3 + 1px)',
+          top: 'calc(var(--card-pad) + (100cqw - var(--card-pad) * 2) * 2 / 3 + 14px)',
           right: 'var(--card-pad)',
         }}
         className="absolute z-20 w-12 h-12 min-h-[48px] min-w-[48px] rounded-full flex items-center justify-center bg-[#07060D]/85 border border-white/20 hover:border-[#E11D48] hover:bg-[#E11D48]/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E11D48] cursor-pointer"
@@ -377,43 +382,47 @@ export const EventCard: FC<EventCardProps> = ({
 export const EventCardSkeleton: FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div
-      className={`flex flex-col bg-[#0D1020] rounded-xl border border-white/10 p-3 sm:p-3.5 select-none ${className}`}
+      className={`flex flex-col bg-[#0D1020] rounded-xl border border-white/10 p-5 md:p-6 select-none ${className}`}
     >
-      {/* 3:2 image block with top-right slots pill placeholder */}
-      <div className="relative aspect-[3/2] w-full rounded-lg bg-white/5 mb-3 overflow-hidden">
+      {/* 3:2 image block with min-height on desktop */}
+      <div className="relative aspect-[3/2] md:min-h-[210px] w-full rounded-lg bg-white/5 mb-4 overflow-hidden">
         <div className="absolute top-2.5 right-2.5 w-20 h-4 rounded bg-white/10" />
       </div>
 
-      <div className="space-y-3 px-0.5 flex-1 flex flex-col justify-between">
-        <div className="space-y-2">
+      <div className="space-y-3.5 px-0.5 flex-1 flex flex-col justify-between">
+        <div className="space-y-2.5">
           {/* Type line placeholder with heart placeholder */}
-          <div className="flex items-center justify-between gap-2 h-7">
-            <div className="h-3.5 w-24 rounded bg-white/10" />
+          <div className="flex items-center justify-between gap-2 h-12">
+            <div className="h-4 w-28 rounded bg-white/10" />
             <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5 shrink-0" />
           </div>
-          {/* Three-line title placeholder */}
-          <div className="space-y-1.5 min-h-[4.2rem]">
-            <div className="h-4.5 w-4/5 rounded bg-white/10" />
-            <div className="h-4.5 w-3/5 rounded bg-white/10" />
-            <div className="h-4.5 w-2/5 rounded bg-white/5" />
+          {/* Title placeholder */}
+          <div className="space-y-2">
+            <div className="h-6 w-4/5 rounded bg-white/10" />
+            <div className="h-6 w-3/5 rounded bg-white/10" />
           </div>
-          {/* Date line with status placeholder */}
-          <div className="flex items-center justify-between gap-2 pt-0.5">
+          {/* Blurb placeholder */}
+          <div className="space-y-1.5 pt-1">
+            <div className="h-3.5 w-full rounded bg-white/5" />
+            <div className="h-3.5 w-4/5 rounded bg-white/5" />
+          </div>
+          {/* Date & status placeholder */}
+          <div className="flex items-center justify-between gap-2 pt-1.5">
             <div className="flex items-center gap-1.5">
-              <div className="w-3.5 h-3.5 rounded-sm bg-white/10" />
-              <div className="h-3 w-28 rounded bg-white/10" />
+              <div className="w-4 h-4 rounded-sm bg-white/10" />
+              <div className="h-3.5 w-32 rounded bg-white/10" />
             </div>
-            <div className="h-4 w-16 rounded border border-white/10 bg-white/5" />
+            <div className="h-5 w-20 rounded border border-white/10 bg-white/5" />
           </div>
         </div>
 
-        {/* Full-width button block */}
-        <div className="h-10 w-full rounded-xl bg-white/10 mt-1" />
+        {/* Full-width 48px button block */}
+        <div className="min-h-[44px] md:min-h-[48px] w-full rounded-lg bg-white/10 mt-2" />
 
         {/* Footer line */}
-        <div className="pt-2.5 border-t border-white/10 flex items-center justify-between">
-          <div className="h-3 w-16 rounded bg-white/10" />
-          <div className="h-3.5 w-14 rounded bg-white/10" />
+        <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+          <div className="h-3.5 w-20 rounded bg-white/10" />
+          <div className="h-4 w-16 rounded bg-white/10" />
         </div>
       </div>
     </div>
