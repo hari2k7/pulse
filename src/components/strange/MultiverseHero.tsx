@@ -36,6 +36,8 @@ export const MultiverseHero: FC = () => {
   const vignetteRef = useRef<HTMLDivElement>(null);
   // "shockwave" element shown at phase 80-100%
   const shockwaveRef = useRef<HTMLDivElement>(null);
+  const singularityRef = useRef<HTMLDivElement>(null);
+  const exitVoidRef = useRef<HTMLDivElement>(null);
 
   // Parallax Layer Refs (Desktop non-lite only, tiny amplitude)
   const farLayerRef = useRef<HTMLDivElement>(null);
@@ -323,12 +325,13 @@ export const MultiverseHero: FC = () => {
                 trigger: wrapper,
                 start: 'top top',
                 end: 'bottom bottom',
-                scrub: 0.6,
+                scrub: 0.5,
                 onUpdate: (self) => {
-                  isHeroScrolledRef.current = self.progress > 0.02;
-                  // 15-45% phase is where text shrinks toward portal center.
-                  // At ~30% progress text is at ~50% scale → disable pointer events.
-                  const isShrunk = self.progress >= 0.18;
+                  const p = self.progress;
+                  isHeroScrolledRef.current = p > 0.02;
+
+                  // Scale < 0.5 happens around progress 0.22
+                  const isShrunk = p >= 0.22;
                   textGroup.style.pointerEvents = isShrunk ? 'none' : '';
                   if (ctaLink) {
                     if (isShrunk) {
@@ -341,143 +344,179 @@ export const MultiverseHero: FC = () => {
               },
             });
 
-            // === Phase 0-15%: HOLD — everything stays exactly as first frame ===
-            tl.set({}, {}, 0.15); // empty keyframe keeps timeline alive during hold
+            // === Phase 0.00 -> 0.12: HOLD ===
+            // Hero sits fully formed
+            tl.set({}, {}, 0.12);
 
-            // === Phase 15-45%: Text + button travel INTO portal (scale down → center, opacity fades at end) ===
+            // === Phase 0.10 -> 0.40: CAMERA DOLLY + COPY INTAKE ===
+            // Chamber background scales subtly 1.0 -> 1.08 with layered parallax
+            if (farLayerRef.current) {
+              tl.to(farLayerRef.current, { scale: 1.04, y: -6, duration: 0.30, ease: 'power1.inOut' }, 0.10);
+            }
+            if (midLayerRef.current) {
+              tl.to(midLayerRef.current, { scale: 1.08, y: -12, duration: 0.30, ease: 'power1.inOut' }, 0.10);
+            }
+            if (nearLayerRef.current) {
+              tl.to(nearLayerRef.current, { scale: 1.15, y: -20, duration: 0.30, ease: 'power1.inOut' }, 0.10);
+            }
+
+            // Entire copy group moves inward: scale 1.0 -> 0.15, translate Y slightly upward, slight perspective tilt < 6 deg
             tl.to(
               textGroup,
               {
-                scale: 0.04,
+                scale: 0.15,
+                y: -40,
+                rotationX: 4,
+                transformOrigin: 'center center',
                 duration: 0.30,
                 ease: 'power2.in',
-                transformOrigin: 'center center',
               },
-              0.15
+              0.10
             );
+
+            // Late fade for copy: opacity stays 1.0 until scale < 0.35, then fades out 0.32 -> 0.40
             tl.to(
               textGroup,
               {
                 opacity: 0,
-                duration: 0.10,
+                duration: 0.08,
                 ease: 'power1.in',
               },
-              0.35
+              0.32
             );
 
-            // === Phase 45-80%: Ring contracts + chamber recedes + iris vignette closes in ===
+            // === Phase 0.35 -> 0.75: RING CONTRACTION + IRIS + SPARK PEEL ===
             if (ring) {
               tl.to(
                 ring,
                 {
-                  scale: 0.42,
-                  opacity: 0.8,
-                  duration: 0.35,
-                  ease: 'power2.in',
+                  scale: 0.35,
+                  opacity: 0.85,
+                  rotation: 12,
                   transformOrigin: 'center center',
+                  duration: 0.40,
+                  ease: 'power2.in',
                 },
-                0.45
+                0.35
               );
             }
             if (chamber) {
               tl.to(
                 chamber,
                 {
-                  scale: 0.28,
-                  opacity: 0.18,
-                  duration: 0.35,
-                  ease: 'power2.in',
+                  scale: 0.20,
+                  opacity: 0.15,
                   transformOrigin: 'center center',
+                  duration: 0.40,
+                  ease: 'power2.in',
                 },
-                0.45
+                0.35
               );
             }
             if (portal) {
               tl.to(
                 portal,
                 {
-                  scale: 0.62,
-                  duration: 0.35,
-                  ease: 'power2.in',
+                  scale: 0.55,
                   transformOrigin: 'center center',
+                  duration: 0.40,
+                  ease: 'power2.in',
                 },
-                0.45
+                0.35
               );
             }
-            // Iris vignette closes in (opacity increases from 0 → 0.85)
             if (vignette) {
               tl.to(
                 vignette,
                 {
-                  opacity: 0.88,
-                  duration: 0.35,
+                  opacity: 0.95,
+                  duration: 0.40,
                   ease: 'power2.in',
                 },
-                0.45
+                0.35
               );
             }
 
-            // === Phase 80-100%: Ring collapses to bright point, shockwave expands/fades, point flares and disappears ===
-            if (portal) {
-              tl.to(
-                portal,
-                {
-                  scale: 0.01,
-                  opacity: 0,
-                  duration: 0.20,
-                  ease: 'power4.in',
-                  transformOrigin: 'center center',
-                },
-                0.80
-              );
-            }
+            // === Phase 0.72 -> 0.92: SINGULARITY ===
+            // Ring snaps from 0.35 -> 0 (scale down to a point)
             if (ring) {
               tl.to(
                 ring,
                 {
-                  scale: 0.02,
+                  scale: 0,
                   opacity: 0,
-                  duration: 0.18,
+                  duration: 0.12,
                   ease: 'power4.in',
                   transformOrigin: 'center center',
                 },
-                0.80
+                0.72
               );
             }
             if (chamber) {
               tl.to(
                 chamber,
                 {
-                  scale: 0.01,
+                  scale: 0,
                   opacity: 0,
-                  duration: 0.18,
+                  duration: 0.12,
                   ease: 'power4.in',
                   transformOrigin: 'center center',
                 },
+                0.72
+              );
+            }
+            if (portal) {
+              tl.to(
+                portal,
+                {
+                  scale: 0,
+                  opacity: 0,
+                  duration: 0.12,
+                  ease: 'power4.in',
+                  transformOrigin: 'center center',
+                },
+                0.72
+              );
+            }
+
+            // Singularity bright white-gold flare appears at 0.72, peaks at 0.78, fades by 0.90
+            if (singularityRef.current) {
+              tl.fromTo(
+                singularityRef.current,
+                { scale: 0.2, opacity: 0 },
+                { scale: 1.4, opacity: 1, duration: 0.08, ease: 'power2.out' },
+                0.72
+              );
+              tl.to(
+                singularityRef.current,
+                { scale: 0, opacity: 0, duration: 0.12, ease: 'power2.in' },
                 0.80
               );
             }
-            // Shockwave ring: briefly appears and expands then fades
+
+            // Single circular shockwave ring expands outward and dissipates
             if (shockwave) {
               tl.fromTo(
                 shockwave,
-                { scale: 0.05, opacity: 0.8 },
-                {
-                  scale: 2.5,
-                  opacity: 0,
-                  duration: 0.20,
-                  ease: 'power1.out',
-                  transformOrigin: 'center center',
-                },
-                0.80
+                { scale: 0.2, opacity: 0.9 },
+                { scale: 2.2, opacity: 0, duration: 0.16, ease: 'power1.out', transformOrigin: 'center center' },
+                0.74
               );
             }
-            // Final vignette completes iris close
-            if (vignette) {
-              tl.to(
-                vignette,
-                { opacity: 1, duration: 0.20, ease: 'none' },
-                0.80
+
+            // === Phase 0.90 -> 1.00: DISSOLVE & EXIT ===
+            if (exitVoidRef.current) {
+              tl.to(exitVoidRef.current, { opacity: 1, duration: 0.10, ease: 'none' }, 0.90);
+            }
+
+            // Next section content rises gently (translateY 30px -> 0, opacity 0.4 -> 1.0)
+            const nextSection = document.getElementById('time-convergence');
+            if (nextSection) {
+              tl.fromTo(
+                nextSection,
+                { y: 30, opacity: 0.4 },
+                { y: 0, opacity: 1, duration: 0.10, ease: 'power1.out' },
+                0.90
               );
             }
           });
@@ -514,7 +553,7 @@ export const MultiverseHero: FC = () => {
       id="festival-hero-wrapper"
       className={
         useStickyLayout
-          ? 'relative w-full h-[180svh] sm:h-[220svh] lg:h-[260svh] overflow-clip bg-[#07060D]'
+          ? 'relative w-full h-[180svh] sm:h-[210svh] lg:h-[240svh] overflow-clip bg-[#07060D]'
           : 'relative w-full bg-[#07060D]'
       }
     >
@@ -657,6 +696,22 @@ export const MultiverseHero: FC = () => {
               <circle cx="120" cy="120" r="110" stroke="#F5B642" strokeWidth="6" strokeOpacity="0.5" />
             </svg>
           </div>
+
+          {/* Singularity flare point (Phase 72-92%) */}
+          <div
+            ref={singularityRef}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[13] pointer-events-none rounded-full bg-white shadow-[0_0_16px_#FFE5A3,0_0_36px_#FF7A1A]"
+            aria-hidden="true"
+            style={{ width: 8, height: 8, opacity: 0 }}
+          />
+
+          {/* Exit void overlay (Phase 90-100%): fades in to complete the transition cleanly */}
+          <div
+            ref={exitVoidRef}
+            className="absolute inset-0 bg-[#07060D] z-[14] pointer-events-none"
+            aria-hidden="true"
+            style={{ opacity: 0 }}
+          />
 
           {/* Layer 6: Foreground Content (Always real text visible in first paint for LCP) */}
           <div

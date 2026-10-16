@@ -58,8 +58,8 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
     };
     window.addEventListener('resize', handleResize, { passive: true });
 
-    // Single capped particle pool (max 22 particles) with uneven speed, size, and trails
-    const particleCount = 22;
+    // Desktop 32 sparks, mobile/lite 10 (P2 requirement)
+    const particleCount = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 32 : 10;
     const radius = Math.min(width, height) * 0.40;
     const centerX = width / 2;
     const centerY = height / 2;
