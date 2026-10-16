@@ -1,7 +1,15 @@
-import { useEffect, useRef, type FC } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense, type FC } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventSummary } from '../../lib/types';
 import { FESTIVAL_CONFIG } from '../../config/festival';
+
+import { SectionErrorBoundary } from '../common/SectionErrorBoundary';
+
+const RegistrationNoticeDialog = lazy(() =>
+  import('../registration/RegistrationNoticeDialog').then((m) => ({
+    default: m.RegistrationNoticeDialog,
+  }))
+);
 
 export interface FinalGatewayProps {
   events: EventSummary[];
@@ -13,12 +21,14 @@ export interface FinalGatewayProps {
  * - Heading: "YOUR NEXT REALITY STARTS HERE."
  * - Button: "REGISTER FOR STRANGE" with a small inline-SVG up-right arrow
  * - Target: festival.ts registrationUrl if set (link out, rel="noopener");
- *   otherwise /events?registration=OPEN and a plain line stating real registration status
+ *   otherwise opens graceful registration notice dialog, with visible notice below
  * - Portal light fades cleanly into the footer
  */
 export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
   const openCount = events.filter((e) => e.registration_status === 'OPEN').length;
   const registrationUrl = FESTIVAL_CONFIG.registrationUrl;
+  const [isNoticeOpen, setIsNoticeOpen] = useState<boolean>(false);
+  const registerBtnRef = useRef<HTMLButtonElement>(null);
 
   const sectionRef = useRef<HTMLElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
@@ -251,10 +261,11 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
           ) : (
             <div className="flex flex-col items-center gap-2">
               <button
+                ref={registerBtnRef}
                 type="button"
-                aria-disabled="true"
+                onClick={() => setIsNoticeOpen(true)}
                 aria-describedby="gateway-registration-notice"
-                className="inline-flex items-center gap-2.5 px-8 sm:px-10 py-4 rounded-md bg-[#1F2438] text-[#8E8B99] font-display font-bold text-sm sm:text-base uppercase tracking-wider border border-white/10 cursor-default select-none shadow-none"
+                className="inline-flex items-center gap-2.5 px-8 sm:px-10 py-4 rounded-md bg-[#FF7A1A]/20 hover:bg-[#FF7A1A]/30 text-[#F3EFE8] font-display font-bold text-sm sm:text-base uppercase tracking-wider border border-[#FF7A1A]/40 hover:border-[#FF7A1A] transition-all cursor-pointer shadow-[0_0_20px_rgba(255,122,26,0.15)] active:scale-95"
               >
                 <span>REGISTER FOR STRANGE</span>
               </button>
@@ -264,6 +275,16 @@ export const FinalGateway: FC<FinalGatewayProps> = ({ events }) => {
               >
                 Registration is not available on this website.
               </p>
+
+              <SectionErrorBoundary sectionName="registration-dialog">
+                <Suspense fallback={null}>
+                  <RegistrationNoticeDialog
+                    isOpen={isNoticeOpen}
+                    onClose={() => setIsNoticeOpen(false)}
+                    triggerRef={registerBtnRef}
+                  />
+                </Suspense>
+              </SectionErrorBoundary>
             </div>
           )}
 

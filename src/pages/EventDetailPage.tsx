@@ -38,6 +38,11 @@ import { runAfterLoadAndIdle } from '../lib/idle';
 const GalleryLightbox = lazy(() =>
   import('../components/events/GalleryLightbox').then((m) => ({ default: m.GalleryLightbox }))
 );
+const RegistrationNoticeDialog = lazy(() =>
+  import('../components/registration/RegistrationNoticeDialog').then((m) => ({
+    default: m.RegistrationNoticeDialog,
+  }))
+);
 import { SectionErrorBoundary } from '../components/common/SectionErrorBoundary';
 import { useEffectsBudget } from '../hooks/useEffectsBudget';
 import { FESTIVAL_CONFIG } from '../config/festival';
@@ -49,6 +54,14 @@ export const EventDetailPage: FC = () => {
   const { status, event, error, isPlaceholder, retry } = useEvent(id);
   const { isFavorite, toggleFavorite } = useFavorites();
   const isFav = event ? isFavorite(event.id) : false;
+
+  const [isNoticeOpen, setIsNoticeOpen] = useState<boolean>(false);
+  const activeTriggerRef = useRef<HTMLElement | null>(null);
+
+  const handleOpenNotice = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    activeTriggerRef.current = e.currentTarget;
+    setIsNoticeOpen(true);
+  }, []);
 
   const [shareFeedback, setShareFeedback] = useState<string>('');
   const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({ 0: true });
@@ -740,9 +753,9 @@ export const EventDetailPage: FC = () => {
               ) : (
                 <button
                   type="button"
-                  aria-disabled="true"
+                  onClick={handleOpenNotice}
                   aria-describedby="hero-registration-notice"
-                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
+                  className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs px-5 py-2.5 rounded-[4px] bg-[#FF7A1A]/20 hover:bg-[#FF7A1A]/30 text-[#F3EFE8] border border-[#FF7A1A]/40 hover:border-[#FF7A1A] cursor-pointer transition-all active:scale-95 shadow-sm"
                 >
                   <span>Register</span>
                 </button>
@@ -885,9 +898,9 @@ export const EventDetailPage: FC = () => {
                   <div className="space-y-2">
                     <button
                       type="button"
-                      aria-disabled="true"
+                      onClick={handleOpenNotice}
                       aria-describedby="summary-registration-notice"
-                      className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-bold uppercase tracking-wider bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
+                      className="w-full py-2.5 px-3 rounded-[4px] text-center text-xs font-bold uppercase tracking-wider bg-[#FF7A1A]/20 hover:bg-[#FF7A1A]/30 text-[#F3EFE8] border border-[#FF7A1A]/40 hover:border-[#FF7A1A] transition-all cursor-pointer shadow-sm active:scale-95"
                     >
                       <span>REGISTER</span>
                     </button>
@@ -1398,9 +1411,9 @@ export const EventDetailPage: FC = () => {
                 <>
                   <button
                     type="button"
-                    aria-disabled="true"
+                    onClick={handleOpenNotice}
                     aria-describedby="reality-panel-registration-notice"
-                    className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs sm:text-sm px-6 py-3 rounded-[4px] bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
+                    className="inline-flex items-center justify-center uppercase tracking-wider font-bold text-xs sm:text-sm px-6 py-3 rounded-[4px] bg-[#FF7A1A]/20 hover:bg-[#FF7A1A]/30 text-[#F3EFE8] border border-[#FF7A1A]/40 hover:border-[#FF7A1A] cursor-pointer transition-all active:scale-95 shadow-sm"
                   >
                     <span>Register for Reality</span>
                   </button>
@@ -1556,9 +1569,9 @@ export const EventDetailPage: FC = () => {
               ) : (
                 <button
                   type="button"
-                  aria-disabled="true"
+                  onClick={handleOpenNotice}
                   aria-describedby="mobile-bottom-registration-notice"
-                  className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#1F2438] text-[#8E8B99] border border-white/10 cursor-default select-none shadow-none"
+                  className="inline-flex items-center justify-center font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-[4px] bg-[#FF7A1A]/20 hover:bg-[#FF7A1A]/30 text-[#F3EFE8] border border-[#FF7A1A]/40 hover:border-[#FF7A1A] cursor-pointer transition-all active:scale-95 shadow-sm"
                 >
                   <span>Register</span>
                 </button>
@@ -1574,6 +1587,21 @@ export const EventDetailPage: FC = () => {
           )}
         </div>
       </div>
+
+      {/* Registration Unavailable Message Dialog */}
+      {!hasRegistrationUrl && (
+        <SectionErrorBoundary sectionName="registration-dialog">
+          <Suspense fallback={null}>
+            <RegistrationNoticeDialog
+              isOpen={isNoticeOpen}
+              onClose={() => setIsNoticeOpen(false)}
+              eventName={event.name}
+              registrationStatus={registrationStatusText}
+              triggerRef={activeTriggerRef}
+            />
+          </Suspense>
+        </SectionErrorBoundary>
+      )}
     </div>
   );
 };

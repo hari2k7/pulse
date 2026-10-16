@@ -96,8 +96,6 @@ export const FESTIVAL_CONFIG: FestivalConfig = {
   expectedParticipants: undefined,
   participatingColleges: undefined,
 
-  // TODO: Set official general registration link if external portal exists
-  // When unset, registration buttons are intentionally rendered as inactive controls with a clear notice
-  // ("Registration is not available on this website"), showing real status without fake links.
+  // TODO: To enable registration, set your registration URL here (e.g. 'https://example.com/register'). When set, Register buttons will link out.
   registrationUrl: undefined,
 };
