@@ -270,7 +270,7 @@ export const ChamberPreview: FC<ChamberPreviewProps> = ({ events }) => {
                     {realm.name}
                   </h3>
 
-                  <p className="text-[11px] sm:text-xs text-[#B8B3C7] mt-1 line-clamp-2 max-w-[180px] leading-relaxed">
+                  <p className="text-[11px] sm:text-xs text-[#B8B3C7] mt-1.5 leading-relaxed text-balance min-w-0 px-1">
                     {realm.descriptor}
                   </p>
                 </div>

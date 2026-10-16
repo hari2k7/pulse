@@ -157,14 +157,14 @@ function cleanCategoryName(cat: string): string {
 }
 
 /**
- * Derives the dynamic descriptor line from the real categories present in that realm
+ * Derives the dynamic descriptor line from all real categories present in that realm.
+ * Shows ALL distinct categories joined with ' · ', never truncated with ellipsis.
  */
 function buildDescriptor(meta: RealmMeta, categories: string[]): string {
   if (categories.length === 0) return meta.defaultDescriptor;
-  const cleaned = Array.from(new Set(categories.map(cleanCategoryName)));
-  // Pick up to 4 representative categories
-  const slice = cleaned.slice(0, 4);
-  return slice.join(', ');
+  const cleaned = Array.from(new Set(categories.map(cleanCategoryName).filter(Boolean)));
+  if (cleaned.length === 0) return meta.defaultDescriptor;
+  return cleaned.join(' · ');
 }
 
 /**

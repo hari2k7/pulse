@@ -161,7 +161,7 @@ export const PortalSelectorRow: FC<PortalSelectorRowProps> = ({
                   {realm.name}
                 </span>
 
-                <span className="text-[10px] sm:text-[11px] text-[#B8B3C7] mt-1 line-clamp-1 max-w-[160px] leading-tight">
+                <span className="text-[10px] sm:text-[11px] text-[#B8B3C7] mt-1 leading-tight text-balance min-w-0 px-1 text-center">
                   {realm.descriptor}
                 </span>
 
