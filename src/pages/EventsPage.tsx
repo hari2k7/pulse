@@ -285,7 +285,7 @@ export const EventsPage: FC = () => {
               type="button"
               aria-pressed={view === 'grid'}
               onClick={() => setView('grid')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] ${
+              className={`flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-md text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] ${
                 view === 'grid'
                   ? 'bg-[#FF7A1A] text-[#07060D]'
                   : 'text-[#B8B3C7] hover:text-[#F3EFE8]'
@@ -300,7 +300,7 @@ export const EventsPage: FC = () => {
               type="button"
               aria-pressed={view === 'timeline'}
               onClick={() => setView('timeline')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] ${
+              className={`flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-md text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] ${
                 view === 'timeline'
                   ? 'bg-[#FF7A1A] text-[#07060D]'
                   : 'text-[#B8B3C7] hover:text-[#F3EFE8]'
@@ -386,7 +386,7 @@ export const EventsPage: FC = () => {
                 id="multiverse-sort"
                 value={filters.sort}
                 onChange={(e) => updateFilters({ sort: e.target.value as EventSortOption })}
-                className="w-full appearance-none pl-3.5 pr-8 py-2.5 rounded-lg bg-[#0D1020] border border-white/15 text-xs font-semibold text-[#F3EFE8] focus:outline-none focus:border-[#FF7A1A] focus:ring-1 focus:ring-[#FF7A1A] transition-colors cursor-pointer"
+                className="w-full min-h-[44px] appearance-none pl-3.5 pr-8 py-2.5 rounded-lg bg-[#0D1020] border border-white/15 text-xs font-semibold text-[#F3EFE8] focus:outline-none focus:border-[#FF7A1A] focus:ring-1 focus:ring-[#FF7A1A] transition-colors cursor-pointer"
               >
                 <option value="soonest">Sort: Soonest First</option>
                 <option value="price-asc">Sort: Price Low → High</option>
@@ -404,7 +404,7 @@ export const EventsPage: FC = () => {
               ref={filterButtonRef}
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
-              className="lg:hidden flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#0D1020] border border-[#FF7A1A]/40 text-xs font-bold uppercase tracking-wider text-[#F3EFE8] hover:border-[#FF7A1A] transition-colors"
+              className="lg:hidden min-h-[44px] flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#0D1020] border border-[#FF7A1A]/40 text-xs font-bold uppercase tracking-wider text-[#F3EFE8] hover:border-[#FF7A1A] transition-colors"
             >
               <svg className="w-4 h-4 text-[#FF7A1A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />

@@ -96,25 +96,25 @@ export const Footer: FC = () => {
             <h2 className="text-xs font-bold uppercase tracking-wider text-[#F3EFE8] mb-4">
               Realms
             </h2>
-            <ul className="flex flex-col gap-2.5 text-xs">
+            <ul className="flex flex-col gap-1 text-xs">
               <li>
-                <Link to="/" className="hover:text-[#F3EFE8] transition-colors">
+                <Link to="/" className="hover:text-[#F3EFE8] transition-colors inline-flex items-center min-h-[44px] min-w-[44px]">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/events" className="hover:text-[#F3EFE8] transition-colors">
+                <Link to="/events" className="hover:text-[#F3EFE8] transition-colors inline-flex items-center min-h-[44px] min-w-[44px]">
                   Events
                 </Link>
               </li>
               <li>
-                <Link to="/favorites" className="hover:text-[#F3EFE8] transition-colors">
+                <Link to="/favorites" className="hover:text-[#F3EFE8] transition-colors inline-flex items-center min-h-[44px] min-w-[44px]">
                   Favorites
                 </Link>
               </li>
               {import.meta.env.DEV && (
                 <li>
-                  <Link to="/styleguide" className="hover:text-[#F3EFE8] transition-colors">
+                  <Link to="/styleguide" className="hover:text-[#F3EFE8] transition-colors inline-flex items-center min-h-[44px] min-w-[44px]">
                     Styleguide (Dev)
                   </Link>
                 </li>

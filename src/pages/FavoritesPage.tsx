@@ -119,9 +119,9 @@ export const FavoritesPage: FC = () => {
 
         <Link
           to="/events"
-          className="text-xs font-bold uppercase tracking-wider text-[#F5B642] hover:text-[#FF7A1A] transition-colors self-start sm:self-auto"
+          className="text-xs font-bold uppercase tracking-wider text-[#F5B642] hover:text-[#FF7A1A] transition-colors self-start sm:self-auto min-h-[44px] flex items-center"
         >
-          Explore More Events
+          Explore More Events &rarr;
         </Link>
       </div>
 
