@@ -100,7 +100,7 @@ export const StrangeLogo: FC<StrangeLogoProps> = ({
     return (
       <Link
         to="/"
-        className="group inline-flex items-center min-h-[44px] transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-[#FF7A1A] rounded-md"
+        className="group inline-flex items-center transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-[#FF7A1A] rounded-md"
         aria-label="STRANGE Home"
       >
         {content}

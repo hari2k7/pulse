@@ -160,24 +160,15 @@ export const MultiverseHero: FC = () => {
 
   // Scene 2 (Scroll): CSS sticky wrapper + GSAP ScrollTrigger on the wrapper
   useEffect(() => {
-    if (typeof window === 'undefined' || isLite) return;
+    if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return;
 
     let ctx: gsap.Context | null = null;
-    let cleanupListeners: (() => void) | null = null;
 
     const initScrollTrigger = async () => {
       try {
         const { gsap } = await import('gsap');
         const { ScrollTrigger } = await import('gsap/ScrollTrigger');
         gsap.registerPlugin(ScrollTrigger);
-
-        // Prevent mobile address bar height fluctuations from causing jumps
-        ScrollTrigger.config({
-          ignoreMobileResize: true,
-          autoRefreshEvents: 'visibilitychange,DOMContentLoaded,load',
-        });
-
-        let tl: gsap.core.Timeline | null = null;
 
         ctx = gsap.context(() => {
           const mm = gsap.matchMedia();
@@ -194,54 +185,15 @@ export const MultiverseHero: FC = () => {
 
             if (!wrapper || !textGroup) return;
 
-            tl = gsap.timeline({
+            const tl = gsap.timeline({
               scrollTrigger: {
                 trigger: wrapper,
-                start: () => 'top top',
-                end: () => 'bottom bottom',
+                start: 'top top',
+                end: 'bottom bottom',
                 scrub: 0.5,
-                invalidateOnRefresh: true,
-                fastScrollEnd: true,
                 onUpdate: (self) => {
                   const p = self.progress;
                   isHeroScrolledRef.current = p > 0.02;
-
-                  // Force full hero visibility at scroll 0 so resize/fullscreen never traps in end state
-                  if (p <= 0.005 || window.scrollY <= 2) {
-                    if (textGroup) {
-                      textGroup.style.opacity = '1';
-                      textGroup.style.transform = 'none';
-                      textGroup.style.pointerEvents = '';
-                    }
-                    if (ctaLink) {
-                      ctaLink.removeAttribute('tabindex');
-                    }
-                    if (exitVoidRef.current) {
-                      exitVoidRef.current.style.opacity = '0';
-                    }
-                    if (vignetteRef.current) {
-                      vignetteRef.current.style.opacity = '0';
-                    }
-                    if (singularityRef.current) {
-                      singularityRef.current.style.opacity = '0';
-                    }
-                    if (shockwaveRef.current) {
-                      shockwaveRef.current.style.opacity = '0';
-                    }
-                    if (ring) {
-                      ring.style.opacity = '1';
-                      ring.style.transform = 'none';
-                    }
-                    if (portal) {
-                      portal.style.opacity = '1';
-                      portal.style.transform = 'none';
-                    }
-                    if (chamber) {
-                      chamber.style.opacity = '1';
-                      chamber.style.transform = 'none';
-                    }
-                    return;
-                  }
 
                   // Scale < 0.5 happens around progress 0.22
                   const isShrunk = p >= 0.22;
@@ -434,36 +386,6 @@ export const MultiverseHero: FC = () => {
             }
           });
         }, wrapperRef);
-
-        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-        const debouncedRefresh = () => {
-          if (debounceTimer) clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
-            ScrollTrigger.refresh();
-            if (window.scrollY <= 5 && tl) {
-              tl.progress(0);
-            }
-          }, 150);
-        };
-
-        window.addEventListener('resize', debouncedRefresh, { passive: true });
-        window.addEventListener('orientationchange', debouncedRefresh, { passive: true });
-        document.addEventListener('fullscreenchange', debouncedRefresh);
-        document.addEventListener('webkitfullscreenchange', debouncedRefresh);
-        if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', debouncedRefresh);
-        }
-
-        cleanupListeners = () => {
-          if (debounceTimer) clearTimeout(debounceTimer);
-          window.removeEventListener('resize', debouncedRefresh);
-          window.removeEventListener('orientationchange', debouncedRefresh);
-          document.removeEventListener('fullscreenchange', debouncedRefresh);
-          document.removeEventListener('webkitfullscreenchange', debouncedRefresh);
-          if (window.visualViewport) {
-            window.visualViewport.removeEventListener('resize', debouncedRefresh);
-          }
-        };
       } catch (err) {
         console.warn('Hero GSAP scroll scrub skipped:', err);
       }
@@ -473,7 +395,6 @@ export const MultiverseHero: FC = () => {
 
     return () => {
       cancelIdle();
-      cleanupListeners?.();
       ctx?.revert();
     };
   }, [isLite]);
@@ -481,9 +402,22 @@ export const MultiverseHero: FC = () => {
   // Whether to use sticky layout (JS available + not lite + not reduced motion)
   // Computed once at mount using useMemo (stable in SPA — no SSR hydration).
   const useStickyLayout = useMemo(() => {
-    if (typeof window === 'undefined' || isLite) return false;
+    if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return false;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, [isLite]);
+
+  // Responsive portal size: desktop sticky uses fixed 580px (in a 100svh viewport it's always fine).
+  // Mobile non-sticky: size is clamped to min(80vw, 44svh) with a fallback of min(72vw, 38svh) on
+  // very short screens (height < 700px). We compute once at mount.
+  const portalSize = useMemo(() => {
+    if (typeof window === 'undefined') return 520;
+    if (window.innerWidth >= 768) return 580;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Portrait mobile: min(80vw, 44svh), but on short phones (< 700px) use min(72vw, 38svh)
+    if (vh < 700) return Math.round(Math.min(vw * 0.72, vh * 0.38));
+    return Math.round(Math.min(vw * 0.80, vh * 0.44));
+  }, []);
 
   return (
     /*
@@ -514,8 +448,20 @@ export const MultiverseHero: FC = () => {
         className={
           useStickyLayout
             ? 'sticky top-0 left-0 right-0 h-[100svh] flex items-center justify-center overflow-hidden select-none'
-            : 'relative w-full min-h-[92vh] md:min-h-screen flex items-center justify-center overflow-hidden pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8 select-none'
+            : 'relative w-full overflow-hidden select-none'
         }
+        style={useStickyLayout ? undefined : {
+          minHeight: '100svh',
+          paddingTop: 'calc(var(--navbar-height, 64px) + 16px)',
+          paddingBottom: '24px',
+          paddingLeft: '20px',
+          paddingRight: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '16px',
+        }}
       >
         {/* Visible Skip Intro Button (Only shown during active intro) */}
         {isIntroActive && (
@@ -534,9 +480,10 @@ export const MultiverseHero: FC = () => {
 
         {/* Intro Camera Push Wrapper (transform only, no layout shift) */}
         <div
-          className={`relative w-full h-full flex items-center justify-center transition-transform duration-1000 ease-out ${
+          className={`relative w-full flex items-center justify-center transition-transform duration-1000 ease-out ${
             introPhase === 'opening' ? 'scale-105' : 'scale-100'
-          }`}
+          } ${useStickyLayout ? 'h-full' : 'flex-1'}`}
+          style={useStickyLayout ? undefined : { minHeight: `${typeof window !== 'undefined' ? Math.max(portalSize + 32, 300) : 300}px` }}
         >
           {/* Layer 0: Far Windows with Twilight Glow */}
           <div
@@ -580,7 +527,7 @@ export const MultiverseHero: FC = () => {
               aria-hidden="true"
             >
               <SlingRingPortal
-                size={580}
+                size={portalSize}
                 introPhase={introPhase === 'dark' ? 'tracing' : introPhase}
                 ringRef={portalRingRef}
                 chamberRef={chamberRef}
@@ -665,8 +612,10 @@ export const MultiverseHero: FC = () => {
           <div
             ref={textGroupRef}
             id="hero-portal-content"
-            className={`relative z-30 max-w-4xl mx-auto flex flex-col items-center text-center space-y-6 px-4 sm:px-6 ${
-              useStickyLayout ? 'pt-[var(--navbar-height)]' : 'pt-4'
+            className={`relative z-30 w-full flex flex-col items-center text-center ${
+              useStickyLayout
+                ? 'max-w-4xl mx-auto space-y-6 px-4 sm:px-6 pt-[var(--navbar-height)]'
+                : 'space-y-4 px-0'
             }`}
           >
             {/* Real H1 Title (LCP Element — NEVER hidden by JS per Hard Rule 2) */}
@@ -674,8 +623,14 @@ export const MultiverseHero: FC = () => {
               <h1
                 ref={h1Ref}
                 aria-label="STRANGE"
-                className="hero-title font-display text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-[0.14em] text-[#F3EFE8] leading-none drop-shadow-2xl select-none"
-                style={{ fontWeight: 700 }}
+                className="hero-title font-display tracking-[0.14em] text-[#F3EFE8] leading-none drop-shadow-2xl select-none"
+                style={{
+                  fontWeight: 700,
+                  fontSize: useStickyLayout
+                    ? 'clamp(3rem, 7vw, 6.5rem)'
+                    : 'clamp(2.25rem, 11vw, 3.25rem)',
+                  letterSpacing: useStickyLayout ? '0.14em' : '0.08em',
+                }}
               >
                 <span className="hero-ch" aria-hidden="true">S</span>
                 <span className="hero-ch" aria-hidden="true">T</span>
@@ -695,7 +650,16 @@ export const MultiverseHero: FC = () => {
             </div>
 
             {/* Tagline */}
-            <p className="font-display text-lg sm:text-2xl md:text-3xl tracking-[0.22em] uppercase text-[#F5B642] max-w-2xl font-semibold drop-shadow-lg">
+            <p
+              className="font-display uppercase text-[#F5B642] font-semibold drop-shadow-lg"
+              style={{
+                fontSize: useStickyLayout ? 'clamp(1rem, 2.4vw, 1.875rem)' : 'clamp(0.6rem, 2.6vw, 0.8rem)',
+                letterSpacing: useStickyLayout ? '0.18em' : '0.12em',
+                whiteSpace: useStickyLayout ? 'nowrap' : undefined,
+                textShadow: useStickyLayout ? undefined : '0 1px 4px rgba(7,6,13,0.8)',
+                maxWidth: useStickyLayout ? 'none' : undefined,
+              }}
+            >
               {FESTIVAL_CONFIG.tagline || 'A Tech Fest Beyond Reality.'}
             </p>
 
@@ -726,14 +690,23 @@ export const MultiverseHero: FC = () => {
             )}
 
             {/* Editorial Sub-copy */}
-            <p className="text-sm sm:text-base md:text-lg text-[#B8B3C7] max-w-xl leading-relaxed">
+            <p
+              className="text-[#B8B3C7] leading-relaxed"
+              style={{
+                fontSize: useStickyLayout ? undefined : '15px',
+                maxWidth: useStickyLayout ? '46ch' : '32ch',
+                textAlign: 'center',
+                overflowWrap: 'anywhere',
+                textWrap: 'balance',
+              } as React.CSSProperties}
+            >
               Traverse 30+ dimensional hackathons, workshops, and technical crucibles.
               Step through the Sling Ring and push the boundaries of engineering.
             </p>
 
             {/* Primary CTA (Opacity-only transition in intro, never layout shift) */}
             <div
-              className={`pt-2 transition-opacity duration-700 ${
+              className={`transition-opacity duration-700 ${
                 introPhase === 'dark' || introPhase === 'tracing' ? 'opacity-0' : 'opacity-100'
               }`}
             >
@@ -741,7 +714,11 @@ export const MultiverseHero: FC = () => {
                 ref={ctaLinkRef}
                 id="hero-explore-cta"
                 to="/events"
-                className="inline-flex items-center justify-center font-bold text-sm sm:text-base uppercase tracking-wider px-8 py-3.5 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-[0_0_24px_rgba(255,122,26,0.5)] border border-[#FFE082]"
+                className="inline-flex items-center justify-center font-bold text-sm sm:text-base uppercase tracking-wider px-8 rounded-md bg-[#FF7A1A] text-[#07060D] hover:bg-[#F5B642] transition-colors active:scale-95 shadow-[0_0_24px_rgba(255,122,26,0.5)] border border-[#FFE082]"
+                style={{
+                  height: '48px',
+                  minWidth: '220px',
+                }}
               >
                 Explore Events
               </Link>
@@ -755,6 +732,11 @@ export const MultiverseHero: FC = () => {
           aria-hidden="true"
         />
       </div>
+
+      {/* After the sticky child ends: transparent spacer so the wrapper's bottom is reachable */}
+      {useStickyLayout && (
+        <div className="h-[100svh] pointer-events-none" aria-hidden="true" />
+      )}
     </div>
   );
 };

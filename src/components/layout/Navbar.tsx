@@ -387,10 +387,10 @@ export const Navbar: FC = () => {
         <div className="justify-self-center flex items-center justify-center px-1 sm:px-2">
           <NavLink
             to="/"
-            className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] rounded py-1 px-1.5 min-h-[44px] flex items-center"
+            className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF7A1A] rounded py-1 px-1.5"
             aria-label="STRANGE Home"
           >
-            <StrangeLogo size="sm" asLink={false} />
+            <StrangeLogo size="sm" />
           </NavLink>
         </div>
 

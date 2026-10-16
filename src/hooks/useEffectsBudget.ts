@@ -13,7 +13,19 @@ export type EffectsBudget = 'lite' | 'full';
 export function isLiteDevice(): boolean {
   if (typeof window === 'undefined') return false;
 
-  // 1. Reduced motion preference
+  // 1. Viewport under 768px
+  if (window.innerWidth < 768) return true;
+
+  // 2. Touch / coarse pointer or no hover support
+  try {
+    if (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches) {
+      return true;
+    }
+  } catch {
+    // Media query fallback
+  }
+
+  // 3. Reduced motion preference
   try {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return true;
@@ -27,7 +39,7 @@ export function isLiteDevice(): boolean {
     deviceMemory?: number;
   };
 
-  // 2. saveData header / API active
+  // 4. saveData header / API active
   try {
     if (nav.connection?.saveData === true || window.matchMedia('(save-data: on)').matches) {
       return true;
@@ -36,13 +48,18 @@ export function isLiteDevice(): boolean {
     // Fallback
   }
 
-  // 3. 2G / slow-2G connection
+  // 5. 2G / slow-2G connection
   if (nav.connection?.effectiveType === '2g' || nav.connection?.effectiveType === 'slow-2g') {
     return true;
   }
 
-  // 4. Very low devices (deviceMemory <= 2 GB)
-  if (typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 2) {
+  // 6. Device memory <= 4 GB
+  if (typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 4) {
+    return true;
+  }
+
+  // 7. Hardware concurrency <= 4 cores
+  if (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4) {
     return true;
   }
 

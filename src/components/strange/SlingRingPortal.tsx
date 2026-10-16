@@ -35,9 +35,9 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
   // Criterion A: Heat shimmer removed per effect shedding order
   const isShimmerAllowed = false;
 
-  // Single capped canvas sparks: desktop non-lite only
+  // Single capped canvas sparks: loaded after window load + idle
   useEffect(() => {
-    if (typeof window === 'undefined' || isLite || window.innerWidth < 1024) return;
+    if (typeof window === 'undefined' || isLite || window.innerWidth < 768) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const canvas = canvasRef.current;
@@ -168,7 +168,8 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative flex items-center justify-center select-none pointer-events-none w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] md:w-[520px] md:h-[520px] lg:w-[580px] lg:h-[580px] ${className}`}
+      className={`relative flex items-center justify-center select-none pointer-events-none ${className}`}
+      style={{ width: size, height: size }}
       aria-hidden="true"
     >
 
@@ -251,15 +252,10 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
               strokeLinecap="round"
               strokeOpacity="0.88"
             />
-            {/* Searing sparks on rim (Clockwise set of 8 sparks) */}
+            {/* Searing sparks on rim */}
             <circle cx="544" cy="300" r="4.5" fill="#FFFFFF" />
-            <circle cx="473" cy="473" r="3.5" fill="#FFE5A3" />
-            <circle cx="300" cy="544" r="4.0" fill="#FF7A1A" />
-            <circle cx="127" cy="473" r="3.0" fill="#F5B642" />
-            <circle cx="56" cy="300" r="4.5" fill="#FFFFFF" />
-            <circle cx="127" cy="127" r="3.5" fill="#FFE5A3" />
-            <circle cx="300" cy="56" r="4.0" fill="#FF7A1A" />
-            <circle cx="473" cy="127" r="3.0" fill="#F5B642" />
+            <circle cx="300" cy="544" r="3.5" fill="#FFE5A3" />
+            <circle cx="127" cy="127" r="3" fill="#F5B642" />
           </g>
 
           {/* Layer C: Inner Fiery Arc 2: Counter-Clockwise (10s) with varied thickness */}
@@ -274,15 +270,8 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
               strokeLinecap="round"
               strokeOpacity="0.9"
             />
-            {/* Counter-Clockwise set of 8 sparks */}
-            <circle cx="525" cy="393" r="3.5" fill="#FFE5A3" />
-            <circle cx="393" cy="525" r="4.0" fill="#FFFFFF" />
-            <circle cx="207" cy="525" r="3.0" fill="#F5B642" />
-            <circle cx="75" cy="393" r="4.0" fill="#FF7A1A" />
-            <circle cx="75" cy="207" r="3.5" fill="#FFE5A3" />
-            <circle cx="207" cy="75" r="4.0" fill="#FFFFFF" />
-            <circle cx="393" cy="75" r="3.0" fill="#F5B642" />
-            <circle cx="525" cy="207" r="4.0" fill="#FF7A1A" />
+            <circle cx="300" cy="61" r="5" fill="#FFFFFF" />
+            <circle cx="473" cy="473" r="3.5" fill="#FFE082" />
           </g>
 
           {/* Layer D: Searing Bright Hot White-Gold Core Edge: Irregular molten line (8s spin) */}
@@ -349,7 +338,7 @@ export const SlingRingPortal: FC<SlingRingPortalProps> = ({
       {!isLite && (
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none z-20 hidden lg:block"
+          className="absolute inset-0 w-full h-full pointer-events-none z-20"
           aria-hidden="true"
         />
       )}
